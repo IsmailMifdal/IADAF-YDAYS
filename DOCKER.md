@@ -196,6 +196,11 @@ spring:
         default_schema: users
 ```
 
+⚠️ **Note** : Le logging SQL (`show-sql: true` et `format_sql: true`) est activé pour faciliter le développement et le debugging. Pour un environnement de production, il est recommandé de :
+- Désactiver ces options ou les contrôler via des profils Spring (`spring.profiles.active`)
+- Utiliser un profil de développement séparé avec logging activé
+- Configurer un logging approprié via un système de logs externe
+
 ## Dépannage
 
 ### PostgreSQL ne démarre pas

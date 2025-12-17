@@ -3,11 +3,11 @@ services:
     image: postgres:15-alpine
     container_name: iadaf-postgres
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_DB: iadaf_db
-      POSTGRES_USER: iadaf_user
-      POSTGRES_PASSWORD: iadaf_password
+      POSTGRES_DB: ${POSTGRES_DB:-iadaf_db}
+      POSTGRES_USER: ${POSTGRES_USER:-iadaf_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
@@ -15,7 +15,7 @@ services:
       - iadaf-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U iadaf_user -d iadaf_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iadaf_user} -d ${POSTGRES_DB:-iadaf_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,10 +24,10 @@ services:
     image: dpage/pgadmin4:latest
     container_name: iadaf-pgadmin
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT:-5050}:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@iadaf.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@iadaf.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     networks:
       - iadaf-network
     restart: unless-stopped
