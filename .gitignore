@@ -60,3 +60,6 @@ Desktop.ini
 /dist/
 /nbdist/
 /.nb-gradle/
+
+# Environment variables
+.env
