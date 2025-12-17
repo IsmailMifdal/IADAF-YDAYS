@@ -167,7 +167,12 @@ Les origines autorisées par défaut :
 - `http://localhost:3000` (React)
 - `http://localhost:5173` (Vite)
 
-Pour ajouter d'autres origines, modifier `CorsConfig.java`.
+Pour ajouter d'autres origines, définir la propriété `cors.allowed-origins` dans `application.yml` :
+
+```yaml
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173,https://mon-app.com
+```
 
 ## Monitoring
 

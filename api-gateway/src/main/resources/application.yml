@@ -90,6 +90,13 @@ logging:
     com.iadaf.gateway: INFO
     reactor.netty.http.client: WARN
 
+# Production Actuator - exposer uniquement les endpoints essentiels
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 resilience4j:
   circuitbreaker:
     instances:
