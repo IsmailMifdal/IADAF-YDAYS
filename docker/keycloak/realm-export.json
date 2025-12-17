@@ -1,0 +1,176 @@
+{
+  "realm": "iadaf",
+  "enabled": true,
+  "displayName": "IA-DAF - Démarches Administratives",
+  "displayNameHtml": "<strong>IA-DAF</strong> - Assistance Administrative",
+  "accessTokenLifespan": 1800,
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "defaultSignatureAlgorithm": "RS256",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "en", "es", "ar"],
+  "defaultLocale": "fr",
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Utilisateur standard - Peut créer des dossiers et uploader des documents",
+        "composite": false
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrateur - Gestion complète de la plateforme",
+        "composite": false
+      },
+      {
+        "name": "AGENT",
+        "description": "Agent administratif - Peut consulter et aider les utilisateurs",
+        "composite": false
+      },
+      {
+        "name": "SUPPORT",
+        "description": "Support technique - Accès aux logs et statistiques",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "iadaf-frontend",
+      "name": "IA-DAF Frontend Application",
+      "description": "Application React pour les utilisateurs",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "iadaf-gateway",
+      "name": "IA-DAF API Gateway",
+      "description": "API Gateway pour la validation des tokens",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "secret": "iadaf-gateway-secret-change-in-production"
+    },
+    {
+      "clientId": "iadaf-backend",
+      "name": "IA-DAF Backend Services",
+      "description": "Microservices backend (bearer-only)",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "bearerOnly": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@iadaf.com",
+      "email": "admin@iadaf.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "System",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER"],
+      "attributes": {
+        "locale": ["fr"]
+      }
+    },
+    {
+      "username": "user@iadaf.com",
+      "email": "user@iadaf.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "John",
+      "lastName": "Doe",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"],
+      "attributes": {
+        "locale": ["en"],
+        "niveauFrancais": ["B1"],
+        "paysOrigine": ["États-Unis"]
+      }
+    },
+    {
+      "username": "agent@iadaf.com",
+      "email": "agent@iadaf.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Marie",
+      "lastName": "Agent",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "agent123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["AGENT", "USER"],
+      "attributes": {
+        "locale": ["fr"]
+      }
+    },
+    {
+      "username": "support@iadaf.com",
+      "email": "support@iadaf.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Support",
+      "lastName": "Technique",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "support123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["SUPPORT", "USER"],
+      "attributes": {
+        "locale": ["fr"]
+      }
+    }
+  ]
+}

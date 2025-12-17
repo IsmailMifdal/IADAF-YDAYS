@@ -45,12 +45,18 @@ cd api-gateway && mvn spring-boot:run
   - Commandes Docker Compose
   - Gestion de la base de données
   - Dépannage
+- **[KEYCLOAK.md](KEYCLOAK.md)** - Documentation complète de l'authentification Keycloak
+  - Configuration des rôles et clients OAuth2
+  - Gestion des utilisateurs
+  - Obtenir des tokens JWT
+  - API et endpoints
 
 ### 🔗 Accès aux services
 
 - **pgAdmin** : http://localhost:5050
 - **Eureka Dashboard** : http://localhost:8761
 - **API Gateway** : http://localhost:8080
+- **Keycloak Admin** : http://localhost:8180
 
 ### 🗄️ Base de données
 
@@ -59,3 +65,25 @@ cd api-gateway && mvn spring-boot:run
 - **Schémas** : users, demarches, documents, analytics
 
 Voir [DOCKER.md](DOCKER.md) pour plus de détails.
+
+## 🔐 Authentification (Keycloak)
+
+Le projet utilise Keycloak pour la gestion de l'authentification et des autorisations.
+
+### Accès Keycloak
+
+- **Admin Console** : http://localhost:8180
+- **Username** : `admin`
+- **Password** : `admin`
+- **Realm** : `iadaf`
+
+### Utilisateurs de test
+
+| Email | Password | Rôle |
+|-------|----------|------|
+| admin@iadaf.com | admin123 | ADMIN |
+| user@iadaf.com | user123 | USER |
+| agent@iadaf.com | agent123 | AGENT |
+| support@iadaf.com | support123 | SUPPORT |
+
+Voir [KEYCLOAK.md](KEYCLOAK.md) pour plus de détails.
