@@ -3,14 +3,23 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      # Découverte automatique des services via Eureka
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
+      # Configuration des timeouts
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+      # Routes par défaut (complétées par GatewayConfig.java)
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
 server:
   port: 8080
 
+# Configuration Eureka Client
 eureka:
   client:
     service-url:
@@ -19,3 +28,78 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCircuitBreaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+      demarchesServiceCircuitBreaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+      documentServiceCircuitBreaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+      aiServiceCircuitBreaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+      analyticsServiceCircuitBreaker:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.iadaf.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+
+---
+# Profil PRODUCTION
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.iadaf.gateway: INFO
+    reactor.netty.http.client: WARN
+
+# Production Actuator - exposer uniquement les endpoints essentiels
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCircuitBreaker:
+        sliding-window-size: 20
+        failure-rate-threshold: 60
