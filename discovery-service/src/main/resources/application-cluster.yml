@@ -1,0 +1,42 @@
+# Configuration pour un cluster Eureka avec 2 instances
+spring:
+  application:
+    name: discovery-service
+
+---
+# Instance 1
+spring:
+  config:
+    activate:
+      on-profile: peer1
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    hostname: peer1
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://peer2:8762/eureka/
+
+---
+# Instance 2
+spring:
+  config:
+    activate:
+      on-profile: peer2
+
+server:
+  port: 8762
+
+eureka:
+  instance:
+    hostname: peer2
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://peer1:8761/eureka/

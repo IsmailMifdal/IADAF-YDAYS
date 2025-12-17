@@ -6,10 +6,55 @@ server:
   port: 8761
 
 eureka:
+  instance:
+    hostname: localhost
+    prefer-ip-address: false
   client:
+    # Le serveur Eureka ne doit pas s'enregistrer lui-même
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
+    # Désactive le mode de préservation en dev (pour tests)
     enable-self-preservation: false
+    # Temps d'expiration des clients (en ms)
+    eviction-interval-timer-in-ms: 10000
+    # Seuil de renouvellement attendu
+    renewal-percent-threshold: 0.85
+    # Réponse cache (en ms)
+    response-cache-update-interval-ms: 5000
+
+# Configuration du monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logs
+logging:
+  level:
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+    com.iadaf.discovery: DEBUG
+
+---
+# Profil PRODUCTION
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+eureka:
+  server:
+    # Active le mode de préservation en production
+    enable-self-preservation: true
+    eviction-interval-timer-in-ms: 60000
+
+logging:
+  level:
+    com.iadaf.discovery: INFO
