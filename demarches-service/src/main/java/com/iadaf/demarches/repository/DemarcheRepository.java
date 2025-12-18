@@ -24,7 +24,8 @@ public interface DemarcheRepository extends JpaRepository<Demarche, Long> {
     List<Demarche> findByUserIdAndTypeDemarcheAndActiveTrue(String userId, TypeDemarche typeDemarche);
     
     @Query("SELECT d FROM Demarche d WHERE d.userId = :userId AND d.active = true " +
-           "AND d.dateEcheance < :today AND d.statut != 'TERMINEE' AND d.statut != 'ANNULEE'")
+           "AND d.dateEcheance < :today AND d.statut != com.iadaf.demarches.enums.StatutDemarche.TERMINEE " +
+           "AND d.statut != com.iadaf.demarches.enums.StatutDemarche.ANNULEE")
     List<Demarche> findOverdueDemarches(@Param("userId") String userId, @Param("today") LocalDate today);
     
     boolean existsByIdAndUserId(Long id, String userId);
