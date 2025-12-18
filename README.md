@@ -124,3 +124,68 @@ Le projet utilise Keycloak pour la gestion de l'authentification et des autorisa
 | support@iadaf.com | support123 | SUPPORT |
 
 Voir [KEYCLOAK.md](KEYCLOAK.md) pour plus de détails.
+
+### 🔑 Obtenir un token JWT
+
+Pour accéder aux endpoints protégés, vous devez d'abord obtenir un token JWT depuis Keycloak :
+
+```bash
+# Obtenir un token pour l'utilisateur admin
+export TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=iadaf-frontend' \
+  -d 'grant_type=password' \
+  -d 'username=admin@iadaf.com' \
+  -d 'password=admin123' \
+  | jq -r '.access_token')
+
+# Vérifier le token
+echo $TOKEN
+```
+
+### 📡 Exemples de requêtes authentifiées
+
+Une fois le token obtenu, utilisez-le dans le header `Authorization: Bearer <token>` :
+
+```bash
+# Obtenir les informations de l'utilisateur connecté
+curl http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Tester l'endpoint admin (uniquement pour ADMIN)
+curl http://localhost:8080/api/auth/admin/test \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Tester l'endpoint agent (pour AGENT ou ADMIN)
+curl http://localhost:8080/api/auth/agent/test \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+### ⚠️ Codes d'erreur d'authentification
+
+| Code | Description |
+|------|-------------|
+| **401 Unauthorized** | Token manquant ou invalide. Obtenez un nouveau token. |
+| **403 Forbidden** | Token valide mais rôle insuffisant. Utilisez un compte avec les permissions appropriées. |
+
+**Exemple sans token (401):**
+```bash
+# Cette requête retournera une erreur 401
+curl http://localhost:8080/api/auth/me
+```
+
+**Exemple avec rôle insuffisant (403):**
+```bash
+# Un utilisateur USER ne peut pas accéder aux endpoints admin
+export USER_TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=iadaf-frontend' \
+  -d 'grant_type=password' \
+  -d 'username=user@iadaf.com' \
+  -d 'password=user123' \
+  | jq -r '.access_token')
+
+# Cette requête retournera une erreur 403
+curl http://localhost:8080/api/auth/admin/test \
+  -H "Authorization: Bearer $USER_TOKEN"
+```
