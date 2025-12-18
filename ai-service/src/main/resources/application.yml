@@ -11,7 +11,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # dialect supprimé - auto-détection par Hibernate
 
 server:
   port: 8084
