@@ -35,6 +35,8 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
+            // CSRF protection désactivée car l'API utilise des tokens JWT stateless
+            // Les attaques CSRF ne sont pas possibles avec l'authentification JWT dans les headers
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .authorizeExchange(exchange -> exchange
                 // Endpoints publics (pas d'authentification requise)
