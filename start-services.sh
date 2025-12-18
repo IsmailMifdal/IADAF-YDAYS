@@ -27,7 +27,6 @@ fi
 
 echo ""
 echo "🚀 Démarrage des services..."
-echo "   POSTGRES_USER=$POSTGRES_USER"
 echo ""
 
 read -p "Quel service voulez-vous démarrer ? (discovery/user/gateway/all) : " SERVICE

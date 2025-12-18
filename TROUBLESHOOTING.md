@@ -4,7 +4,7 @@
 
 ### Symptôme
 ```
-FATAL: authentification par mot de passe échouée pour l'utilisateur « iadaf_user »
+FATAL: authentification par mot de passe a échoué pour l'utilisateur « iadaf_user »
 ```
 
 ### Solution
