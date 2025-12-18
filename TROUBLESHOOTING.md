@@ -27,7 +27,9 @@ FATAL: authentification par mot de passe échouée pour l'utilisateur « iadaf_u
 
 3. **Exporter les variables d'environnement** :
    ```bash
-   export $(cat .env | grep -v '^#' | xargs)
+   set -a
+   source .env
+   set +a
    ```
 
 4. **Tester la connexion PostgreSQL** :

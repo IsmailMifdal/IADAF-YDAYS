@@ -4,7 +4,9 @@
 
 echo "🔧 Chargement des variables d'environnement..."
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    source .env
+    set +a
     echo "✅ Variables chargées depuis .env"
 else
     echo "❌ ERREUR : Fichier .env introuvable"
@@ -26,7 +28,6 @@ fi
 echo ""
 echo "🚀 Démarrage des services..."
 echo "   POSTGRES_USER=$POSTGRES_USER"
-echo "   POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
 echo ""
 
 read -p "Quel service voulez-vous démarrer ? (discovery/user/gateway/all) : " SERVICE
