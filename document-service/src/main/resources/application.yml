@@ -15,6 +15,12 @@ spring:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: documents
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
 
 server:
   port: 8083
@@ -27,3 +33,7 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG
