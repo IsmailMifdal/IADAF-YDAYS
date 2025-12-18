@@ -18,6 +18,8 @@ import reactor.core.publisher.Mono;
 @Component
 public class AuthenticationLoggingFilter implements GlobalFilter, Ordered {
 
+    private static final int FILTER_ORDER = -100;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
@@ -35,12 +37,11 @@ public class AuthenticationLoggingFilter implements GlobalFilter, Ordered {
                                 exchange.getRequest().getURI().getPath());
                     }
                 })
-                .then(chain.filter(exchange))
-                .contextWrite(ReactiveSecurityContextHolder.clearContext());
+                .then(chain.filter(exchange));
     }
 
     @Override
     public int getOrder() {
-        return -100; // Exécuté après l'authentification
+        return FILTER_ORDER; // Exécuté après l'authentification
     }
 }

@@ -90,11 +90,19 @@ public class SecurityConfig {
                 return List.of();
             }
             
+            Object rolesObj = realmAccess.get("roles");
+            
+            // Valider que roles est bien une liste avant de faire le cast
+            if (!(rolesObj instanceof List)) {
+                return List.of();
+            }
+            
             @SuppressWarnings("unchecked")
-            List<String> roles = (List<String>) realmAccess.get("roles");
+            List<String> roles = (List<String>) rolesObj;
             
             // Convertir en GrantedAuthority avec le préfixe ROLE_
             return roles.stream()
+                    .filter(role -> role instanceof String)
                     .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                     .collect(Collectors.toList());
         }

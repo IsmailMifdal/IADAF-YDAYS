@@ -19,8 +19,10 @@ import java.time.LocalDateTime;
  */
 @Slf4j
 @Component
-@Order(-2)
+@Order(SecurityExceptionHandler.HANDLER_ORDER)
 public class SecurityExceptionHandler implements ErrorWebExceptionHandler {
+    
+    public static final int HANDLER_ORDER = -2;
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
