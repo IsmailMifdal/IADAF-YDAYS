@@ -22,7 +22,7 @@ export default function HomePage() {
           </h1>
           <p className="text-xl text-gray-600 mb-8">
             Une plateforme intelligente pour vous accompagner dans toutes vos démarches
-            administratives avec l'aide de l'IA.
+            administratives avec l&apos;aide de l&apos;IA.
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/login">

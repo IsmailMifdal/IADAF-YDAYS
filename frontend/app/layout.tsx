@@ -1,28 +1,23 @@
-'use client';
-
-import { Inter } from 'next/font/google'
+import type { Metadata } from 'next'
 import './globals.css'
-import { AuthProvider } from '@/lib/auth/AuthProvider'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Providers } from '@/components/providers/Providers'
 
-const inter = Inter({ subsets: ['latin'] })
+export const metadata: Metadata = {
+  title: 'IA-DAF - Assistance Administrative',
+  description: 'Plateforme d\'assistance pour les démarches administratives',
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [queryClient] = useState(() => new QueryClient())
-
   return (
     <html lang="fr">
-      <body className={inter.className}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </QueryClientProvider>
+      <body className="font-sans">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

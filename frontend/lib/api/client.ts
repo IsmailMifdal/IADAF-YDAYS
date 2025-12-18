@@ -11,7 +11,7 @@ const apiClient = axios.create({
 // Intercepteur pour ajouter le token JWT
 apiClient.interceptors.request.use(
   (config) => {
-    if (keycloak.token) {
+    if (keycloak && keycloak.token) {
       config.headers.Authorization = `Bearer ${keycloak.token}`;
     }
     return config;
@@ -25,7 +25,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && keycloak) {
       // Token expiré, tenter de le rafraîchir
       try {
         await keycloak.updateToken(30);
@@ -34,7 +34,9 @@ apiClient.interceptors.response.use(
         return apiClient.request(error.config);
       } catch (refreshError) {
         // Échec du refresh, déconnecter l'utilisateur
-        keycloak.logout();
+        if (keycloak) {
+          keycloak.logout();
+        }
         return Promise.reject(refreshError);
       }
     }

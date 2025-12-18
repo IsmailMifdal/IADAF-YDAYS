@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="pays">Pays d'origine</Label>
+                  <Label htmlFor="pays">Pays d&apos;origine</Label>
                   <Input id="pays" placeholder="France" />
                 </div>
                 <div>
@@ -99,7 +99,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
-              La gestion des mots de passe et de l'authentification est gérée par Keycloak.
+              La gestion des mots de passe et de l&apos;authentification est gérée par Keycloak.
             </p>
             <Button variant="outline">Modifier mon mot de passe</Button>
           </CardContent>

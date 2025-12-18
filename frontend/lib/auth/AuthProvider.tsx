@@ -3,11 +3,20 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import keycloak from './keycloak';
 
+interface UserInfo {
+  sub?: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+  preferred_username?: string;
+  [key: string]: unknown;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
-  userInfo: any;
+  userInfo: UserInfo | null;
   login: () => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
@@ -19,9 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   useEffect(() => {
+    if (!keycloak || typeof window === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
+
     keycloak
       .init({
         onLoad: 'check-sso',
@@ -62,15 +76,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = () => {
-    keycloak.login();
+    if (keycloak) {
+      keycloak.login();
+    }
   };
 
   const logout = () => {
-    keycloak.logout();
+    if (keycloak) {
+      keycloak.logout();
+    }
   };
 
   const hasRole = (role: string): boolean => {
-    return keycloak.hasRealmRole(role);
+    return keycloak ? keycloak.hasRealmRole(role) : false;
   };
 
   return (

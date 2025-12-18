@@ -8,7 +8,7 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-lg mb-4">IA-DAF</h3>
             <p className="text-gray-600">
-              Plateforme d'assistance pour les démarches administratives
+              Plateforme d&apos;assistance pour les démarches administratives
             </p>
           </div>
           <div>
