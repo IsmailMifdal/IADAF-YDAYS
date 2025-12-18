@@ -41,6 +41,9 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
+    metadata-map:
+      # Métadonnées pour identifier l'API Gateway
+      management.context-path: /actuator
 
 # Circuit Breaker Configuration
 resilience4j:
