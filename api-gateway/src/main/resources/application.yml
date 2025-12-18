@@ -1,6 +1,15 @@
 spring:
   application:
     name: api-gateway
+  
+  # Configuration OAuth2 Resource Server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
+
   cloud:
     gateway:
       # Découverte automatique des services via Eureka
@@ -15,6 +24,8 @@ spring:
       # Routes par défaut (complétées par GatewayConfig.java)
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        # Propager le token JWT aux microservices
+        - TokenRelay=
 
 server:
   port: 8080
@@ -73,9 +84,9 @@ management:
 # Logging
 logging:
   level:
+    org.springframework.security: DEBUG
     org.springframework.cloud.gateway: DEBUG
     com.iadaf.gateway: DEBUG
-    reactor.netty.http.client: DEBUG
 
 ---
 # Profil PRODUCTION
@@ -86,9 +97,9 @@ spring:
 
 logging:
   level:
+    org.springframework.security: INFO
     org.springframework.cloud.gateway: INFO
     com.iadaf.gateway: INFO
-    reactor.netty.http.client: WARN
 
 # Production Actuator - exposer uniquement les endpoints essentiels
 management:

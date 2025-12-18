@@ -220,13 +220,139 @@ Les logs montrent :
 - Les erreurs de routage
 - Les activations du circuit breaker
 
-## Sécurité (évolution future)
+## Sécurité OAuth2
 
-Pour sécuriser la gateway :
-- Ajouter Spring Security
-- Implémenter JWT pour l'authentification
+L'API Gateway est sécurisé avec Spring Security OAuth2 Resource Server et valide les tokens JWT émis par Keycloak.
+
+### Prérequis
+
+- Keycloak démarré sur http://localhost:8180
+- Realm `iadaf` configuré
+
+### Authentification
+
+Toutes les requêtes (sauf `/actuator/health` et `/actuator/info`) nécessitent un token JWT valide dans le header Authorization :
+
+```bash
+Authorization: Bearer <JWT_TOKEN>
+```
+
+### Obtenir un token JWT
+
+1. **Via l'API Keycloak** :
+```bash
+curl -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'client_id=iadaf-gateway' \
+  -d 'client_secret=<YOUR_CLIENT_SECRET>' \
+  -d 'grant_type=password' \
+  -d 'username=<USERNAME>' \
+  -d 'password=<PASSWORD>'
+```
+
+2. **Utiliser le token** :
+```bash
+# Récupérer le token de la réponse JSON (champ "access_token")
+export TOKEN="<ACCESS_TOKEN>"
+
+# Faire une requête authentifiée
+curl http://localhost:8080/api/users \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Rôles et permissions
+
+L'API Gateway supporte les rôles suivants (définis dans Keycloak) :
+
+| Rôle | Description | Accès |
+|------|-------------|-------|
+| **USER** | Utilisateur standard | `/api/users/**`, `/api/demarches/**`, `/api/documents/**`, `/api/ia/**` |
+| **AGENT** | Agent administratif | Tous les endpoints USER + `/api/agent/**` |
+| **SUPPORT** | Support technique | `/api/analytics/**` |
+| **ADMIN** | Administrateur | Tous les endpoints |
+
+### Exemples de requêtes authentifiées
+
+#### Appel avec authentification
+```bash
+# Utilisateur standard (rôle USER)
+curl http://localhost:8080/api/demarches \
+  -H "Authorization: Bearer $TOKEN"
+
+# Agent (rôle AGENT)
+curl http://localhost:8080/api/agent/pending-requests \
+  -H "Authorization: Bearer $TOKEN"
+
+# Admin (rôle ADMIN)
+curl http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+#### Réponses d'erreur
+
+**401 Unauthorized** - Token manquant ou invalide :
+```json
+{
+  "timestamp": "2025-12-18T10:30:00",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Authentication required. Please provide a valid JWT token.",
+  "path": "/api/users"
+}
+```
+
+**403 Forbidden** - Permissions insuffisantes :
+```json
+{
+  "timestamp": "2025-12-18T10:30:00",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "You don't have permission to access this resource.",
+  "path": "/api/admin/users"
+}
+```
+
+### Configuration
+
+Les URLs Keycloak sont configurables via des variables d'environnement :
+
+```bash
+KEYCLOAK_ISSUER_URI=http://localhost:8180/realms/iadaf
+KEYCLOAK_JWK_SET_URI=http://localhost:8180/realms/iadaf/protocol/openid-connect/certs
+```
+
+### TokenRelay
+
+Le filtre `TokenRelay` propage automatiquement le token JWT aux microservices en aval. Les microservices peuvent ainsi valider l'authentification et récupérer les informations utilisateur.
+
+### Tests de sécurité
+
+Pour tester la sécurité :
+
+1. **Sans token** (doit renvoyer 401) :
+```bash
+curl http://localhost:8080/api/users
+```
+
+2. **Avec token valide** (doit fonctionner) :
+```bash
+curl http://localhost:8080/api/users \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+3. **Avec rôle insuffisant** (doit renvoyer 403) :
+```bash
+# Utilisateur avec rôle USER essayant d'accéder à un endpoint ADMIN
+curl http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Évolutions futures
+
 - Ajouter un rate limiter
 - Configurer HTTPS
+- Implémenter le refresh token
+- Ajouter des métriques de sécurité
 
 ## Dépendances
 
