@@ -52,11 +52,26 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                                 subject, username, email, roles);
                         
                         // Ajouter les headers custom pour les microservices
+                        // On construit tous les headers en une seule fois
+                        String userHeader = username != null ? username : subject;
+                        
                         ServerWebExchange mutatedExchange = exchange.mutate()
-                                .request(request -> request
-                                        .header("X-Auth-User", username != null ? username : subject)
-                                        .header("X-Auth-Email", email != null ? email : "")
-                                        .header("X-Auth-Roles", roles))
+                                .request(request -> {
+                                    // Ajouter X-Auth-User (username ou subject comme fallback)
+                                    if (userHeader != null) {
+                                        request.header("X-Auth-User", userHeader);
+                                    }
+                                    
+                                    // Ajouter X-Auth-Email uniquement si présent
+                                    if (email != null && !email.isEmpty()) {
+                                        request.header("X-Auth-Email", email);
+                                    }
+                                    
+                                    // Ajouter X-Auth-Roles
+                                    if (roles != null && !roles.isEmpty()) {
+                                        request.header("X-Auth-Roles", roles);
+                                    }
+                                })
                                 .build();
                         
                         return chain.filter(mutatedExchange);

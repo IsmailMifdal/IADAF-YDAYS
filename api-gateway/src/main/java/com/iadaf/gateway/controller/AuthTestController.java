@@ -24,6 +24,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/auth")
 public class AuthTestController {
 
+    // Constantes pour les rôles
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_AGENT = "AGENT";
+    private static final String[] AGENT_ALLOWED_ROLES = {ROLE_AGENT, ROLE_ADMIN};
+
     /**
      * Endpoint pour récupérer les informations de l'utilisateur authentifié
      * Accessible par tout utilisateur authentifié
@@ -68,7 +73,7 @@ public class AuthTestController {
      * Accessible uniquement par les utilisateurs avec le rôle ADMIN
      */
     @GetMapping("/admin/test")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('" + ROLE_ADMIN + "')")
     public ResponseEntity<Map<String, Object>> adminTest(@AuthenticationPrincipal Jwt jwt) {
         log.info("🔐 Admin endpoint accessed by: {}", jwt.getSubject());
         
@@ -77,7 +82,7 @@ public class AuthTestController {
         response.put("user", jwt.getClaimAsString("preferred_username"));
         response.put("email", jwt.getClaimAsString("email"));
         response.put("endpoint", "/api/auth/admin/test");
-        response.put("role", "ADMIN");
+        response.put("role", ROLE_ADMIN);
         response.put("timestamp", Instant.now());
         
         return ResponseEntity.ok(response);
@@ -88,7 +93,7 @@ public class AuthTestController {
      * Accessible par les utilisateurs avec le rôle AGENT ou ADMIN
      */
     @GetMapping("/agent/test")
-    @PreAuthorize("hasAnyRole('AGENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('" + ROLE_AGENT + "', '" + ROLE_ADMIN + "')")
     public ResponseEntity<Map<String, Object>> agentTest(@AuthenticationPrincipal Jwt jwt) {
         log.info("👮 Agent endpoint accessed by: {}", jwt.getSubject());
         
@@ -97,7 +102,7 @@ public class AuthTestController {
         response.put("user", jwt.getClaimAsString("preferred_username"));
         response.put("email", jwt.getClaimAsString("email"));
         response.put("endpoint", "/api/auth/agent/test");
-        response.put("allowedRoles", new String[]{"AGENT", "ADMIN"});
+        response.put("allowedRoles", AGENT_ALLOWED_ROLES);
         response.put("timestamp", Instant.now());
         
         return ResponseEntity.ok(response);
