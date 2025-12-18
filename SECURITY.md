@@ -353,9 +353,30 @@ KEYCLOAK_TOKEN_URI=http://localhost:8180/realms/iadaf/protocol/openid-connect/to
 KEYCLOAK_USER_INFO_URI=http://localhost:8180/realms/iadaf/protocol/openid-connect/userinfo
 ```
 
+## 🔒 Security Considerations
+
+### CSRF Protection
+
+CSRF (Cross-Site Request Forgery) protection is **intentionally disabled** in all microservices. This is a standard and secure practice for stateless REST APIs using JWT tokens because:
+
+1. **JWT tokens are stored in HTTP headers** (not cookies), so they are not automatically sent by browsers
+2. **Sessions are stateless** (SessionCreationPolicy.STATELESS) - no session state is maintained
+3. **CSRF attacks rely on automatic cookie submission**, which does not apply to bearer token authentication
+4. **All authentication is explicit** via the `Authorization: Bearer <token>` header
+
+This configuration follows Spring Security best practices for OAuth2 Resource Servers and is documented in the [Spring Security documentation](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html#csrf-when-stateless).
+
+### Token Security
+
+- JWT tokens are validated on every request using public keys from Keycloak (JWK Set)
+- Tokens have expiration times (exp claim) to limit their validity period
+- Token validation includes signature verification, issuer verification, and expiration checks
+- All communication should use HTTPS in production to prevent token interception
+
 ## 📚 Références
 
 - [Spring Security OAuth2 Resource Server](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/index.html)
+- [Spring Security CSRF Protection](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html)
 - [JWT (RFC 7519)](https://datatracker.ietf.org/doc/html/rfc7519)
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 - [OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749)
