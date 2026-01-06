@@ -55,8 +55,12 @@ public class ChatService {
         } else {
             conversation = new Conversation();
             conversation.setUserId(userId);
-            conversation.setTitle(request.getMessage().substring(0, 
-                    Math.min(50, request.getMessage().length())));
+            String message = request.getMessage();
+            if (message != null && !message.isEmpty()) {
+                conversation.setTitle(message.substring(0, Math.min(50, message.length())));
+            } else {
+                conversation.setTitle("Nouvelle conversation");
+            }
             conversation = conversationRepository.save(conversation);
         }
 

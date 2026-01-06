@@ -24,7 +24,7 @@ import java.util.Map;
 public class DocumentAnalysisService {
 
     private final OpenAIClient openAIClient;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public AnalysisResult analyzeDocument(DocumentAnalysisRequest request) {
         log.info("Analyse d'un document de type: {}", request.getDocumentType());

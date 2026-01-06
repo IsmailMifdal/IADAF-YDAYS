@@ -11,11 +11,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TranslationService {
+
+    private static final Pattern ARABIC_PATTERN = Pattern.compile(".*[\\u0600-\\u06FF].*");
+    private static final Pattern FRENCH_PATTERN = Pattern.compile(".*[àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ].*");
+    private static final Pattern SPANISH_PATTERN = Pattern.compile(".*[ñáéíóúÑÁÉÍÓÚ].*");
 
     private final OpenAIClient openAIClient;
 
@@ -68,11 +73,11 @@ public class TranslationService {
 
     private String detectLanguage(String text) {
         // Simple heuristic detection
-        if (text.matches(".*[\\u0600-\\u06FF].*")) {
+        if (ARABIC_PATTERN.matcher(text).matches()) {
             return "AR"; // Arabic
-        } else if (text.matches(".*[àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ].*")) {
+        } else if (FRENCH_PATTERN.matcher(text).matches()) {
             return "FR"; // French
-        } else if (text.matches(".*[ñáéíóúÑÁÉÍÓÚ].*")) {
+        } else if (SPANISH_PATTERN.matcher(text).matches()) {
             return "ES"; // Spanish
         }
         return "EN"; // Default to English

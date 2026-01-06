@@ -22,7 +22,7 @@ import java.util.Map;
 public class SuggestionService {
 
     private final OpenAIClient openAIClient;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public List<SuggestionDTO> suggestDemarches(String userProfile, String userHistory) {
         log.info("Génération de suggestions de démarches pour l'utilisateur");
