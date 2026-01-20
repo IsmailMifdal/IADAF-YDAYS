@@ -2,19 +2,28 @@ spring:
   application:
     name: ai-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/iadaf_ai
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://localhost:5432/iadaf_db?currentSchema=ai
+    username: ${POSTGRES_USER:iadaf_user}
+    password: ${POSTGRES_PASSWORD:iadaf_password}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # dialect supprimé - auto-détection par Hibernate
+        format_sql: true
+        default_schema: ai
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
 
 server:
-  port: 8084
+  port: 8086
 
 eureka:
   client:
@@ -24,3 +33,17 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+
+# OpenAI Configuration
+ai:
+  openai:
+    api-key: ${OPENAI_API_KEY:sk-dummy-key-for-testing}
+    model: ${OPENAI_MODEL:gpt-4}
+    temperature: ${OPENAI_TEMPERATURE:0.7}
+    max-tokens: ${OPENAI_MAX_TOKENS:1000}
+    timeout: ${OPENAI_TIMEOUT:30000}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.iadaf.ai: DEBUG

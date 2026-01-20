@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: api-gateway
+  
+  # Désactiver OAuth2 pour les tests
+  security:
+    enabled: false
+  
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+
+server:
+  port: 8080
+
+# Désactiver Eureka pour les tests
+eureka:
+  client:
+    enabled: false
+
+# Logging minimal pour les tests
+logging:
+  level:
+    org.springframework: WARN
+    com.iadaf.gateway: INFO
