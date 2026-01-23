@@ -9,10 +9,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
-        # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: ai
   security:
@@ -45,5 +44,5 @@ ai:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
     com.iadaf.ai: DEBUG
