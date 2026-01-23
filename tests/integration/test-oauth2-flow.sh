@@ -43,9 +43,10 @@ if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
     echo -e "${GREEN}✓ Token valide (non-null)${NC}"
     ((PASSED++))
     
-    # Decode JWT header and payload
-    HEADER=$(echo "$TOKEN" | cut -d. -f1 | base64 -d 2>/dev/null)
-    PAYLOAD=$(echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null)
+    # Decode JWT header and payload (JWT uses base64url encoding)
+    # Add padding if needed for base64 decoding
+    PAYLOAD_RAW=$(echo "$TOKEN" | cut -d. -f2)
+    PAYLOAD=$(echo "$PAYLOAD_RAW" | base64 -d 2>/dev/null || echo "$PAYLOAD_RAW" | sed 's/-/+/g; s/_/\//g' | base64 -d 2>/dev/null)
     
     if echo "$PAYLOAD" | jq . > /dev/null 2>&1; then
         echo -e "${GREEN}✓ Token JWT bien formé${NC}"

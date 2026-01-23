@@ -30,7 +30,8 @@ check_service() {
 }
 
 echo "Docker Services:"
-check_service "PostgreSQL     " "http://localhost:5432"
+# Note: PostgreSQL uses TCP port 5432, not HTTP - check done in docker infrastructure test
+echo -e "${YELLOW}⚠${NC} PostgreSQL      (Port 5432 - use docker infrastructure test for validation)"
 check_service "Keycloak       " "http://localhost:8180/health/ready"
 check_service "pgAdmin        " "http://localhost:5050"
 

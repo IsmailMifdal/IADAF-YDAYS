@@ -80,8 +80,12 @@ HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer $TOKEN" \
     http://localhost:8080/api/analytics/dashboard)
 
-if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]; then
+# Note: 503 may be returned if Analytics Service is still initializing or has dependencies not yet ready
+if [ "$HTTP_CODE" = "200" ]; then
     echo -e "${GREEN}✓ Communication API Gateway → Analytics Service OK${NC}"
+    ((PASSED++))
+elif [ "$HTTP_CODE" = "503" ]; then
+    echo -e "${YELLOW}⚠${NC} Analytics Service temporarily unavailable (HTTP 503) - may be initializing"
     ((PASSED++))
 else
     echo -e "${RED}✗ Communication API Gateway → Analytics Service ÉCHEC (HTTP $HTTP_CODE)${NC}"
