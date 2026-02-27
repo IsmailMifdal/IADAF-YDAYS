@@ -7,6 +7,8 @@ projet-YDAYS
 - ✅ Docker Desktop installé et démarré
 - ✅ Java 17+ (`java -version`)
 - ✅ Maven 3.8+ (`mvn -version`)
+- ✅ Node.js 20+ (`node --version`) - Pour le frontend
+- ✅ npm 10+ (`npm --version`) - Pour le frontend
 - ✅ Git
 
 ### Configuration initiale (une seule fois)
@@ -56,6 +58,11 @@ mvn spring-boot:run
 # Terminal 3 - API Gateway
 cd api-gateway
 mvn spring-boot:run
+
+# Terminal 4 - Frontend (optionnel)
+cd frontend
+./start-frontend.sh
+# Ou manuellement: npm install && npm run dev
 ```
 
 ### Vérification de l'installation
@@ -77,6 +84,12 @@ Consulter **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** pour les solutions aux pr
 
 ### 📚 Documentation
 
+- **[frontend/README.md](frontend/README.md)** - Documentation du Frontend Next.js 15
+  - Configuration et installation
+  - Structure du projet
+  - Composants UI et pages
+  - Intégration Keycloak
+  - API endpoints
 - **[DOCKER.md](DOCKER.md)** - Documentation complète de l'environnement Docker
   - Configuration PostgreSQL et pgAdmin
   - Commandes Docker Compose
@@ -90,6 +103,7 @@ Consulter **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** pour les solutions aux pr
 
 ### 🔗 Accès aux services
 
+- **Frontend** : http://localhost:3000
 - **pgAdmin** : http://localhost:5050
 - **Eureka Dashboard** : http://localhost:8761
 - **API Gateway** : http://localhost:8080
@@ -189,3 +203,137 @@ export USER_TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol
 curl http://localhost:8080/api/auth/admin/test \
   -H "Authorization: Bearer $USER_TOKEN"
 ```
+
+## 🏗️ Architecture du Projet
+
+### Structure des Modules
+
+```
+IADAF-YDAYS/
+├── frontend/                  # 🎨 Frontend Next.js 15 + TypeScript
+│   ├── app/                  # Pages et routes (App Router)
+│   ├── components/           # Composants React réutilisables
+│   ├── lib/                  # Logique métier, API, auth
+│   └── types/                # Types TypeScript
+├── api-gateway/              # 🚪 API Gateway (Spring Cloud Gateway)
+├── discovery-service/        # 🔍 Service Discovery (Eureka)
+├── user-service/             # 👤 Gestion des utilisateurs
+├── demarches-service/        # 📋 Gestion des démarches
+├── document-service/         # 📎 Gestion des documents
+├── ai-service/               # 🤖 Service IA
+├── analytics-service/        # 📊 Service Analytics
+└── docker/                   # 🐳 Configuration Docker
+    ├── postgres/
+    └── keycloak/
+```
+
+### Flux de Communication
+
+```
+[Frontend Next.js] 
+       ↓
+[Keycloak OAuth2] ← JWT Token
+       ↓
+[API Gateway :8080]
+       ↓
+[Eureka Discovery :8761]
+       ↓
+[Microservices]
+       ↓
+[PostgreSQL :5432]
+```
+
+### Technologies
+
+#### Frontend
+- **Next.js 15** - Framework React avec App Router
+- **TypeScript** - Typage statique
+- **Tailwind CSS** - Framework CSS utility-first
+- **Keycloak-js** - Client OAuth2/OIDC
+- **Axios** - Client HTTP avec intercepteurs JWT
+- **React Query** - State management et cache
+- **shadcn/ui** - Composants UI réutilisables
+
+#### Backend
+- **Spring Boot 3.4** - Framework Java
+- **Spring Cloud Gateway** - API Gateway
+- **Spring Cloud Netflix Eureka** - Service Discovery
+- **Spring Security** - Sécurité et OAuth2
+- **PostgreSQL** - Base de données relationnelle
+- **Keycloak** - Serveur d'authentification OAuth2/OIDC
+
+## 🚀 Démarrer le Frontend
+
+### Installation
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+```
+
+### Configuration
+
+Modifier `frontend/.env.local` :
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8180
+NEXT_PUBLIC_KEYCLOAK_REALM=iadaf
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=iadaf-frontend
+```
+
+### Démarrage
+
+```bash
+# Avec le script
+./start-frontend.sh
+
+# Ou manuellement
+npm run dev
+```
+
+Le frontend sera accessible sur **http://localhost:3000**
+
+### Build de Production
+
+```bash
+npm run build
+npm start
+```
+
+## 🎯 Fonctionnalités Frontend
+
+### Pages Publiques
+- **Landing Page** (`/`) - Page d'accueil avec présentation
+- **Login** (`/login`) - Connexion via Keycloak OAuth2
+
+### Pages Protégées (nécessitent authentification)
+- **Dashboard** (`/dashboard`) - Tableau de bord principal
+- **Démarches** (`/dashboard/demarches`) - Gestion des démarches
+- **Documents** (`/dashboard/documents`) - Upload et gestion de documents
+- **Profil** (`/dashboard/profile`) - Profil utilisateur
+
+### Fonctionnalités
+- ✅ Authentification OAuth2 avec Keycloak
+- ✅ Routes protégées avec redirection automatique
+- ✅ Refresh automatique des tokens JWT
+- ✅ Sidebar responsive avec navigation
+- ✅ Composants UI réutilisables (shadcn/ui)
+- ✅ Gestion des rôles (ADMIN, USER, AGENT, SUPPORT)
+- ✅ Design responsive (Mobile, Tablet, Desktop)
+- ✅ Mode sombre (optionnel)
+- ✅ Gestion d'état avec React Query
+
+## 📱 Interface Utilisateur
+
+### Design System
+- **Couleurs primaires** : Blue (#2563eb)
+- **Police** : System fonts (Inter alternative)
+- **Composants** : shadcn/ui
+- **Icônes** : Emojis et lucide-react
+
+### Responsive Breakpoints
+- Mobile : < 768px
+- Tablet : 768px - 1024px
+- Desktop : > 1024px
