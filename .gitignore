@@ -65,3 +65,7 @@ Desktop.ini
 .env
 *.env
 !.env.example
+
+# Service management
+logs/
+pids/

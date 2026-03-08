@@ -1,6 +1,25 @@
 # IADAF-YDAYS
 projet-YDAYS
 
+## 🚀 Quick Start Guide
+
+**New User? Start here!** 👉 [QUICK-START.md](QUICK-START.md)
+
+This guide shows you how to start all services with a single command!
+
+```bash
+# Start all services automatically
+./start-all-services.sh
+
+# Check status
+./status-services.sh
+
+# Stop all services
+./stop-all-services.sh
+```
+
+---
+
 ## 🚀 Démarrage Rapide (Quick Start)
 
 ### Prérequis
