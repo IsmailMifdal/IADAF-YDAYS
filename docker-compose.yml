@@ -15,7 +15,11 @@ services:
       - iadaf-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iadaf_user} -d ${POSTGRES_DB:-iadaf_db}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-iadaf_user} -d ${POSTGRES_DB:-iadaf_db}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,7 +58,7 @@ services:
     networks:
       - iadaf-network
     restart: unless-stopped
-    command: 
+    command:
       - start-dev
       - --import-realm
     volumes:
@@ -75,3 +79,10 @@ volumes:
   postgres_data:
   keycloak_data:
     driver: local
+
+front:
+build: ./front
+ports:
+  - "3000:3000"
+env_file:
+  - ./front/.env.local
