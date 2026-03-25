@@ -1,105 +1,89 @@
 #!/bin/bash
+# IA-DAF — Script de démarrage
+# Architecture : discovery-service + api-gateway + ai-service + ollama
 
-# Script de démarrage des microservices IA-DAF
+set -e
 
-echo "🔧 Chargement des variables d'environnement..."
-if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
-    echo "✅ Variables chargées depuis .env"
-else
-    echo "⚠️  ATTENTION : Fichier .env introuvable"
-    echo "📝 Utilisation des valeurs par défaut"
-fi
+# Couleurs
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-echo ""
-echo "🐘 Vérification de PostgreSQL..."
-docker ps | grep iadaf-postgres > /dev/null
-if [ $? -eq 0 ]; then
-    echo "✅ PostgreSQL est démarré"
-else
-    echo "❌ PostgreSQL n'est pas démarré"
-    echo "📝 Exécutez : docker compose up -d"
-    exit 1
-fi
+log()   { echo -e "${GREEN}[INFO]${NC}  $1"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; }
+title() { echo -e "\n${CYAN}$1${NC}"; }
 
-echo ""
-echo "🔑 Vérification de Keycloak..."
-docker ps | grep iadaf-keycloak > /dev/null
-if [ $? -eq 0 ]; then
-    echo "✅ Keycloak est démarré"
-else
-    echo "⚠️  Keycloak n'est pas démarré"
-    echo "📝 Exécutez : docker compose up -d"
-    echo "⏳ Attendre 2 minutes après le démarrage pour l'initialisation"
-fi
+title "🚀 IA-DAF — Démarrage des services"
 
-echo ""
-echo "🚀 Démarrage des services..."
-echo "   POSTGRES_USER=${POSTGRES_USER:-iadaf_user}"
-echo "   POSTGRES_DB=${POSTGRES_DB:-iadaf_db}"
-echo ""
+# --------------------------------------------------------------------------
+# 1. Démarrer tous les conteneurs
+# --------------------------------------------------------------------------
+title "📦 Démarrage des conteneurs Docker…"
+docker compose up -d --build
+log "Conteneurs démarrés."
 
-# Afficher le menu
-echo "Services disponibles :"
-echo "  1) discovery   - Discovery Service (Eureka) - Port 8761"
-echo "  2) gateway     - API Gateway - Port 8080"
-echo "  3) user        - User Service - Port 8081"
-echo "  4) demarches   - Demarches Service - Port 8082"
-echo "  5) document    - Document Service - Port 8083"
-echo "  6) analytics   - Analytics Service - Port 8085"
-echo "  7) ai          - AI Service - Port 8086"
-echo "  8) all         - Tous les services (instructions)"
-echo ""
-
-read -p "Quel service voulez-vous démarrer ? (1-8) : " CHOICE
-
-case $CHOICE in
-    1|discovery)
-        echo "🔍 Démarrage Discovery Service..."
-        cd discovery-service && mvn spring-boot:run
-        ;;
-    2|gateway)
-        echo "🌐 Démarrage API Gateway..."
-        cd api-gateway && mvn spring-boot:run
-        ;;
-    3|user)
-        echo "👤 Démarrage User Service..."
-        cd user-service && mvn spring-boot:run
-        ;;
-    4|demarches)
-        echo "📋 Démarrage Demarches Service..."
-        cd demarches-service && mvn spring-boot:run
-        ;;
-    5|document)
-        echo "📎 Démarrage Document Service..."
-        cd document-service && mvn spring-boot:run
-        ;;
-    6|analytics)
-        echo "📊 Démarrage Analytics Service..."
-        cd analytics-service && mvn spring-boot:run
-        ;;
-    7|ai)
-        echo "🤖 Démarrage AI Service..."
-        cd ai-service && mvn spring-boot:run
-        ;;
-    8|all)
-        echo ""
-        echo "🔄 Pour démarrer tous les services, ouvrez 7 terminaux et exécutez :"
-        echo ""
-        echo "Terminal 1: cd discovery-service && mvn spring-boot:run"
-        echo "Terminal 2: cd api-gateway && mvn spring-boot:run"
-        echo "Terminal 3: cd user-service && mvn spring-boot:run"
-        echo "Terminal 4: cd demarches-service && mvn spring-boot:run"
-        echo "Terminal 5: cd document-service && mvn spring-boot:run"
-        echo "Terminal 6: cd analytics-service && mvn spring-boot:run"
-        echo "Terminal 7: cd ai-service && mvn spring-boot:run"
-        echo ""
-        echo "⚠️  IMPORTANT : Démarrer dans cet ordre et attendre que chaque service soit UP"
-        ;;
-    *)
-        echo "❌ Choix invalide"
+# --------------------------------------------------------------------------
+# 2. Attendre que discovery-service soit healthy
+# --------------------------------------------------------------------------
+title "⏳ Attente du Discovery Service (Eureka)…"
+MAX_WAIT=120
+ELAPSED=0
+until docker compose exec -T discovery-service curl -sf http://localhost:8761/actuator/health > /dev/null 2>&1; do
+    if [ $ELAPSED -ge $MAX_WAIT ]; then
+        error "Discovery Service non disponible après ${MAX_WAIT}s. Vérifiez : docker compose logs discovery-service"
         exit 1
-        ;;
-esac
+    fi
+    echo -n "."
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+done
+echo ""
+log "✅ Discovery Service prêt."
+
+# --------------------------------------------------------------------------
+# 3. Attendre que l'AI service soit healthy
+# --------------------------------------------------------------------------
+title "⏳ Attente du AI Service…"
+ELAPSED=0
+until docker compose exec -T ai-service curl -sf http://localhost:8086/ai/health > /dev/null 2>&1; do
+    if [ $ELAPSED -ge $MAX_WAIT ]; then
+        warn "AI Service non disponible après ${MAX_WAIT}s. Il démarrera en arrière-plan."
+        break
+    fi
+    echo -n "."
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+done
+echo ""
+log "✅ AI Service prêt (ou en cours de démarrage)."
+
+# --------------------------------------------------------------------------
+# 4. Télécharger le modèle Mistral dans Ollama (en arrière-plan)
+# --------------------------------------------------------------------------
+title "🤖 Lancement du téléchargement du modèle Mistral…"
+warn "Cette étape peut prendre plusieurs minutes selon votre connexion Internet."
+warn "Le téléchargement s'effectue en arrière-plan. Suivez la progression avec :"
+warn "  docker compose exec ollama ollama pull mistral"
+docker compose exec -d ollama ollama pull mistral 2>/dev/null \
+    || warn "Impossible de lancer le téléchargement. Exécutez manuellement : docker compose exec ollama ollama pull mistral"
+
+# --------------------------------------------------------------------------
+# 5. Afficher les URLs d'accès
+# --------------------------------------------------------------------------
+title "🌐 Services disponibles"
+echo ""
+echo -e "  ${GREEN}Eureka Dashboard${NC}      →  http://localhost:8761"
+echo -e "  ${GREEN}API Gateway${NC}           →  http://localhost:8080"
+echo -e "  ${GREEN}AI Service (direct)${NC}   →  http://localhost:8086"
+echo -e "  ${GREEN}AI Docs (Swagger)${NC}     →  http://localhost:8086/docs"
+echo -e "  ${GREEN}Ollama${NC}                →  http://localhost:11434"
+echo ""
+echo -e "  ${CYAN}Test rapide :${NC}"
+echo "  curl http://localhost:8086/ai/health"
+echo "  curl -X POST http://localhost:8080/api/ai/chat \\"
+echo "       -H 'Content-Type: application/json' \\"
+echo "       -d '{\"message\": \"Comment obtenir une carte de séjour ?\"}'"
+echo ""

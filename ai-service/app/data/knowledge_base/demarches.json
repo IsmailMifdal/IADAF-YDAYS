@@ -1,0 +1,237 @@
+[
+  {
+    "id": "assurance_maladie",
+    "title": "Assurance maladie (CPAM) — Affiliation et carte Vitale",
+    "organisme": "Caisse Primaire d'Assurance Maladie (CPAM)",
+    "description": "L'assurance maladie couvre les frais de santé (médecin, hôpital, médicaments). Toute personne résidant en France de façon stable et régulière y a droit.",
+    "documents_requis": [
+      "Pièce d'identité (passeport ou titre de séjour)",
+      "Justificatif de domicile de moins de 3 mois",
+      "Formulaire d'affiliation (cerfa 13810*06)",
+      "Relevé d'identité bancaire (RIB)",
+      "Justificatif de situation professionnelle (contrat de travail, attestation de stage, etc.)"
+    ],
+    "etapes": [
+      "1. Télécharger et compléter le formulaire cerfa 13810*06 sur ameli.fr",
+      "2. Rassembler tous les documents justificatifs",
+      "3. Envoyer le dossier complet à votre CPAM locale par courrier recommandé",
+      "4. Attendre la confirmation d'affiliation (délai : 2 à 4 semaines)",
+      "5. Créer votre compte ameli.fr pour suivre vos remboursements",
+      "6. Recevoir votre carte Vitale par courrier (délai supplémentaire : 3 à 6 semaines)"
+    ],
+    "delais": "2 à 6 semaines pour l'affiliation complète et réception de la carte Vitale",
+    "frais": "Gratuit",
+    "liens_utiles": [
+      "https://www.ameli.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F34" 
+    ],
+    "conseils": [
+      "Si vous êtes salarié, votre employeur peut vous aider à vous affilier",
+      "En cas d'urgence, vous pouvez consulter un médecin sans carte Vitale et vous faire rembourser ensuite",
+      "Vérifiez que votre dossier est complet avant l'envoi pour éviter les allers-retours"
+    ]
+  },
+  {
+    "id": "caf",
+    "title": "CAF — Allocations Familiales",
+    "organisme": "Caisse d'Allocations Familiales (CAF)",
+    "description": "La CAF verse de nombreuses aides : allocations familiales, APL (aide au logement), RSA, prime d'activité, etc. Toute personne résidant en France peut en bénéficier sous conditions.",
+    "documents_requis": [
+      "Pièce d'identité ou titre de séjour",
+      "Justificatif de domicile de moins de 3 mois",
+      "Relevé d'identité bancaire (RIB)",
+      "Avis d'imposition ou de non-imposition de l'année précédente",
+      "Justificatifs de ressources des 3 derniers mois",
+      "Acte de naissance des enfants (si demande d'allocations familiales)",
+      "Contrat de bail ou titre de propriété (si demande d'APL)"
+    ],
+    "etapes": [
+      "1. Créer un dossier en ligne sur caf.fr",
+      "2. Remplir le formulaire de demande de prestations",
+      "3. Télécharger les pièces justificatives en ligne",
+      "4. Valider et envoyer le dossier",
+      "5. Suivre l'avancement sur votre espace personnel caf.fr",
+      "6. Recevoir la notification de décision par courrier",
+      "7. Le premier versement intervient généralement le 5 du mois suivant l'acceptation"
+    ],
+    "delais": "4 à 8 semaines pour le traitement du dossier",
+    "frais": "Gratuit",
+    "liens_utiles": [
+      "https://www.caf.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F10390"
+    ],
+    "conseils": [
+      "Déclarez vos ressources chaque année pour maintenir vos droits",
+      "Signalez tout changement de situation (emploi, déménagement, enfant) dans les 2 mois",
+      "L'APL peut être demandée dès la signature du bail"
+    ]
+  },
+  {
+    "id": "titre_sejour",
+    "title": "Titre de séjour — Demande et renouvellement",
+    "organisme": "Préfecture / Sous-préfecture",
+    "description": "Le titre de séjour est obligatoire pour tout ressortissant non-UE souhaitant séjourner en France plus de 3 mois. Il existe plusieurs catégories : étudiant, salarié, visiteur, vie privée et familiale, etc.",
+    "documents_requis": [
+      "Passeport valide (+ copie de toutes les pages)",
+      "Visa long séjour valant titre de séjour (VLS-TS) ou titre précédent",
+      "3 photos d'identité récentes",
+      "Justificatif de domicile de moins de 3 mois",
+      "Formulaire cerfa 15605*05 (disponible sur le site de la préfecture)",
+      "Justificatif du motif de séjour (contrat de travail, certificat d'inscription, etc.)",
+      "Justificatif de ressources suffisantes",
+      "Timbres fiscaux (montant variable selon le type de titre)"
+    ],
+    "documents_specifiques_etudiant": [
+      "Certificat d'inscription ou de scolarité",
+      "Justificatif de bourse ou de ressources suffisantes (environ 615€/mois)"
+    ],
+    "documents_specifiques_salarie": [
+      "Contrat de travail signé",
+      "Bulletins de salaire",
+      "Autorisation de travail (si nécessaire)"
+    ],
+    "etapes": [
+      "1. Télécharger et compléter le formulaire cerfa sur le site de votre préfecture",
+      "2. Prendre rendez-vous en ligne sur le site de la préfecture (délai parfois long : 1-3 mois)",
+      "3. Rassembler tous les documents originaux + photocopies",
+      "4. Se présenter au rendez-vous avec le dossier complet",
+      "5. Payer les droits de timbre fiscal (timbres dématérialisés sur timbre.impots.gouv.fr)",
+      "6. Recevoir le récépissé de dépôt (valable 3 mois, renouvelable)",
+      "7. Recevoir la convocation pour retirer le titre de séjour"
+    ],
+    "delais": "1 à 4 mois selon la préfecture",
+    "frais": "19€ à 269€ selon le type de titre",
+    "liens_utiles": [
+      "https://www.service-public.fr/particuliers/vosdroits/N110",
+      "https://administration-etrangers-en-france.interieur.gouv.fr",
+      "https://www.prefectures-regions.gouv.fr"
+    ],
+    "conseils": [
+      "Commencez les démarches 3 mois avant l'expiration de votre titre actuel",
+      "Le récépissé permet de rester légalement sur le territoire pendant l'instruction",
+      "En cas de refus, vous avez 2 mois pour faire un recours gracieux ou contentieux",
+      "Certaines préfectures permettent maintenant de faire la demande entièrement en ligne"
+    ]
+  },
+  {
+    "id": "declaration_impots",
+    "title": "Déclaration de revenus (impôts)",
+    "organisme": "Direction Générale des Finances Publiques (DGFiP)",
+    "description": "Toute personne domiciliée fiscalement en France doit déclarer ses revenus chaque année (généralement avril-juin). La première déclaration doit se faire en ligne ou sur formulaire papier.",
+    "documents_requis": [
+      "Numéro fiscal (disponible sur avis d'imposition ou en ligne sur impots.gouv.fr)",
+      "Pièce d'identité",
+      "Relevés de salaires (ou AER si chômage)",
+      "Bulletins de salaire de décembre",
+      "RIB (pour remboursement éventuel)",
+      "Justificatifs de charges déductibles (frais réels, pensions alimentaires, etc.)"
+    ],
+    "etapes": [
+      "1. Se connecter sur impots.gouv.fr avec votre numéro fiscal",
+      "2. Cliquer sur 'Déclarer mes revenus'",
+      "3. Vérifier et compléter les informations pré-remplies",
+      "4. Ajouter les revenus non pré-remplis (revenus étrangers, locations, etc.)",
+      "5. Saisir les déductions et charges",
+      "6. Vérifier le résumé et valider",
+      "7. Conserver l'accusé de réception électronique"
+    ],
+    "delais": "Période de déclaration : avril à juin chaque année (dates précises sur impots.gouv.fr)",
+    "frais": "Gratuit",
+    "liens_utiles": [
+      "https://www.impots.gouv.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F1419"
+    ],
+    "conseils": [
+      "La première année, si vous n'avez pas de numéro fiscal, contactez votre centre des finances publiques",
+      "Déclarez même si vous n'avez pas de revenus imposables (pour obtenir un avis de non-imposition)",
+      "Les retardataires sont pénalisés : 10% de majoration sur le montant de l'impôt"
+    ]
+  },
+  {
+    "id": "ouverture_compte_bancaire",
+    "title": "Ouverture d'un compte bancaire",
+    "organisme": "Banque commerciale ou La Banque Postale",
+    "description": "Tout résident en France a le droit d'ouvrir un compte bancaire (droit au compte). En cas de refus de toutes les banques, la Banque de France peut imposer l'ouverture d'un compte.",
+    "documents_requis": [
+      "Pièce d'identité valide (passeport, carte d'identité ou titre de séjour)",
+      "Justificatif de domicile de moins de 3 mois (facture, quittance de loyer)",
+      "Numéro de téléphone portable",
+      "Adresse email"
+    ],
+    "documents_supplementaires_possibles": [
+      "Justificatif de revenus ou de ressources",
+      "Numéro fiscal (parfois demandé)",
+      "Formulaire FATCA (pour les ressortissants américains)"
+    ],
+    "etapes": [
+      "1. Choisir une banque (en ligne ou physique)",
+      "2. Se rendre en agence ou faire la demande en ligne",
+      "3. Présenter les documents requis",
+      "4. Signer les conditions générales d'utilisation",
+      "5. Effectuer un premier versement (variable : 10€ à 300€)",
+      "6. Recevoir la carte bancaire par courrier (7 à 10 jours)"
+    ],
+    "delais": "1 à 10 jours selon la banque",
+    "frais": "Gratuit à 50€ selon la banque et les services choisis",
+    "droit_au_compte": "Si toutes les banques refusent, contactez la Banque de France au 3414. Elle désignera une banque qui est obligée de vous ouvrir un compte de dépôt.",
+    "liens_utiles": [
+      "https://www.service-public.fr/particuliers/vosdroits/F2909",
+      "https://www.banque-france.fr/fr/nos-services/particuliers/droit-au-compte"
+    ],
+    "conseils": [
+      "Les banques en ligne (Boursorama, Hello Bank, N26) sont souvent plus accessibles",
+      "La Banque Postale accepte généralement plus facilement les personnes sans revenus",
+      "Gardez tous les justificatifs de refus en cas de recours"
+    ]
+  },
+  {
+    "id": "inscription_universite",
+    "title": "Inscription à l'université",
+    "organisme": "Université / Campus France",
+    "description": "Les étudiants étrangers souhaitant étudier en France doivent suivre une procédure spécifique selon leur pays d'origine (procédure CEF ou DAP) ou via Parcoursup pour les bacheliers.",
+    "documents_requis": [
+      "Passeport valide",
+      "Diplômes et relevés de notes apostillés/légalisés",
+      "Traduction officielle des diplômes (si non francophones)",
+      "Lettre de motivation",
+      "Curriculum Vitae",
+      "Justificatif de maîtrise du français (DELF, DALF, TCF, TEF) ou dispense",
+      "Attestation d'assurance responsabilité civile",
+      "Photo d'identité"
+    ],
+    "documents_pour_inscription_definitive": [
+      "Visa étudiant (VLS-TS étudiant)",
+      "Justificatif de logement en France",
+      "Attestation de couverture sociale",
+      "Paiement des droits d'inscription (CVEC + frais d'inscription)"
+    ],
+    "etapes": [
+      "1. Choisir la formation et vérifier les prérequis",
+      "2. Déposer le dossier via Campus France (campusfrance.org) ou directement sur le site de l'université",
+      "3. Passer les entretiens et tests de langue si requis",
+      "4. Attendre la lettre d'acceptation",
+      "5. Demander le visa étudiant au consulat français de votre pays",
+      "6. Payer la CVEC sur cvec.etudiant.gouv.fr (103€)",
+      "7. Finaliser l'inscription administrative à l'arrivée"
+    ],
+    "delais": "3 à 6 mois avant le début des études",
+    "frais": {
+      "CVEC": "103€/an",
+      "droits_inscription_licence": "170€/an",
+      "droits_inscription_master": "243€/an",
+      "droits_inscription_doctorat": "380€/an",
+      "etudiants_hors_UE": "2770€ en licence, 3770€ en master (dispenses possibles)"
+    },
+    "liens_utiles": [
+      "https://www.campusfrance.org",
+      "https://www.parcoursup.gouv.fr",
+      "https://cvec.etudiant.gouv.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F2861"
+    ],
+    "conseils": [
+      "Commencez les démarches Campus France entre octobre et janvier pour une rentrée en septembre",
+      "Certaines universités proposent des bourses du gouvernement français",
+      "Le statut étudiant donne accès aux aides de la CAF (APL) et aux restaurants universitaires"
+    ]
+  }
+]

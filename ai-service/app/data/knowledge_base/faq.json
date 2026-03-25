@@ -1,0 +1,62 @@
+[
+  {
+    "id": "faq_001",
+    "question": "Je viens d'arriver en France, par quoi commencer ?",
+    "answer": "Voici les premières démarches à effectuer à votre arrivée en France : 1) Valider votre visa long séjour (VLS-TS) sur le site de l'OFII dans les 3 mois suivant votre arrivée. 2) Ouvrir un compte bancaire. 3) Vous affilier à la Sécurité Sociale (CPAM) pour être couvert maladie. 4) Vous inscrire à la CAF si vous avez droit à des aides au logement. 5) Vous domicilier (justificatif de domicile). Ces démarches sont prioritaires.",
+    "tags": ["arrivée", "premiers pas", "démarches essentielles"]
+  },
+  {
+    "id": "faq_002",
+    "question": "Qu'est-ce qu'un justificatif de domicile ?",
+    "answer": "Un justificatif de domicile est un document qui prouve votre adresse en France. Les documents acceptés sont : facture d'électricité, gaz ou eau de moins de 3 mois, quittance de loyer de l'agence ou du propriétaire, relevé bancaire de moins de 3 mois, avis d'imposition ou taxe foncière. Si vous habitez chez quelqu'un, il faut une attestation d'hébergement signée par la personne qui vous héberge, accompagnée de sa pièce d'identité et son justificatif de domicile.",
+    "tags": ["justificatif domicile", "logement", "documents"]
+  },
+  {
+    "id": "faq_003",
+    "question": "Comment obtenir une attestation de droits à l'assurance maladie ?",
+    "answer": "Vous pouvez télécharger votre attestation de droits directement sur ameli.fr : 1) Connectez-vous à votre compte ameli.fr. 2) Cliquez sur 'Mes attestations'. 3) Téléchargez 'Attestation de droits'. Si vous n'avez pas encore de compte, vous pouvez créer votre espace personnel en utilisant votre numéro de Sécurité Sociale. En cas de problème, contactez votre CPAM par téléphone au 36 46.",
+    "tags": ["assurance maladie", "attestation", "ameli"]
+  },
+  {
+    "id": "faq_004",
+    "question": "Mon titre de séjour expire bientôt, que faire ?",
+    "answer": "Il faut déposer votre demande de renouvellement au moins 2 mois avant l'expiration de votre titre actuel. Voici les étapes : 1) Prendre rendez-vous en ligne sur le site de votre préfecture. 2) Préparer votre dossier complet (voir la liste sur le site de la préfecture). 3) Vous présenter au rendez-vous. 4) Vous recevrez un récépissé qui vous permet de rester légalement en France pendant l'instruction. Important : ne pas attendre que le titre soit expiré, car vous risquez une situation irrégulière.",
+    "tags": ["titre de séjour", "renouvellement", "préfecture"]
+  },
+  {
+    "id": "faq_005",
+    "question": "J'ai des difficultés à obtenir un rendez-vous en préfecture, que faire ?",
+    "answer": "Les rendez-vous en préfecture sont souvent difficiles à obtenir. Voici quelques conseils : 1) Consultez le site très régulièrement (les créneaux s'ouvrent souvent tôt le matin). 2) Utilisez des alertes de notifications si disponibles. 3) Certains titres de séjour permettent maintenant de faire la demande entièrement en ligne sur le site 'Administration des étrangers en France'. 4) En cas d'urgence ou de situation critique, contactez la préfecture directement par téléphone ou email. 5) Contactez une association d'aide aux étrangers comme France Terre d'Asile ou la Cimade.",
+    "tags": ["préfecture", "rendez-vous", "titre de séjour", "difficultés"]
+  },
+  {
+    "id": "faq_006",
+    "question": "Comment fonctionne la carte Vitale ?",
+    "answer": "La carte Vitale est la carte d'assurance maladie française. Elle contient vos informations de Sécurité Sociale et permet aux professionnels de santé de transmettre directement vos feuilles de soins à l'Assurance Maladie. Voici comment l'utiliser : 1) Présentez-la à chaque consultation médicale. 2) Elle ne remplace pas la carte d'identité. 3) Avec une complémentaire santé (mutuelle), la plupart des soins sont entièrement remboursés. 4) En cas de perte, signalez-le immédiatement sur ameli.fr et demandez un remplacement.",
+    "tags": ["carte Vitale", "assurance maladie", "remboursement"]
+  },
+  {
+    "id": "faq_007",
+    "question": "Puis-je travailler en France avec un titre de séjour étudiant ?",
+    "answer": "Oui, avec un titre de séjour étudiant, vous pouvez travailler en France, mais avec des limites : vous pouvez travailler jusqu'à 964 heures par an (environ 60% d'un temps plein). Aucune autorisation de travail spécifique n'est nécessaire pour les ressortissants de certains pays. Pour les étudiants des pays soumis à autorisation de travail, votre titre de séjour étudiant vaut autorisation de travail dans la limite des 964 heures. Au-delà, une autorisation supplémentaire est nécessaire.",
+    "tags": ["travail", "étudiant", "titre de séjour", "autorisation"]
+  },
+  {
+    "id": "faq_008",
+    "question": "Qu'est-ce que le DALF/DELF et est-ce obligatoire ?",
+    "answer": "Le DELF (Diplôme d'Études en Langue Française) et le DALF (Diplôme Approfondi de Langue Française) sont des certifications officielles de maîtrise du français. Ils sont souvent requis pour : l'inscription dans les universités françaises, certaines demandes de titre de séjour (notamment pour la nationalité française). Les niveaux vont de A1 à C2 (CECRL). Pour l'université, le niveau B2 minimum est généralement demandé. Ces diplômes sont délivrés à vie et reconnus mondialement.",
+    "tags": ["français", "DELF", "DALF", "langue", "certification"]
+  },
+  {
+    "id": "faq_009",
+    "question": "Comment envoyer de l'argent dans mon pays depuis la France ?",
+    "answer": "Plusieurs options existent pour envoyer de l'argent depuis la France : 1) Virement bancaire international (SWIFT) depuis votre compte bancaire français (frais variables : 0-30€). 2) Services de transfert d'argent en ligne : Western Union, MoneyGram, Wise (TransferWise), WorldRemit - souvent moins chers. 3) Virement SEPA (gratuit ou très peu cher) si le bénéficiaire est dans la zone euro. Comparez les frais et taux de change avant de choisir. Wise est généralement recommandé pour les meilleurs taux.",
+    "tags": ["transfert argent", "virement international", "banque"]
+  },
+  {
+    "id": "faq_010",
+    "question": "Comment accéder aux soins d'urgence sans carte Vitale ?",
+    "answer": "En France, les soins d'urgence sont accessibles à tous, même sans couverture maladie : 1) Appelez le 15 (SAMU) pour une urgence médicale grave. 2) Appelez le 18 (Pompiers) ou le 112 (numéro européen) en cas d'urgence. 3) Rendez-vous aux urgences de l'hôpital le plus proche sans rendez-vous. 4) Si vous n'avez pas de couverture, l'hôpital vous soignera et vous facturera ensuite. 5) L'Aide Médicale d'État (AME) est disponible pour les personnes en situation irrégulière résidant en France depuis plus de 3 mois.",
+    "tags": ["urgences", "soins", "sans papiers", "AME"]
+  }
+]
