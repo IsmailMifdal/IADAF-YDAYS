@@ -1,16 +1,21 @@
+version: "3.8"
+
+# IA-DAF — Architecture simplifiée (3 services + Ollama)
+#
+#   discovery-service  :8761   (Spring Boot / Eureka)
+#   api-gateway        :8080   (Spring Cloud Gateway)
+#   ai-service         :8086   (Python / FastAPI)
+#   ollama             :11434  (LLM local Mistral)
+
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: iadaf-postgres
+  # --------------------------------------------------------------------------
+  # Eureka Discovery Service
+  # --------------------------------------------------------------------------
+  discovery-service:
+    build: ./discovery-service
+    container_name: iadaf-discovery
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-iadaf_db}
-      POSTGRES_USER: ${POSTGRES_USER:-iadaf_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - "8761:8761"
     networks:
       - iadaf-network
     restart: unless-stopped
@@ -23,40 +28,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: iadaf-pgadmin
+  # --------------------------------------------------------------------------
+  # API Gateway
+  # --------------------------------------------------------------------------
+  api-gateway:
+    build: ./api-gateway
+    container_name: iadaf-gateway
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "8080:8080"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@iadaf.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
     networks:
       - iadaf-network
-    restart: unless-stopped
     depends_on:
-      - postgres
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0
-    container_name: iadaf-keycloak
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
-      KC_DB_USERNAME: ${POSTGRES_USER:-iadaf_user}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
-      KC_HOSTNAME: localhost
-      KC_HTTP_PORT: 8180
-    ports:
-      - "8180:8180"
-    depends_on:
-      postgres:
+      discovery-service:
         condition: service_healthy
-    networks:
-      - iadaf-network
     restart: unless-stopped
     command:
       - start-dev
@@ -65,11 +53,62 @@ services:
       - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8180/health/ready"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # --------------------------------------------------------------------------
+  # AI Service (Python / FastAPI)
+  # --------------------------------------------------------------------------
+  ai-service:
+    build: ./ai-service
+    container_name: iadaf-ai
+    ports:
+      - "8086:8086"
+    environment:
+      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=mistral
+      - USE_OPENAI=false
+      - CHROMA_PERSIST_DIR=/data/vectorstore
+    volumes:
+      - ai_vectorstore:/data/vectorstore
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # --------------------------------------------------------------------------
+  # Ollama — LLM local (Mistral 7B)
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: iadaf-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - iadaf-network
+    restart: unless-stopped
+    # Uncomment to use GPU (NVIDIA):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
 networks:
   iadaf-network:
@@ -79,10 +118,3 @@ volumes:
   postgres_data:
   keycloak_data:
     driver: local
-
-front:
-build: ./front
-ports:
-  - "3000:3000"
-env_file:
-  - ./front/.env.local

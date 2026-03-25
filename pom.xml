@@ -16,11 +16,9 @@
     <modules>
         <module>discovery-service</module>
         <module>api-gateway</module>
-        <module>user-service</module>
-        <module>demarches-service</module>
-        <module>document-service</module>
-        <module>ai-service</module>
-        <module>analytics-service</module>
+        <!-- Other Java services disabled: user-service, demarches-service,
+             document-service, analytics-service are superseded by the
+             Python ai-service. See each service's README. -->
     </modules>
 
     <properties>

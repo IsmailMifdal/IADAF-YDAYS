@@ -21,6 +21,16 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
           jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=300s
+    cache-names:
+      - demarcheStats
+      - documentStats
+      - userActivity
+      - dashboard
+      - performance
 
 server:
   port: 8085
@@ -37,3 +47,12 @@ eureka:
 logging:
   level:
     org.springframework.security: DEBUG
+
+# Service URLs for inter-service communication
+services:
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8082}
+  demarches-service:
+    url: ${DEMARCHES_SERVICE_URL:http://localhost:8083}
+  document-service:
+    url: ${DOCUMENT_SERVICE_URL:http://localhost:8084}
