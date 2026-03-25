@@ -39,7 +39,23 @@ spring:
       # Configuration des timeouts
       httpclient:
         connect-timeout: 5000
-        response-timeout: 10s
+        response-timeout: 30s
+      # Routes explicites
+      routes:
+        # AI Service — toutes les requêtes /api/ai/** → AI-SERVICE
+        - id: ai-service
+          uri: lb://AI-SERVICE
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - StripPrefix=1   # /api/ai/chat → /ai/chat
+        # AI Service health (sans strip pour compatibilité directe)
+        - id: ai-service-health
+          uri: lb://AI-SERVICE
+          predicates:
+            - Path=/api/ai/health
+          filters:
+            - StripPrefix=1
       # Routes par défaut (complétées par GatewayConfig.java)
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -53,7 +69,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:

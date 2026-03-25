@@ -1,191 +1,147 @@
-# IADAF-YDAYS
-projet-YDAYS
+# IA-DAF — Intelligent Assistant for Administrative Formalities
 
-## 🚀 Démarrage Rapide (Quick Start)
+> Plateforme IA pour aider les personnes non-francophones à réussir leurs démarches administratives en France.
+
+---
+
+## 🏗️ Architecture
+
+```
+Client (Next.js / curl)
+        │
+        ▼
+┌──────────────────┐
+│   API Gateway    │  :8080  (Spring Cloud Gateway)
+│  (Spring Boot)   │
+└────────┬─────────┘
+         │ route /api/ai/**  →  AI-SERVICE:8086
+         │
+         ▼
+┌──────────────────┐        ┌──────────────────────┐
+│   AI Service     │        │  Discovery Service   │
+│  (Python/FastAPI)│◀──────▶│  (Eureka) :8761      │
+│  :8086           │        └──────────────────────┘
+└──────────────────┘
+         │
+   ┌─────┴──────┐
+   │  LangChain │
+   │  ChromaDB  │
+   │  Mistral   │
+   └────────────┘
+```
+
+| Service | Technologie | Port |
+|---------|------------|------|
+| `discovery-service` | Spring Boot / Eureka | 8761 |
+| `api-gateway` | Spring Cloud Gateway | 8080 |
+| `ai-service` | Python / FastAPI | 8086 |
+| `ollama` | Ollama (Mistral 7B) | 11434 |
+
+---
+
+## 🚀 Démarrage rapide
 
 ### Prérequis
-- ✅ Docker Desktop installé et démarré
-- ✅ Java 17+ (`java -version`)
-- ✅ Maven 3.8+ (`mvn -version`)
-- ✅ Git
 
-### Configuration initiale (une seule fois)
+- Docker + Docker Compose
+- 8 Go RAM minimum (pour Mistral 7B)
+
+### Démarrer tous les services
 
 ```bash
-# 1. Cloner le repository
-git clone <repository-url>
-cd IADAF-YDAYS
+# Option 1 — Script automatisé
+bash start-services.sh
 
-# 2. Créer le fichier .env depuis le template
-cp .env.example .env
-
-# 3. Démarrer l'infrastructure Docker
+# Option 2 — Docker Compose directement
 docker compose up -d
-
-# 4. Attendre que PostgreSQL soit prêt (30 secondes)
-echo "⏳ Attente de PostgreSQL..."
-sleep 30
-
-# 5. Vérifier que PostgreSQL fonctionne
-docker exec -it iadaf-postgres psql -U iadaf_user -d iadaf_db -c "SELECT 1;"
 ```
 
-### Démarrer les microservices
+### Vérifier que tout fonctionne
 
-**Option 1 : Script automatique** (recommandé)
 ```bash
-./start-services.sh
+# Eureka Dashboard
+open http://localhost:8761
+
+# Santé de l'AI Service
+curl http://localhost:8086/ai/health
+
+# Test du chatbot via l'API Gateway
+curl -X POST http://localhost:8080/api/ai/chat \
+     -H "Content-Type: application/json" \
+     -d '{"message": "Comment obtenir une carte de séjour ?"}'
+
+# Test de traduction
+curl -X POST http://localhost:8080/api/ai/translate \
+     -H "Content-Type: application/json" \
+     -d '{"text": "Bonjour", "target_language": "EN"}'
 ```
 
-**Option 2 : Manuel** (dans des terminaux séparés)
+---
+
+## 🤖 Endpoints AI Service
+
+| Méthode | Chemin (via Gateway) | Description |
+|---------|---------------------|-------------|
+| GET | `/api/ai/health` | Santé du service |
+| POST | `/api/ai/chat` | Chatbot administratif (FR/EN/AR/ES) |
+| POST | `/api/ai/translate` | Traduction multilingue |
+| POST | `/api/ai/analyze-document` | Analyse de document administratif |
+
+Documentation Swagger interactive : http://localhost:8086/docs
+
+---
+
+## 📦 Services désactivés
+
+Les services Java suivants sont temporairement désactivés (voir leurs README respectifs) :
+
+- `user-service` — Gestion utilisateurs
+- `demarches-service` — Catalogue des démarches
+- `document-service` — Gestion des documents
+- `analytics-service` — Analyses et statistiques
+
+---
+
+## 🎯 Fonctionnalités IA
+
+- **Chatbot RAG** — Répond aux questions sur les démarches administratives françaises en s'appuyant sur une base de connaissances vectorisée (ChromaDB + LangChain)
+- **Traduction multilingue** — Français, Anglais, Arabe, Espagnol
+- **Analyse de documents** — Vérifie la conformité d'un dossier et donne des recommandations
+- **Mode dégradé** — Fonctionne même si Ollama/Mistral n'est pas encore disponible
+
+---
+
+## 🏥 Démarches couvertes
+
+| Démarche | Organisme |
+|----------|-----------|
+| Assurance maladie (CPAM) | CPAM / Ameli |
+| Allocations (CAF) | CAF |
+| Titre de séjour | Préfecture |
+| Déclaration impôts | DGFiP |
+| Ouverture compte bancaire | Banques |
+| Inscription université | Campus France / Universités |
+
+---
+
+## 🛠️ Développement
+
+### AI Service (Python)
 
 ```bash
-# Terminal 1 - Discovery Service (OBLIGATOIRE EN PREMIER)
-cd discovery-service
-mvn spring-boot:run
-
-# Attendre le message "Started DiscoveryServiceApplication"
-# Ouvrir http://localhost:8761 pour vérifier
-
-# Terminal 2 - User Service
-export POSTGRES_USER=iadaf_user
-export POSTGRES_PASSWORD=iadaf_password
-cd user-service
-mvn spring-boot:run
-
-# Terminal 3 - API Gateway
-cd api-gateway
-mvn spring-boot:run
+cd ai-service
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn app.main:app --reload --port 8086
 ```
 
-### Vérification de l'installation
+### Services Java
 
 ```bash
-# Tester Eureka Dashboard
-curl http://localhost:8761
+# Discovery Service
+cd discovery-service && mvn spring-boot:run
 
-# Tester User Service via API Gateway
-curl http://localhost:8080/api/users
-
-# Tester Keycloak
-curl http://localhost:8180/realms/iadaf/.well-known/openid-configuration
-```
-
-### En cas de problème
-
-Consulter **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** pour les solutions aux problèmes courants.
-
-### 📚 Documentation
-
-- **[DOCKER.md](DOCKER.md)** - Documentation complète de l'environnement Docker
-  - Configuration PostgreSQL et pgAdmin
-  - Commandes Docker Compose
-  - Gestion de la base de données
-  - Dépannage
-- **[KEYCLOAK.md](KEYCLOAK.md)** - Documentation complète de l'authentification Keycloak
-  - Configuration des rôles et clients OAuth2
-  - Gestion des utilisateurs
-  - Obtenir des tokens JWT
-  - API et endpoints
-
-### 🔗 Accès aux services
-
-- **pgAdmin** : http://localhost:5050
-- **Eureka Dashboard** : http://localhost:8761
-- **API Gateway** : http://localhost:8080
-- **Keycloak Admin** : http://localhost:8180
-
-### 🗄️ Base de données
-
-- **PostgreSQL** : `localhost:5432`
-- **Database** : `iadaf_db`
-- **Schémas** : users, demarches, documents, analytics
-
-Voir [DOCKER.md](DOCKER.md) pour plus de détails.
-
-## 🔐 Authentification (Keycloak)
-
-Le projet utilise Keycloak pour la gestion de l'authentification et des autorisations.
-
-### Accès Keycloak
-
-- **Admin Console** : http://localhost:8180
-- **Username** : `admin`
-- **Password** : `admin`
-- **Realm** : `iadaf`
-
-### Utilisateurs de test
-
-| Email | Password | Rôle |
-|-------|----------|------|
-| admin@iadaf.com | admin123 | ADMIN |
-| user@iadaf.com | user123 | USER |
-| agent@iadaf.com | agent123 | AGENT |
-| support@iadaf.com | support123 | SUPPORT |
-
-Voir [KEYCLOAK.md](KEYCLOAK.md) pour plus de détails.
-
-### 🔑 Obtenir un token JWT
-
-Pour accéder aux endpoints protégés, vous devez d'abord obtenir un token JWT depuis Keycloak :
-
-```bash
-# Obtenir un token pour l'utilisateur admin
-export TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'client_id=iadaf-frontend' \
-  -d 'grant_type=password' \
-  -d 'username=admin@iadaf.com' \
-  -d 'password=admin123' \
-  | jq -r '.access_token')
-
-# Vérifier le token
-echo $TOKEN
-```
-
-### 📡 Exemples de requêtes authentifiées
-
-Une fois le token obtenu, utilisez-le dans le header `Authorization: Bearer <token>` :
-
-```bash
-# Obtenir les informations de l'utilisateur connecté
-curl http://localhost:8080/api/auth/me \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# Tester l'endpoint admin (uniquement pour ADMIN)
-curl http://localhost:8080/api/auth/admin/test \
-  -H "Authorization: Bearer $TOKEN" | jq
-
-# Tester l'endpoint agent (pour AGENT ou ADMIN)
-curl http://localhost:8080/api/auth/agent/test \
-  -H "Authorization: Bearer $TOKEN" | jq
-```
-
-### ⚠️ Codes d'erreur d'authentification
-
-| Code | Description |
-|------|-------------|
-| **401 Unauthorized** | Token manquant ou invalide. Obtenez un nouveau token. |
-| **403 Forbidden** | Token valide mais rôle insuffisant. Utilisez un compte avec les permissions appropriées. |
-
-**Exemple sans token (401):**
-```bash
-# Cette requête retournera une erreur 401
-curl http://localhost:8080/api/auth/me
-```
-
-**Exemple avec rôle insuffisant (403):**
-```bash
-# Un utilisateur USER ne peut pas accéder aux endpoints admin
-export USER_TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'client_id=iadaf-frontend' \
-  -d 'grant_type=password' \
-  -d 'username=user@iadaf.com' \
-  -d 'password=user123' \
-  | jq -r '.access_token')
-
-# Cette requête retournera une erreur 403
-curl http://localhost:8080/api/auth/admin/test \
-  -H "Authorization: Bearer $USER_TOKEN"
+# API Gateway
+cd api-gateway && mvn spring-boot:run
 ```
