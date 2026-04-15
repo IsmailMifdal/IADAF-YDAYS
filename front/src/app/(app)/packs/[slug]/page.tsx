@@ -20,7 +20,7 @@ function validateFile(file: File) {
   const isValidSize = file.size <= MAX_SIZE;
 
   if (!isValidType) {
-    return "Type de fichier non supporte. Utilisez PDF, JPG ou PNG.";
+    return "Type de fichier non supporté. Utilisez PDF, JPG ou PNG.";
   }
 
   if (!isValidSize) {
@@ -76,7 +76,7 @@ export default function PackDetailPage() {
             Pack introuvable
           </h1>
           <p className="text-gray-600 mt-2">
-            Le pack demande n'existe pas ou n'est plus disponible.
+            Le pack demandé n'existe pas ou n'est plus disponible.
           </p>
           <Link
             href="/nosPacks"
@@ -94,7 +94,7 @@ export default function PackDetailPage() {
       <div className="bg-gray-50 min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-12">
           <div className="bg-white border rounded-xl p-10 text-center">
-            <p className="text-gray-600">Verification d'acces...</p>
+            <p className="text-gray-600">Vérification d'accès...</p>
           </div>
         </div>
       </div>
@@ -106,9 +106,9 @@ export default function PackDetailPage() {
       <div className="bg-gray-50 min-h-screen">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-12">
           <div className="bg-white border rounded-xl p-10 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Acces bloque</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Accès bloqué</h1>
             <p className="text-gray-600 mt-3">
-              Ce pack necessite un paiement pour etre accessible.
+              Ce pack nécessite un paiement pour être accessible.
             </p>
             <Link
               href={`/payment/${slug}`}
@@ -171,7 +171,7 @@ export default function PackDetailPage() {
       {
         role: "ai",
         content:
-          "Message recu. Continue a deposer tes documents, je t'aide ensuite pour la verification.",
+          "Message reçu. Continue à déposer tes documents, je t'aide ensuite pour la vérification.",
       },
     ]);
     setChatInput("");
@@ -189,9 +189,9 @@ export default function PackDetailPage() {
             {pack.shortDescription}
           </h2>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-10">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8 items-stretch mt-10">
             {/* SECTION 1 - DOCUMENTS A PREPARER */}
-            <section className="bg-white border border-gray-200 rounded-xl p-6">
+            {/* <section className="bg-white border border-gray-200 rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4">
                 Veuillez préparer ces documents
               </h2>
@@ -203,10 +203,10 @@ export default function PackDetailPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </section> */}
 
             {/* SECTION 2 - UPLOAD DES DOCUMENTS */}
-            <section className="bg-white border border-gray-200 rounded-xl p-6">
+            <section className="bg-white border border-gray-200 rounded-xl p-6 h-full flex flex-col">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Upload des documents
@@ -230,7 +230,7 @@ export default function PackDetailPage() {
                         accept=".pdf,.jpg,.jpeg,.png"
                       />
                       <p className="text-sm text-gray-500 mt-1">
-                        Format accepte : PDF, JPG, PNG (max 10MB)
+                        Format accepté : PDF, JPG, PNG (max 10MB)
                       </p>
                     </div>
                   ))}
@@ -256,7 +256,7 @@ export default function PackDetailPage() {
                 >
                   <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-600">
-                    Deposez vos fichiers ici ou cliquez pour selectionner
+                    Déposez vos fichiers ici ou cliquez pour sélectionner
                   </p>
                   <input
                     ref={dropInputRef}
@@ -280,7 +280,7 @@ export default function PackDetailPage() {
               {uploadedCount > 0 && (
                 <div className="mt-6 border border-gray-200 rounded-xl p-4">
                   <h4 className="font-semibold text-gray-900 mb-2">
-                    Fichiers ajoutes
+                    Fichiers ajoutés
                   </h4>
                   <ul className="space-y-1 text-sm text-gray-600">
                     {Object.entries(filesByDocument)
@@ -309,8 +309,8 @@ export default function PackDetailPage() {
             </section>
 
             {/* SECTION 3 - CHAT IA */}
-            <aside className="w-full">
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm h-full md:h-[700px] flex flex-col md:sticky md:top-0 p-4 gap-4">
+            <aside className="w-full h-full">
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm h-full flex flex-col md:sticky md:top-0 p-4 gap-4">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
                     <MessageSquare className="h-5 w-5 text-white" />

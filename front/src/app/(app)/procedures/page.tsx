@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Briefcase,
   Building2,
@@ -102,6 +103,15 @@ const filters: FilterOption[] = [
   { label: "Impôts", icon: Receipt },
 ];
 
+const procedureHrefById: Record<number, string> = {
+  1: "/payment/aide-logement",
+  2: "/payment/impots",
+  3: "/payment/assurance-maladie",
+  4: "/nosPacks",
+  5: "/payment/titre-sejour",
+  6: "/payment/impots",
+};
+
 export default function Procedures() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("Toutes");
@@ -179,6 +189,7 @@ export default function Procedures() {
                 duration={procedure.duration}
                 difficulty={procedure.difficulty}
                 documents={procedure.documents}
+                targetHref={procedureHrefById[procedure.id] ?? "/nosPacks"}
               />
             ))}
           </section>
@@ -195,6 +206,7 @@ type ProcedureCardProps = {
   duration: string;
   difficulty: string;
   documents: number;
+  targetHref: string;
 };
 
 function ProcedureCard({
@@ -204,6 +216,7 @@ function ProcedureCard({
   duration,
   difficulty,
   documents,
+  targetHref,
 }: ProcedureCardProps) {
   return (
     <article className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-4">
@@ -229,12 +242,12 @@ function ProcedureCard({
         {documents} document(s) requis
       </div>
 
-      <button
-        type="button"
-        className="bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium w-full transition"
+      <Link
+        href={targetHref}
+        className="bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium w-full transition text-center"
       >
         Démarrer cette démarche
-      </button>
+      </Link>
     </article>
   );
 }

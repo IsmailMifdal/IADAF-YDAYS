@@ -68,7 +68,7 @@ const profiles: Profile[] = [
     title: "Nouveau travailleur",
     description:
       "Vous commencez un emploi en France ? Nous vous guidons pour toutes les formalités professionnelles.",
-    steps: ["URSSAF", "Pôle emploi", "Mutuelle"],
+    steps: ["URSSAF", "France travail", "Mutuelle"],
     color: "violet",
   },
   {
@@ -108,7 +108,7 @@ export default function Home() {
 
             <div className="flex gap-4 mt-8 flex-wrap">
               <Link
-                href="/chatIa"
+                href="/nosPacks"
                 className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition"
               >
                 Commencer maintenant →
@@ -177,7 +177,7 @@ export default function Home() {
               AMELI
             </span>
             <span className="px-5 py-2 rounded-xl text-lg font-semibold bg-orange-100 text-orange-700">
-              Pôle Emploi
+              France Travail
             </span>
             <span className="px-5 py-2 rounded-xl text-lg font-semibold bg-red-100 text-red-700">
               Préfecture
@@ -434,9 +434,12 @@ function ProfileCard({
           </div>
         </div>
 
-        <button className="bg-red-500 hover:bg-red-600 text-white w-full py-2 rounded-lg mt-4 font-medium transition text-center">
+        <Link
+          href="/nosPacks"
+          className="bg-red-500 hover:bg-red-600 text-white w-full py-2 rounded-lg mt-4 font-medium transition text-center"
+        >
           Commencer →
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ type MenuItem = {
 const menu: MenuItem[] = [
   { label: "Accueil", href: "/", icon: Home },
   { label: "Nos packs", href: "/nosPacks", icon: Package },
-  { label: "Chat IA", href: "/chatIa", icon: MessageSquare },
+  // { label: "Chat IA", href: "/chatIa", icon: MessageSquare },
   { label: "Démarches", href: "/procedures", icon: FileText },
   { label: "Mes Dossiers", href: "/myFolders", icon: Folder },
   // { label: "Documents", href: "/documents", icon: Upload },
