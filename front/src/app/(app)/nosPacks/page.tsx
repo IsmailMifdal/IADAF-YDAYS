@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Check,
   HeartPulse,
@@ -7,82 +9,26 @@ import {
   IdCard,
   Package,
   Receipt,
-  type LucideIcon,
 } from "lucide-react";
 import PageHeader from "../../components/ui/PageHeader";
+import { isPackUnlocked } from "../../lib/mockPayment";
+import {
+  packs,
+  type PackColor,
+  type PackData,
+  type PackIconKey,
+} from "../packs/packsData";
 
-type PackColor = "blue" | "green" | "orange" | "violet" | "yellow";
-
-type Pack = {
-  title: string;
-  price: string;
-  color: PackColor;
-  description: string[];
-  icon: LucideIcon;
+const iconByKey: Record<
+  PackIconKey,
+  React.ComponentType<{ className?: string }>
+> = {
+  "id-card": IdCard,
+  "heart-pulse": HeartPulse,
+  house: House,
+  receipt: Receipt,
+  package: Package,
 };
-
-const packs: Pack[] = [
-  {
-    title: "Titre de sejour (ANEF)",
-    price: "20€",
-    color: "blue",
-    description: [
-      "Guide complet",
-      "Choix du type de titre",
-      "Checklist personnalisée",
-      "Vérification documents",
-      "Assistance IA avancée",
-      "Alertes (dates, RDV)",
-    ],
-    icon: IdCard,
-  },
-  {
-    title: "Assurance maladie (Ameli)",
-    price: "20€",
-    color: "green",
-    description: [
-      "Guide complet",
-      "Checklist documents",
-      "Vérification des documents",
-      "Assistance IA avancée",
-      "Alertes documents manquants",
-    ],
-    icon: HeartPulse,
-  },
-  {
-    title: "Aide logement (CAF)",
-    price: "20€",
-    color: "orange",
-    description: [
-      "Simulation aides",
-      "Guide CAF simplifié",
-      "Aide remplissage",
-      "Suivi dossier",
-      "Notifications",
-    ],
-    icon: House,
-  },
-
-  //   {
-  //     title: "Declaration impots",
-  //     price: "10€",
-  //     color: "violet",
-  //     description: [
-  //       "Explication simplifiée",
-  //       "Aide remplissage",
-  //       "Vérification des données",
-  //       "Simulation",
-  //     ],
-  //     icon: Receipt,
-  //   },
-  {
-    title: "Pack complet",
-    price: "50€",
-    color: "yellow",
-    description: ["Le contenu de tous les packs réunis en un seul !"],
-    icon: Package,
-  },
-];
 
 const packStyleClass: Record<
   PackColor,
@@ -121,6 +67,19 @@ const packStyleClass: Record<
 };
 
 export default function NosPacksPage() {
+  const [unlockedPacks, setUnlockedPacks] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  useEffect(() => {
+    const unlockedMap = packs.reduce<Record<string, boolean>>((acc, pack) => {
+      acc[pack.slug] = isPackUnlocked(pack.slug);
+      return acc;
+    }, {});
+
+    setUnlockedPacks(unlockedMap);
+  }, []);
+
   return (
     <div>
       <PageHeader
@@ -132,7 +91,10 @@ export default function NosPacksPage() {
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
             {packs.map((pack) => (
               <div key={pack.title}>
-                <PackCard pack={pack} />
+                <PackCard
+                  pack={pack}
+                  isUnlocked={Boolean(unlockedPacks[pack.slug])}
+                />
               </div>
             ))}
           </section>
@@ -143,12 +105,13 @@ export default function NosPacksPage() {
 }
 
 type PackCardProps = {
-  pack: Pack;
+  pack: PackData;
+  isUnlocked: boolean;
 };
 
-function PackCard({ pack }: PackCardProps) {
+function PackCard({ pack, isUnlocked }: PackCardProps) {
   const style = packStyleClass[pack.color];
-  const Icon = pack.icon;
+  const Icon = iconByKey[pack.icon];
   const isBestChoice = pack.title === "Pack complet";
 
   return (
@@ -166,6 +129,12 @@ function PackCard({ pack }: PackCardProps) {
       {isBestChoice && (
         <span className="absolute top-4 right-4 bg-yellow-400 text-white text-xs px-3 py-1 rounded-full">
           Meilleur choix
+        </span>
+      )}
+
+      {isUnlocked && (
+        <span className="absolute top-4 left-4 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
+          Achete
         </span>
       )}
 
@@ -193,12 +162,12 @@ function PackCard({ pack }: PackCardProps) {
         </ul>
       </div>
 
-      <button
-        type="button"
-        className="mt-8 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition w-full"
+      <Link
+        href={`/payment/${pack.slug}`}
+        className="mt-8 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition w-full text-center"
       >
         Choisir ce pack
-      </button>
+      </Link>
     </article>
   );
 }

@@ -33,7 +33,7 @@ const menu: MenuItem[] = [
   { label: "Chat IA", href: "/chatIa", icon: MessageSquare },
   { label: "Démarches", href: "/procedures", icon: FileText },
   { label: "Mes Dossiers", href: "/myFolders", icon: Folder },
-  { label: "Documents", href: "/documents", icon: Upload },
+  // { label: "Documents", href: "/documents", icon: Upload },
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutGrid },
 ];
 
