@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, MessageSquare, Upload } from "lucide-react";
+import { ArrowRight, Bot, Loader2, MessageSquare, Sparkles, Upload } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getPackBySlug } from "../packsData";
 import { isPackUnlocked } from "../../../lib/mockPayment";
 import HeaderPage from "../../../components/ui/PageHeader";
+import { api, type ChatResponse } from "../../../lib/api";
+import { useLanguage } from "../../../context/LanguageContext";
+import LanguageSelector from "../../../components/ui/LanguageSelector";
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -39,6 +44,7 @@ export default function PackDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? "";
   const pack = getPackBySlug(slug);
+  const { lang, t } = useLanguage();
 
   const [filesByDocument, setFilesByDocument] = useState<
     Record<string, File | null>
@@ -48,14 +54,103 @@ export default function PackDetailPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "ai",
-      content:
-        "Paiement validé ! Tu peux désormais déposer les fichiers demandés directement dans les champs à gauche. Si tu as la moindre question ou si tu es bloqué(é), n'hésite pas !",
-    },
-  ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [welcomeSent, setWelcomeSent] = useState(false);
   const dropInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Reset chat when language changes so welcome is re-sent in new language
+  useEffect(() => {
+    if (!hasAccess) return;
+    setMessages([]);
+    setConversationId(undefined);
+    setWelcomeSent(false);
+  }, [lang]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Envoie un message de bienvenue contextuel au pack choisi
+  useEffect(() => {
+    if (!pack || !hasAccess || welcomeSent) return;
+    setWelcomeSent(true);
+    setIsLoading(true);
+
+    const docsList = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
+
+    const langPrompts: Record<string, string> = {
+      fr: `CONTEXTE OBLIGATOIRE : L'utilisateur a choisi le pack "${pack.title}" — ${pack.shortDescription}
+Tu dois UNIQUEMENT parler de la démarche "${pack.title}". Ne parle JAMAIS d'une autre démarche.
+
+Génère un court message de bienvenue en français avec ce format EXACT :
+1. Une ligne d'accueil chaleureuse avec un emoji (max 1 phrase) qui mentionne la démarche "${pack.title}"
+2. Une ligne vide
+3. Le texte "📋 **Documents à préparer :**" suivi d'une liste à puces des documents suivants :
+${docsList}
+4. Une ligne vide
+5. Une phrase finale courte invitant à poser des questions sur cette démarche précise
+
+Règles : reste bref (max 8 lignes), tutoiement, positif. Réponds en français.`,
+      en: `MANDATORY CONTEXT: The user chose the pack "${pack.title}" — ${pack.shortDescription}
+You must ONLY talk about the "${pack.title}" procedure. NEVER mention another procedure.
+
+Generate a short welcome message in English with this EXACT format:
+1. A warm greeting line with an emoji (max 1 sentence) mentioning "${pack.title}"
+2. A blank line
+3. The text "📋 **Documents to prepare:**" followed by a bullet list of these documents:
+${docsList}
+4. A blank line
+5. A short closing sentence inviting questions about this specific procedure
+
+Rules: keep it brief (max 8 lines), friendly, positive. Respond in English.`,
+      ar: `السياق الإلزامي: اختار المستخدم باقة "${pack.title}" — ${pack.shortDescription}
+يجب أن تتحدث فقط عن إجراء "${pack.title}". لا تذكر أبدًا إجراءً آخر.
+
+أنشئ رسالة ترحيب قصيرة بالعربية بهذا التنسيق:
+1. سطر ترحيب دافئ مع إيموجي يذكر "${pack.title}"
+2. سطر فارغ
+3. النص "📋 **المستندات المطلوبة:**" متبوعًا بقائمة نقطية للمستندات التالية:
+${docsList}
+4. سطر فارغ
+5. جملة ختامية قصيرة تدعو لطرح الأسئلة
+
+أجب بالعربية.`,
+      es: `CONTEXTO OBLIGATORIO: El usuario eligió el pack "${pack.title}" — ${pack.shortDescription}
+Debes hablar ÚNICAMENTE del trámite "${pack.title}". NUNCA menciones otro trámite.
+
+Genera un mensaje de bienvenida corto en español con este formato EXACTO:
+1. Una línea de saludo cálida con un emoji (máx 1 frase) que mencione "${pack.title}"
+2. Una línea en blanco
+3. El texto "📋 **Documentos a preparar:**" seguido de una lista con viñetas:
+${docsList}
+4. Una línea en blanco
+5. Una frase final corta invitando a hacer preguntas sobre este trámite
+
+Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
+    };
+
+    const prompt = langPrompts[lang] || langPrompts.fr;
+
+    api
+      .chat({ message: prompt, conversation_id: undefined, language: lang })
+      .then((res) => {
+        setConversationId(res.conversation_id);
+        setMessages([{ role: "ai", content: res.response }]);
+      })
+      .catch(() => {
+        const fallbackDocs = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
+        setMessages([
+          {
+            role: "ai",
+            content: `Bienvenue ! 🎉 Je suis là pour t'accompagner dans ta démarche **${pack.title}**.\n\n📋 **Documents à préparer :**\n${fallbackDocs}\n\nN'hésite pas à me poser tes questions, je suis là pour t'aider ! 💬`,
+          },
+        ]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [pack, hasAccess, welcomeSent]);
 
   const uploadedCount = useMemo(() => {
     return (
@@ -67,6 +162,42 @@ export default function PackDetailPage() {
   useEffect(() => {
     setHasAccess(isPackUnlocked(slug));
   }, [slug]);
+
+  const handleSendMessage = useCallback(async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || isLoading) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    setChatInput("");
+    setIsLoading(true);
+
+    try {
+      const packContext = pack
+        ? `[CONTEXTE : L'utilisateur travaille sur la démarche "${pack.title}" (${pack.shortDescription}). Réponds UNIQUEMENT en rapport avec cette démarche. Ne parle pas d'autres démarches.]\n\nQuestion de l'utilisateur : `
+        : "";
+      const res: ChatResponse = await api.chat({
+        message: packContext + trimmed,
+        conversation_id: conversationId,
+        language: lang,
+      });
+
+      setConversationId(res.conversation_id);
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: res.response },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          content: t("pack.chat.error"),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [chatInput, conversationId, isLoading, pack, lang, t]);
 
   if (!pack) {
     return (
@@ -159,22 +290,6 @@ export default function PackDetailPage() {
     const files = Array.from(event.dataTransfer.files ?? []);
     if (files.length === 0) return;
     addDroppedFiles(files);
-  };
-
-  const handleSendMessage = () => {
-    const trimmed = chatInput.trim();
-    if (!trimmed) return;
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", content: trimmed },
-      {
-        role: "ai",
-        content:
-          "Message reçu. Continue à déposer tes documents, je t'aide ensuite pour la vérification.",
-      },
-    ]);
-    setChatInput("");
   };
 
   return (
@@ -317,25 +432,74 @@ export default function PackDetailPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-2xl text-gray-900 leading-tight">
-                      Assistant IA
+                      {t("pack.chat.assistant")}
                     </h3>
-                    <p className="text-green-600 text-sm">En ligne</p>
+                    <p className="text-green-600 text-sm">{t("pack.chat.online")}</p>
+                  </div>
+                  <div className="ml-auto">
+                    <LanguageSelector />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1">
                   {messages.map((message, index) => (
                     <div
                       key={`${message.role}-${index}`}
-                      className={`rounded-lg p-3 text-sm ${
-                        message.role === "ai"
-                          ? "bg-gray-100 text-gray-800"
-                          : "bg-red-50 text-red-900 ml-auto max-w-[90%]"
-                      }`}
+                      className={`flex items-start gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                     >
-                      {message.content}
+                      {message.role === "ai" ? (
+                        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
+                          <Bot className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-orange-200">
+                          <span className="text-xs font-bold">U</span>
+                        </div>
+                      )}
+                      <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : ""}`}>
+                        {message.role === "ai" ? (
+                          <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm prose prose-sm prose-blue max-w-none
+                            prose-headings:text-blue-800 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-headings:text-sm
+                            prose-h2:border-b prose-h2:border-blue-100 prose-h2:pb-1
+                            prose-p:text-gray-700 prose-p:leading-relaxed prose-p:text-sm
+                            prose-li:text-gray-700 prose-li:leading-relaxed prose-li:text-sm prose-li:marker:text-blue-500
+                            prose-strong:text-blue-900
+                            prose-a:text-blue-600 prose-a:underline prose-a:decoration-blue-300 hover:prose-a:text-blue-800
+                            prose-ul:my-1 prose-ol:my-1"
+                          >
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl px-4 py-2.5 shadow-sm text-sm">
+                            {message.content}
+                          </div>
+                        )}
+                        {message.role === "ai" && index > 0 && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> OpenAI
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
+
+                  {isLoading && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm text-gray-500 flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                        <span className="text-sm">{t("pack.chat.loading")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <div className="border border-gray-200 rounded-xl p-2 flex items-center gap-2">
@@ -344,18 +508,20 @@ export default function PackDetailPage() {
                     value={chatInput}
                     onChange={(event) => setChatInput(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") {
+                      if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
                         handleSendMessage();
                       }
                     }}
-                    placeholder="Posez votre question..."
-                    className="flex-1 bg-transparent outline-none px-2 py-2 text-gray-700 placeholder:text-gray-400"
+                    placeholder={t("pack.chat.placeholder")}
+                    disabled={isLoading}
+                    className="flex-1 bg-transparent outline-none px-2 py-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
                   />
                   <button
                     type="button"
                     onClick={handleSendMessage}
-                    className="h-10 w-10 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition"
+                    disabled={isLoading || chatInput.trim().length === 0}
+                    className="h-10 w-10 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition disabled:opacity-50"
                   >
                     <ArrowRight className="h-4 w-4" />
                   </button>

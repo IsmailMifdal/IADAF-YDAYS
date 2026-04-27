@@ -1,12 +1,15 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# Install system deps for health checks and building native extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+# Install CPU-only PyTorch first (avoids downloading ~6GB of CUDA libs)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

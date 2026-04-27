@@ -58,5 +58,53 @@
     "question": "Comment accéder aux soins d'urgence sans carte Vitale ?",
     "answer": "En France, les soins d'urgence sont accessibles à tous, même sans couverture maladie : 1) Appelez le 15 (SAMU) pour une urgence médicale grave. 2) Appelez le 18 (Pompiers) ou le 112 (numéro européen) en cas d'urgence. 3) Rendez-vous aux urgences de l'hôpital le plus proche sans rendez-vous. 4) Si vous n'avez pas de couverture, l'hôpital vous soignera et vous facturera ensuite. 5) L'Aide Médicale d'État (AME) est disponible pour les personnes en situation irrégulière résidant en France depuis plus de 3 mois.",
     "tags": ["urgences", "soins", "sans papiers", "AME"]
+  },
+  {
+    "id": "faq_011",
+    "question": "Comment obtenir un numéro de Sécurité Sociale ?",
+    "answer": "Le numéro de Sécurité Sociale (NIR) est automatiquement attribué lors de votre affiliation à l'Assurance Maladie. Étapes : 1) Remplir le formulaire cerfa 13810*06 ou S1106 disponible sur ameli.fr. 2) Joindre titre de séjour, justificatif de domicile, RIB, acte de naissance traduit. 3) Envoyer le dossier à la CPAM de votre lieu de résidence. 4) Vous recevrez d'abord un numéro provisoire, puis votre numéro définitif (13 chiffres) et votre carte Vitale. Délai : 2 à 8 semaines. Contact : 36 46 (service Ameli). Site : https://www.ameli.fr",
+    "tags": ["sécurité sociale", "NIR", "CPAM", "affiliation"]
+  },
+  {
+    "id": "faq_012",
+    "question": "Quels sont les numéros d'urgence en France ?",
+    "answer": "Les numéros d'urgence en France (gratuits, accessibles 24h/24) : 15 — SAMU (urgence médicale), 17 — Police (urgence sécuritaire), 18 — Pompiers (incendie, accident), 112 — Numéro européen d'urgence (fonctionne dans toute l'UE), 114 — Urgence par SMS (personnes sourdes ou malentendantes), 115 — SAMU social (hébergement d'urgence), 119 — Enfance en danger, 3114 — Prévention du suicide. All these numbers work from any phone, even without crédit ni carte SIM.",
+    "tags": ["urgences", "numéros utiles", "SAMU", "police", "pompiers"]
+  },
+  {
+    "id": "faq_013",
+    "question": "Comment trouver un médecin traitant ?",
+    "answer": "En France, il est recommandé de déclarer un médecin traitant pour être mieux remboursé. Étapes : 1) Chercher un médecin sur annuairesante.ameli.fr (filtre par spécialité, ville, secteur). 2) Prendre rendez-vous via Doctolib, Maiia ou par téléphone. 3) Lors de la 1re consultation, demander au médecin de remplir le formulaire de déclaration de médecin traitant (cerfa S3704). 4) La déclaration est envoyée à la CPAM automatiquement. Conseil : Beaucoup de médecins ne prennent plus de nouveaux patients. Essayez les maisons de santé ou contactez votre CPAM au 36 46 pour de l'aide. Sans médecin traitant, le remboursement passe de 70% à 30%. Site : https://annuairesante.ameli.fr",
+    "tags": ["médecin", "santé", "médecin traitant", "remboursement"]
+  },
+  {
+    "id": "faq_014",
+    "question": "Comment faire une procuration pour voter en France ?",
+    "answer": "Si vous êtes citoyen français et ne pouvez pas voter en personne, voici la procédure de procuration : 1) Faire la demande en ligne sur maprocuration.gouv.fr (vérification via FranceConnect). 2) Vous devrez ensuite valider en personne au commissariat, gendarmerie ou consulat. 3) Désigner une personne de confiance inscrite sur les listes électorales de la même commune. 4) La procuration est enregistrée automatiquement. Délai recommandé : au moins 1 semaine avant le scrutin. Site : https://www.maprocuration.gouv.fr — https://www.service-public.fr/particuliers/vosdroits/F1604",
+    "tags": ["vote", "élections", "procuration", "citoyenneté"]
+  },
+  {
+    "id": "faq_015",
+    "question": "Qu'est-ce que la CSS (Complémentaire Santé Solidaire) ?",
+    "answer": "La CSS (ex-CMU-C) est une complémentaire santé gratuite ou à faible coût pour les personnes aux revenus modestes. Elle couvre la part non remboursée par l'Assurance Maladie : consultations, médicaments, lunettes, prothèses dentaires, etc. Conditions : résider en France de façon stable depuis plus de 3 mois et avoir des revenus inférieurs à un plafond (environ 10 166€/an pour une personne seule). Demande : 1) En ligne sur ameli.fr ou par formulaire cerfa 12504*09. 2) Joindre justificatifs de revenus et de résidence. 3) Réponse sous 2 mois. Gratuite sous un certain seuil de revenus, 1€/jour au-dessus. Site : https://www.ameli.fr/assure/droits-demarches/difficultes-acces-droits-soins/complementaire-sante-solidaire",
+    "tags": ["CSS", "CMU", "complémentaire santé", "aide santé"]
+  },
+  {
+    "id": "faq_016",
+    "question": "Comment renouveler mon récépissé de titre de séjour ?",
+    "answer": "Le récépissé est un document provisoire qui prouve que votre demande de titre de séjour est en cours. Pour le renouveler : 1) Prendre rendez-vous sur le site de votre préfecture (souvent en ligne uniquement). 2) Se présenter avec : votre récépissé actuel, passeport, justificatif de domicile, photo d'identité. 3) Un nouveau récépissé de 3 mois est généralement délivré. Le récépissé vous autorise à rester et souvent à travailler (vérifiez la mention 'autorise son titulaire à travailler'). En cas de difficulté pour obtenir un rendez-vous, contactez la préfecture par e-mail ou appelez le standard. Site : https://administration-etrangers-en-france.interieur.gouv.fr",
+    "tags": ["récépissé", "titre de séjour", "préfecture", "renouvellement"]
+  },
+  {
+    "id": "faq_017",
+    "question": "Comment obtenir un acte de naissance en France ?",
+    "answer": "L'acte de naissance est un document très demandé pour de nombreuses démarches. Si vous êtes né en France : 1) Faire la demande en ligne sur service-public.fr (gratuit). 2) Indiquer la commune de naissance. 3) Recevoir l'acte par courrier sous 5 à 10 jours. Si vous êtes né à l'étranger et avez la nationalité française : contacter le Service Central d'État Civil (SCEC) à Nantes. Pour les étrangers nés à l'étranger : contacter les autorités de votre pays d'origine ou le consulat. L'acte doit souvent être traduit par un traducteur assermenté et apostillé. Site : https://www.service-public.fr/particuliers/vosdroits/F1427",
+    "tags": ["acte de naissance", "état civil", "documents", "traduction"]
+  },
+  {
+    "id": "faq_018",
+    "question": "Comment fonctionne le RSA (Revenu de Solidarité Active) ?",
+    "answer": "Le RSA est un revenu minimum versé par la CAF aux personnes sans ressources ou aux revenus très faibles. Montant : environ 607€/mois pour une personne seule (2024). Conditions : avoir plus de 25 ans (ou 18 ans avec enfant), résider en France de façon stable, avoir des ressources inférieures au montant du RSA. Pour les étrangers : titre de séjour autorisant le travail depuis au moins 5 ans. Demande : 1) Faire une simulation sur caf.fr. 2) Remplir le formulaire cerfa 15481*01. 3) Joindre tous les justificatifs. 4) Déposer à la CAF ou en ligne. Contrepartie : vous devez signer un contrat d'engagement réciproque et être inscrit à France Travail. Site : https://www.caf.fr — https://www.service-public.fr/particuliers/vosdroits/N19775",
+    "tags": ["RSA", "aide sociale", "revenus", "CAF"]
   }
 ]

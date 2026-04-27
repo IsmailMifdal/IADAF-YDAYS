@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from app.api.routes import chat, document, health, translate
+from app.api.routes import chat, document, health, lead, translate
 from app.core.config import settings
 from app.models.database import init_db
 from app.services.llm_service import llm_service
@@ -64,15 +64,23 @@ def _register_eureka() -> None:
     """Register this service with the Eureka discovery server."""
     try:
         import py_eureka_client.eureka_client as eureka_client  # type: ignore
+        import asyncio
 
-        eureka_client.init(
-            eureka_server=settings.eureka_server_url,
-            app_name=settings.eureka_app_name,
-            instance_port=settings.app_port,
-            instance_host="ai-service",
-            health_check_url=f"http://ai-service:{settings.app_port}/ai/health",
-            status_page_url=f"http://ai-service:{settings.app_port}/docs",
-        )
+        host = settings.eureka_instance_hostname
+
+        async def _do_register():
+            await eureka_client.init_async(
+                eureka_server=settings.eureka_server_url,
+                app_name=settings.eureka_app_name,
+                instance_port=settings.app_port,
+                instance_host=host,
+                health_check_url=f"http://{host}:{settings.app_port}/ai/health",
+                status_page_url=f"http://{host}:{settings.app_port}/docs",
+            )
+
+        loop = asyncio.get_running_loop()
+        loop.create_task(_do_register())
+
         logger.info(
             f"✅ Registered with Eureka — app={settings.eureka_app_name} "
             f"@ {settings.eureka_server_url}"
@@ -117,6 +125,7 @@ def create_app() -> FastAPI:
     application.include_router(chat.router, prefix="/ai")
     application.include_router(translate.router, prefix="/ai")
     application.include_router(document.router, prefix="/ai")
+    application.include_router(lead.router, prefix="/ai")
 
     return application
 

@@ -1,57 +1,84 @@
-version: "3.8"
-
-# IA-DAF — Architecture simplifiée (3 services + Ollama)
+# IA-DAF — Docker Compose
 #
+# Architecture :
+#   postgres           :5432   (PostgreSQL 16)
 #   discovery-service  :8761   (Spring Boot / Eureka)
 #   api-gateway        :8080   (Spring Cloud Gateway)
-#   ai-service         :8086   (Python / FastAPI)
-#   ollama             :11434  (LLM local Mistral)
+#   ai-service         :8086   (Python / FastAPI + OpenAI)
+#   frontend           :3000   (Next.js)
+#
+# Lancement :  docker compose up -d --build
+# Arrêt :      docker compose down
+# Logs :       docker compose logs -f <service>
 
 services:
-  # --------------------------------------------------------------------------
-  # Eureka Discovery Service
-  # --------------------------------------------------------------------------
-  discovery-service:
-    build: ./discovery-service
-    container_name: iadaf-discovery
+  # ====================================================================
+  #  INFRASTRUCTURE
+  # ====================================================================
+
+  # --- PostgreSQL ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: iadaf-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-iadaf_db}
+      POSTGRES_USER: ${POSTGRES_USER:-iadaf_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
+      TZ: Europe/Paris
     ports:
-      - "8761:8761"
+      - "5432:5432"
+    volumes:
+      - C:/postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     networks:
       - iadaf-network
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-iadaf_user} -d ${POSTGRES_DB:-iadaf_db}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iadaf_user} -d ${POSTGRES_DB:-iadaf_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
 
-  # --------------------------------------------------------------------------
-  # API Gateway
-  # --------------------------------------------------------------------------
+  # --- Eureka Discovery ---
+  discovery-service:
+    build:
+      context: .
+      dockerfile: discovery-service/Dockerfile
+    container_name: iadaf-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=discovery-service
+    networks:
+      - iadaf-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ====================================================================
+  #  GATEWAY
+  # ====================================================================
+
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: iadaf-gateway
     ports:
       - "8080:8080"
     environment:
-      - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWED-ORIGINS=http://localhost:3000
     networks:
       - iadaf-network
     depends_on:
       discovery-service:
         condition: service_healthy
     restart: unless-stopped
-    command:
-      - start-dev
-      - --import-realm
-    volumes:
-      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm.json
-      - keycloak_data:/opt/keycloak/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -59,9 +86,11 @@ services:
       retries: 5
       start_period: 60s
 
-  # --------------------------------------------------------------------------
-  # AI Service (Python / FastAPI)
-  # --------------------------------------------------------------------------
+  # ====================================================================
+  #  BACKEND SERVICES
+  # ====================================================================
+
+  # --- AI Service (Python / FastAPI) ---
   ai-service:
     build: ./ai-service
     container_name: iadaf-ai
@@ -69,10 +98,12 @@ services:
       - "8086:8086"
     environment:
       - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=mistral
-      - USE_OPENAI=false
+      - EUREKA_INSTANCE_HOSTNAME=ai-service
+      - USE_OPENAI=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CHROMA_PERSIST_DIR=/data/vectorstore
+      - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db
+      - POSTGRES_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
     volumes:
       - ai_vectorstore:/data/vectorstore
     networks:
@@ -80,35 +111,39 @@ services:
     depends_on:
       discovery-service:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
-  # --------------------------------------------------------------------------
-  # Ollama — LLM local (Mistral 7B)
-  # --------------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: iadaf-ollama
+  # ====================================================================
+  #  FRONTEND
+  # ====================================================================
+
+  frontend:
+    build:
+      context: ./front
+      dockerfile: DockerFile
+    container_name: iadaf-front
     ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
+      - "3000:3000"
+    environment:
+      - API_GATEWAY_URL=http://api-gateway:8080
     networks:
       - iadaf-network
+    depends_on:
+      api-gateway:
+        condition: service_healthy
     restart: unless-stopped
-    # Uncomment to use GPU (NVIDIA):
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+
+# ====================================================================
+#  NETWORKS & VOLUMES
+# ====================================================================
 
 networks:
   iadaf-network:
@@ -116,5 +151,6 @@ networks:
 
 volumes:
   postgres_data:
-  keycloak_data:
+    driver: local
+  ai_vectorstore:
     driver: local

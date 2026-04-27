@@ -1,35 +1,43 @@
 """SQLAlchemy async models for conversation persistence.
 
-Uses SQLite (via aiosqlite) for development.
-Switch to PostgreSQL for production by changing DATABASE_URL.
+Uses SQLite (via aiosqlite) for conversations.
+Uses PostgreSQL (via asyncpg) for lead emails.
 """
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint, func
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 from app.core.config import settings
 
 # ---------------------------------------------------------------------------
-# Engine & session factory
+# Engines
 # ---------------------------------------------------------------------------
 
+# SQLite engine for conversations/messages
 engine = create_async_engine(settings.database_url, echo=False)
 
+# PostgreSQL engine for lead emails
+pg_engine = create_async_engine(settings.postgres_url, echo=False)
+
 
 # ---------------------------------------------------------------------------
-# Base declarative class
+# Base declarative classes
 # ---------------------------------------------------------------------------
 
 
 class Base(DeclarativeBase):
-    """Shared declarative base."""
+    """Shared declarative base for SQLite models."""
+
+
+class PgBase(DeclarativeBase):
+    """Declarative base for PostgreSQL models."""
 
 
 # ---------------------------------------------------------------------------
-# ORM models
+# SQLite models (conversations)
 # ---------------------------------------------------------------------------
 
 
@@ -61,17 +69,47 @@ class Message(Base):
 
 
 # ---------------------------------------------------------------------------
+# PostgreSQL models (lead emails)
+# ---------------------------------------------------------------------------
+
+
+class LeadEmail(PgBase):
+    """Stores lead emails collected from the accueil chat."""
+
+    __tablename__ = "lead_emails"
+
+    id = Column(String(36), primary_key=True)
+    email = Column(String(255), nullable=False)
+    source = Column(String(50), default="accueil_chat")
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("email", "source", name="uq_lead_email_source"),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Helper: initialise tables
 # ---------------------------------------------------------------------------
 
 
 async def init_db() -> None:
     """Create all database tables (idempotent)."""
+    # SQLite tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # PostgreSQL tables
+    async with pg_engine.begin() as conn:
+        await conn.run_sync(PgBase.metadata.create_all)
 
 
 async def get_session() -> AsyncSession:  # type: ignore[return]
-    """Yield an async SQLAlchemy session (for use as a FastAPI dependency)."""
+    """Yield an async SQLAlchemy session for SQLite."""
     async with AsyncSession(engine, expire_on_commit=False) as session:
+        yield session
+
+
+async def get_pg_session() -> AsyncSession:  # type: ignore[return]
+    """Yield an async SQLAlchemy session for PostgreSQL."""
+    async with AsyncSession(pg_engine, expire_on_commit=False) as session:
         yield session

@@ -6,7 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
  * API Gateway - Point d'entrée unique pour tous les microservices
- * Gère le routage, le load balancing et la sécurité
+ * Gère le routage et le load balancing
  */
 @SpringBootApplication
 @EnableDiscoveryClient

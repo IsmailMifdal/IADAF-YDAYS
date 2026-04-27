@@ -233,5 +233,292 @@
       "Certaines universités proposent des bourses du gouvernement français",
       "Le statut étudiant donne accès aux aides de la CAF (APL) et aux restaurants universitaires"
     ]
+  },
+  {
+    "id": "logement_social",
+    "title": "Demande de logement social (HLM)",
+    "organisme": "Service demande de logement social / Préfecture",
+    "description": "Le logement social (HLM) est un logement à loyer modéré. Toute personne résidant légalement en France dont les revenus ne dépassent pas certains plafonds peut en faire la demande.",
+    "documents_requis": [
+      "Pièce d'identité ou titre de séjour en cours de validité",
+      "Avis d'imposition ou de non-imposition de l'année N-2",
+      "Justificatif de domicile actuel",
+      "Justificatifs de revenus des 3 derniers mois",
+      "Livret de famille ou acte de naissance des enfants",
+      "Attestation d'hébergement si hébergé chez un tiers"
+    ],
+    "etapes": [
+      "1. Créer votre demande en ligne sur demande-logement-social.gouv.fr",
+      "2. Remplir le formulaire cerfa 14069*05",
+      "3. Joindre toutes les pièces justificatives",
+      "4. Obtenir votre numéro unique d'enregistrement (NUE)",
+      "5. Renouveler la demande chaque année (vous recevrez un courrier de rappel)",
+      "6. Répondre aux propositions de logement dans les délais impartis"
+    ],
+    "delais": "De quelques mois à plusieurs années selon la zone géographique et la situation",
+    "frais": "Gratuit",
+    "liens_utiles": [
+      "https://www.demande-logement-social.gouv.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F10007",
+      "https://www.actionlogement.fr"
+    ],
+    "conseils": [
+      "Les délais sont très longs en Île-de-France (parfois 5 à 10 ans)",
+      "Contactez votre mairie ou Action Logement (si vous êtes salarié) pour accélérer",
+      "Si vous êtes en situation d'urgence, contactez le 115 (hébergement d'urgence) ou le SIAO",
+      "Vous pouvez déposer un recours DALO si le délai est anormalement long"
+    ]
+  },
+  {
+    "id": "pole_emploi",
+    "title": "Inscription à France Travail (ex-Pôle Emploi)",
+    "organisme": "France Travail (anciennement Pôle Emploi)",
+    "description": "Si vous perdez votre emploi ou arrivez sur le marché du travail, vous devez vous inscrire à France Travail pour bénéficier des allocations chômage (ARE) et d'un accompagnement à la recherche d'emploi.",
+    "documents_requis": [
+      "Pièce d'identité ou titre de séjour autorisant le travail",
+      "Carte Vitale ou attestation de droits",
+      "Relevé d'identité bancaire (RIB)",
+      "Attestation employeur (remise par votre ancien employeur)",
+      "CV à jour",
+      "Justificatif de domicile"
+    ],
+    "etapes": [
+      "1. S'inscrire en ligne sur francetravail.fr dans les 12 mois suivant la fin du contrat",
+      "2. Compléter le formulaire d'inscription avec votre parcours professionnel",
+      "3. Valider l'inscription et obtenir un rendez-vous de diagnostic",
+      "4. Se présenter au rendez-vous avec les documents",
+      "5. Actualiser votre situation chaque mois (entre le 28 et le 15 du mois suivant)",
+      "6. Accepter les offres raisonnables d'emploi proposées"
+    ],
+    "delais": "L'inscription est immédiate en ligne. Le 1er versement d'ARE intervient après un délai de carence (7 jours minimum + différé d'indemnisation).",
+    "frais": "Gratuit",
+    "liens_utiles": [
+      "https://www.francetravail.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F1636",
+      "https://www.unedic.org"
+    ],
+    "conseils": [
+      "Inscrivez-vous dès le lendemain de la fin de votre contrat pour ne pas perdre de jours d'indemnisation",
+      "L'actualisation mensuelle est obligatoire, sinon vos droits sont suspendus",
+      "Les étrangers hors UE doivent avoir un titre de séjour autorisant le travail",
+      "France Travail propose des formations gratuites pour améliorer votre employabilité"
+    ]
+  },
+  {
+    "id": "permis_conduire",
+    "title": "Permis de conduire — Échange ou passage",
+    "organisme": "Préfecture / ANTS (Agence Nationale des Titres Sécurisés)",
+    "description": "Les étrangers résidant en France peuvent échanger leur permis de conduire étranger contre un permis français (si accord bilatéral) ou passer le permis en France.",
+    "documents_requis": [
+      "Pièce d'identité ou titre de séjour en cours de validité",
+      "Justificatif de domicile de moins de 6 mois",
+      "Permis de conduire étranger original + traduction officielle",
+      "Photo d'identité aux normes françaises",
+      "Formulaire cerfa 14879*01 (demande d'échange)",
+      "Attestation de droits à conduire du pays d'origine (si disponible)"
+    ],
+    "echange_permis": {
+      "conditions": [
+        "Le permis doit être en cours de validité",
+        "Il doit avoir été obtenu avant la date de début de validité du titre de séjour",
+        "Un accord bilatéral doit exister entre la France et le pays d'émission",
+        "Le demandeur doit résider en France depuis au moins 6 mois"
+      ],
+      "pays_avec_accord": "Liste complète sur le site de l'ANTS ou service-public.fr"
+    },
+    "etapes": [
+      "1. Vérifier si votre pays a un accord d'échange avec la France sur service-public.fr",
+      "2. Faire traduire votre permis par un traducteur assermenté",
+      "3. Faire la demande en ligne sur ants.gouv.fr",
+      "4. Envoyer les documents par courrier à la préfecture ou sur le site ANTS",
+      "5. Recevoir le nouveau permis français par courrier (délai variable)"
+    ],
+    "delais": "2 à 6 mois pour l'échange de permis",
+    "frais": "25€ (taxe pour le permis) + frais de traduction assermentée (30-60€)",
+    "liens_utiles": [
+      "https://ants.gouv.fr",
+      "https://www.service-public.fr/particuliers/vosdroits/F1460",
+      "https://www.service-public.fr/particuliers/vosdroits/F31192"
+    ],
+    "conseils": [
+      "Vous avez 1 an après l'obtention de votre titre de séjour pour demander l'échange",
+      "Pendant la procédure d'échange, vous pouvez conduire avec votre permis étranger",
+      "Si pas d'accord bilatéral, vous devez passer le permis français (code + conduite)",
+      "Le permis international ne remplace pas l'échange de permis pour les résidents"
+    ]
+  },
+  {
+    "id": "naturalisation",
+    "title": "Demande de nationalité française (naturalisation)",
+    "organisme": "Préfecture / Ministère de l'Intérieur",
+    "description": "La naturalisation est l'acquisition de la nationalité française par décret. Elle est soumise à des conditions de résidence, d'intégration, de connaissance du français et d'absence de condamnation pénale.",
+    "documents_requis": [
+      "Formulaire cerfa 12753*03",
+      "Acte de naissance + traduction",
+      "Pièce d'identité et titre de séjour",
+      "Justificatifs de domicile des 3 dernières années",
+      "Avis d'imposition des 3 dernières années",
+      "Attestation de niveau de français B1 oral (DELF B1, TCF, TEF)",
+      "Casier judiciaire du pays d'origine (apostillé et traduit)",
+      "Justificatif de travail ou de ressources",
+      "Timbres fiscaux de 55€"
+    ],
+    "conditions": [
+      "Résider en France depuis au moins 5 ans (réduit à 2 ans dans certains cas)",
+      "Avoir un titre de séjour en cours de validité",
+      "Justifier d'un niveau B1 oral en français",
+      "Avoir des ressources stables et suffisantes",
+      "Ne pas avoir de condamnation pénale grave",
+      "Être intégré dans la société française (connaissance des valeurs de la République)"
+    ],
+    "etapes": [
+      "1. Vérifier que vous remplissez les conditions sur service-public.fr",
+      "2. Constituer le dossier complet avec tous les documents",
+      "3. Prendre rendez-vous à la préfecture ou à la plateforme de naturalisation",
+      "4. Déposer le dossier et passer l'entretien d'assimilation",
+      "5. Attendre la réponse du Ministère de l'Intérieur (12 à 18 mois)",
+      "6. Si acceptée, signer le décret de naturalisation",
+      "7. Participer à la cérémonie d'accueil dans la citoyenneté française"
+    ],
+    "delais": "12 à 18 mois après le dépôt du dossier complet",
+    "frais": "55€ (timbres fiscaux)",
+    "liens_utiles": [
+      "https://www.service-public.fr/particuliers/vosdroits/F2213",
+      "https://administration-etrangers-en-france.interieur.gouv.fr",
+      "https://www.immigration.interieur.gouv.fr"
+    ],
+    "conseils": [
+      "Passez le DELF B1 ou TCF avant de constituer le dossier",
+      "Un dossier incomplet sera rejeté — vérifiez chaque document",
+      "En cas de refus, vous pouvez faire un recours dans les 2 mois",
+      "La double nationalité est possible avec la plupart des pays"
+    ]
+  },
+  {
+    "id": "carte_sejour_talent",
+    "title": "Passeport talent — Carte de séjour pluriannuelle",
+    "organisme": "Préfecture / ANEF",
+    "description": "Le Passeport talent est une carte de séjour pluriannuelle (jusqu'à 4 ans) destinée aux étrangers qualifiés : salariés hautement qualifiés, chercheurs, artistes, créateurs d'entreprise, etc.",
+    "documents_requis": [
+      "Passeport valide",
+      "Visa long séjour adapté au motif",
+      "Justificatif de domicile",
+      "3 photos d'identité",
+      "Contrat de travail avec rémunération ≥ 1,8 SMIC (salarié qualifié) ou ≥ 2 SMIC (carte bleue européenne)",
+      "Diplôme de niveau Master ou équivalent",
+      "Timbres fiscaux (225€)"
+    ],
+    "categories": [
+      "Salarié qualifié (rémunération ≥ 1,8 SMIC)",
+      "Carte bleue européenne (rémunération ≥ 2 SMIC)",
+      "Chercheur ou enseignant-chercheur",
+      "Artiste-interprète",
+      "Créateur d'entreprise innovante",
+      "Projet économique innovant (French Tech Visa)",
+      "Investisseur",
+      "Mandataire social",
+      "Profession artistique et culturelle",
+      "Renommée internationale"
+    ],
+    "etapes": [
+      "1. Identifier votre catégorie de Passeport talent sur service-public.fr",
+      "2. Obtenir le visa long séjour adapté au consulat de France",
+      "3. Valider votre VLS-TS sur le site de l'OFII dans les 3 mois",
+      "4. Faire la demande de carte de séjour sur administration-etrangers-en-france.interieur.gouv.fr",
+      "5. Déposer le dossier complet en ligne ou en préfecture",
+      "6. Recevoir le récépissé puis la carte (durée : jusqu'à 4 ans)"
+    ],
+    "delais": "2 à 4 mois",
+    "frais": "225€ (timbres fiscaux)",
+    "liens_utiles": [
+      "https://www.service-public.fr/particuliers/vosdroits/F16922",
+      "https://administration-etrangers-en-france.interieur.gouv.fr",
+      "https://lafrenchtech.com/fr/la-france-aide-les-talents/french-tech-visa/"
+    ],
+    "conseils": [
+      "Le passeport talent s'étend automatiquement à la famille (conjoint et enfants)",
+      "Le conjoint obtient un titre 'vie privée et familiale' avec autorisation de travail",
+      "Le renouvellement est plus simple que la première demande",
+      "Pour la French Tech Visa, l'entreprise doit être labellisée"
+    ]
+  },
+  {
+    "id": "regroupement_familial",
+    "title": "Regroupement familial",
+    "organisme": "OFII (Office Français de l'Immigration et de l'Intégration) / Préfecture",
+    "description": "Le regroupement familial permet à un étranger résidant légalement en France de faire venir sa famille (conjoint et enfants mineurs) depuis leur pays d'origine.",
+    "documents_requis": [
+      "Formulaire cerfa 11436*05",
+      "Titre de séjour valide depuis au moins 18 mois",
+      "Justificatif de ressources stables ≥ SMIC (hors aides sociales)",
+      "Justificatif de logement adapté à la taille de la famille (superficie + salubrité)",
+      "Acte de mariage et actes de naissance des enfants (traduits et apostillés)",
+      "Avis d'imposition de l'année précédente",
+      "Contrat de travail ou bulletins de salaire des 12 derniers mois"
+    ],
+    "etapes": [
+      "1. Constituer le dossier complet avec le formulaire cerfa",
+      "2. Déposer le dossier à l'OFII de votre département",
+      "3. L'OFII transmet à la mairie qui vérifie le logement",
+      "4. Le préfet rend sa décision dans un délai de 6 mois",
+      "5. En cas d'accord, la famille fait la demande de visa au consulat",
+      "6. À l'arrivée en France, la famille passe la visite médicale OFII",
+      "7. Chaque membre obtient un titre de séjour 'vie privée et familiale'"
+    ],
+    "delais": "6 à 12 mois pour la procédure complète",
+    "frais": "Gratuit pour le dépôt. Frais de visa consulaire pour la famille.",
+    "liens_utiles": [
+      "https://www.service-public.fr/particuliers/vosdroits/F11166",
+      "https://www.ofii.fr",
+      "https://administration-etrangers-en-france.interieur.gouv.fr"
+    ],
+    "conseils": [
+      "Le logement est vérifié par la mairie — il doit respecter les normes de superficie",
+      "Les ressources doivent atteindre le SMIC (sans compter les aides sociales)",
+      "Si le préfet ne répond pas dans les 6 mois, c'est un rejet implicite (recours possible)",
+      "Le regroupement familial ne concerne pas les conjoints de Français (procédure différente)"
+    ]
+  },
+  {
+    "id": "prime_activite",
+    "title": "Prime d'activité",
+    "organisme": "Caisse d'Allocations Familiales (CAF)",
+    "description": "La prime d'activité est un complément de revenus versé par la CAF aux travailleurs aux revenus modestes (salariés, indépendants, étudiants salariés). Elle remplace l'ancienne prime pour l'emploi et le RSA activité.",
+    "documents_requis": [
+      "Numéro d'allocataire CAF (ou créer un compte)",
+      "Pièce d'identité ou titre de séjour",
+      "Justificatif de domicile",
+      "RIB",
+      "Bulletins de salaire des 3 derniers mois",
+      "Déclaration trimestrielle de ressources"
+    ],
+    "etapes": [
+      "1. Faire une simulation sur caf.fr pour vérifier votre éligibilité",
+      "2. Se connecter à votre espace personnel caf.fr",
+      "3. Cliquer sur 'Faire une demande de prestation' > 'Prime d'activité'",
+      "4. Remplir le formulaire avec vos revenus des 3 derniers mois",
+      "5. Valider la demande",
+      "6. Déclarer vos revenus tous les 3 mois pour maintenir le versement"
+    ],
+    "delais": "Versement le mois suivant la demande. Déclaration trimestrielle obligatoire.",
+    "frais": "Gratuit",
+    "conditions": [
+      "Avoir plus de 18 ans",
+      "Résider en France de façon stable",
+      "Exercer une activité professionnelle (salariée ou non)",
+      "Avoir des revenus modestes (plafond variable selon la composition du foyer)",
+      "Pour les étrangers hors UE : titre de séjour autorisant le travail depuis au moins 5 ans"
+    ],
+    "liens_utiles": [
+      "https://www.caf.fr/allocataires/droits-et-prestations/connaitre-vos-droits/vie-professionnelle/la-prime-d-activite",
+      "https://www.service-public.fr/particuliers/vosdroits/F2882",
+      "https://www.caf.fr/allocataires/mes-services-en-ligne/faire-une-simulation"
+    ],
+    "conseils": [
+      "Faites la simulation en ligne avant de faire la demande",
+      "La prime est versée le 5 de chaque mois",
+      "N'oubliez pas la déclaration trimestrielle sinon le versement est suspendu",
+      "Les étudiants qui travaillent peuvent aussi en bénéficier si revenus > 1082,87€/mois"
+    ]
   }
 ]

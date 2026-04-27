@@ -2,8 +2,8 @@ package com.iadaf.gateway.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -17,27 +17,27 @@ import java.util.Map;
 @RequestMapping("/fallback")
 public class FallbackController {
 
-    @GetMapping("/users")
+    @RequestMapping(value = "/users", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> userServiceFallback() {
         return buildFallbackResponse("User Service");
     }
 
-    @GetMapping("/demarches")
+    @RequestMapping(value = "/demarches", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> demarchesServiceFallback() {
         return buildFallbackResponse("Demarches Service");
     }
 
-    @GetMapping("/documents")
+    @RequestMapping(value = "/documents", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> documentServiceFallback() {
         return buildFallbackResponse("Document Service");
     }
 
-    @GetMapping("/ia")
+    @RequestMapping(value = "/ia", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> aiServiceFallback() {
         return buildFallbackResponse("AI Service");
     }
 
-    @GetMapping("/analytics")
+    @RequestMapping(value = "/analytics", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> analyticsServiceFallback() {
         return buildFallbackResponse("Analytics Service");
     }

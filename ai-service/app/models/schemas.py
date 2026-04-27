@@ -81,3 +81,22 @@ class HealthResponse(BaseModel):
     status: str = "UP"
     service: str = "ai-service"
     version: str = "1.0.0"
+
+
+# ---------------------------------------------------------------------------
+# Lead email
+# ---------------------------------------------------------------------------
+
+
+class LeadEmailRequest(BaseModel):
+    """Request body for saving a lead email."""
+
+    email: str = Field(..., description="Email address to save")
+    source: str = Field("accueil_chat", description="Source of the lead")
+
+
+class LeadEmailResponse(BaseModel):
+    """Response body after saving a lead email."""
+
+    success: bool
+    message: str

@@ -12,6 +12,7 @@ import {
   Sparkles,
   LucideIcon,
 } from "lucide-react";
+import AccueilChat from "../components/chat/AccueilChat";
 
 const colorStyles = {
   blue: {
@@ -379,6 +380,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <AccueilChat />
     </div>
   );
 }

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Eureka discovery
     eureka_server_url: str = "http://localhost:8761/eureka"
     eureka_app_name: str = "AI-SERVICE"
+    eureka_instance_hostname: str = "localhost"
 
     # Ollama / LLM
     ollama_base_url: str = "http://localhost:11434"
@@ -40,9 +41,9 @@ class Settings(BaseSettings):
     # SQLite database (for conversation history)
     database_url: str = "sqlite+aiosqlite:///./app/data/iadaf.db"
 
-    # JWT / Keycloak (optional)
-    keycloak_issuer_uri: str = "http://localhost:8180/realms/iadaf"
-    jwt_algorithm: str = "RS256"
+    # PostgreSQL database (for lead emails)
+    postgres_url: str = "postgresql+asyncpg://iadaf_user:iadaf_password@localhost:5432/iadaf_db"
+
 
 
 settings = Settings()

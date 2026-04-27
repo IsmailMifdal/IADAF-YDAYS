@@ -43,7 +43,7 @@ class LLMService:
             llm = Ollama(
                 base_url=settings.ollama_base_url,
                 model=settings.ollama_model,
-                temperature=0.3,
+                temperature=0.1,
             )
             self._llm = llm
             self._ollama_available = True
@@ -70,9 +70,9 @@ class LLMService:
             from langchain_openai import ChatOpenAI  # type: ignore
 
             self._llm = ChatOpenAI(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 openai_api_key=settings.openai_api_key,
-                temperature=0.3,
+                temperature=0.1,
             )
             self._openai_available = True
             logger.info("OpenAI fallback backend ready.")

@@ -1,0 +1,15 @@
+# Root .dockerignore — used by Java service builds (context: .)
+**/target
+**/.git
+**/*.md
+**/.env
+**/node_modules
+**/__pycache__
+front/
+ai-service/
+docker/
+tests/
+user-service/
+demarches-service/
+document-service/
+analytics-service/

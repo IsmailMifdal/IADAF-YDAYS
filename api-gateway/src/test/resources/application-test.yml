@@ -2,10 +2,6 @@ spring:
   application:
     name: api-gateway
   
-  # Désactiver OAuth2 pour les tests
-  security:
-    enabled: false
-  
   cloud:
     gateway:
       discovery:

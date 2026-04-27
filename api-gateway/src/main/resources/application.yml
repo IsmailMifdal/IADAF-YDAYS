@@ -1,33 +1,6 @@
 spring:
   application:
     name: api-gateway
-  
-  # Configuration OAuth2 Resource Server
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
-      
-      client:
-        provider:
-          keycloak:
-            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-            authorization-uri: ${KEYCLOAK_AUTH_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/auth}
-            token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/token}
-            user-info-uri: ${KEYCLOAK_USER_INFO_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/userinfo}
-            jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
-            user-name-attribute: preferred_username
-        
-        registration:
-          iadaf-gateway:
-            provider: keycloak
-            client-id: ${KEYCLOAK_CLIENT_ID:iadaf-gateway}
-            client-secret: ${KEYCLOAK_CLIENT_SECRET:iadaf-gateway-secret-change-in-production}
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope: openid, profile, email
 
   cloud:
     gateway:
@@ -40,27 +13,10 @@ spring:
       httpclient:
         connect-timeout: 5000
         response-timeout: 30s
-      # Routes explicites
-      routes:
-        # AI Service — toutes les requêtes /api/ai/** → AI-SERVICE
-        - id: ai-service
-          uri: lb://AI-SERVICE
-          predicates:
-            - Path=/api/ai/**
-          filters:
-            - StripPrefix=1   # /api/ai/chat → /ai/chat
-        # AI Service health (sans strip pour compatibilité directe)
-        - id: ai-service-health
-          uri: lb://AI-SERVICE
-          predicates:
-            - Path=/api/ai/health
-          filters:
-            - StripPrefix=1
-      # Routes par défaut (complétées par GatewayConfig.java)
+      # Routes explicites gérées dans GatewayConfig.java (avec circuit breaker)
+      # Filtre par défaut
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        # Propager le token JWT aux microservices
-        - TokenRelay=
 
 server:
   port: 8080
@@ -69,7 +25,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:
@@ -77,7 +33,6 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
     metadata-map:
-      # Métadonnées pour identifier l'API Gateway
       management.context-path: /actuator
 
 # Circuit Breaker Configuration
@@ -122,8 +77,6 @@ management:
 # Logging
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2: DEBUG
     org.springframework.cloud.gateway: DEBUG
     com.iadaf.gateway: DEBUG
 
@@ -136,7 +89,6 @@ spring:
 
 logging:
   level:
-    org.springframework.security: INFO
     org.springframework.cloud.gateway: INFO
     com.iadaf.gateway: INFO
 

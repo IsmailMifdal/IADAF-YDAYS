@@ -65,3 +65,9 @@ Desktop.ini
 .env
 *.env
 !.env.example
+
+# Python virtual environments
+.venv/
+venv/
+ai-service/.venv/
+ai-service/.venv311/
