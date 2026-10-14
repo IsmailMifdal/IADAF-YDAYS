@@ -8,9 +8,16 @@ import {
   FileText,
   FolderOpen,
   Upload,
-  type LucideIcon,
 } from "lucide-react";
-import HeaderPage from "../../components/ui/PageHeader";
+import PageHeader from "../../components/ui/PageHeader";
+import {
+  Alert,
+  Button,
+  Card,
+  EmptyState,
+  PageContainer,
+  StatCard,
+} from "../../components/ui/primitives";
 
 type AnalysisStatus = "Conforme" | "En analyse";
 
@@ -111,31 +118,39 @@ export default function Documents() {
 
   return (
     <div>
-      <HeaderPage
+      <PageHeader
         title="Mes Documents"
-        subtitle="Gérez tous vos documents administratifs en un seul endroit."
+        subtitle="Déposez vos pièces justificatives : elles sont vérifiées automatiquement."
       />
 
-      <div className="bg-gray-50 min-h-screen px-4 md:px-8 py-10">
-        <div className="max-w-6xl mx-auto w-full space-y-6">
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatsCard label="Total" value={stats.total} variant="neutral" />
-            <StatsCard
+      <PageContainer>
+        <div className="space-y-6">
+          <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Total"
+              value={stats.total}
+              icon={<FolderOpen className="h-5 w-5" />}
+              tone="neutral"
+            />
+            <StatCard
               label="Conformes"
               value={stats.conformes}
-              variant="green"
+              icon={<CheckCircle2 className="h-5 w-5" />}
+              tone="success"
             />
-            <StatsCard
+            <StatCard
               label="En analyse"
               value={stats.enAnalyse}
-              variant="blue"
+              icon={<Clock3 className="h-5 w-5" />}
+              tone="info"
             />
-            <StatsCard
+            <StatCard
               label="À corriger"
               value={stats.aCorriger}
-              variant="orange"
+              icon={<AlertTriangle className="h-5 w-5" />}
+              tone="warning"
             />
-          </section>
+          </div>
 
           <UploadZone
             isDragActive={isDragActive}
@@ -156,94 +171,25 @@ export default function Documents() {
           />
 
           {errorMessage && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              {errorMessage}
-            </p>
+            <Alert tone="danger">{errorMessage}</Alert>
           )}
 
           {uploadedFiles.length === 0 ? (
-            <section className="bg-white border border-gray-200 rounded-xl p-10 flex flex-col items-center justify-center gap-4 text-center">
-              <FileText className="w-10 h-10 text-gray-400" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Aucun document
-              </h2>
-              <p className="text-gray-600">
-                Ajoutez vos premiers fichiers pour commencer.
-              </p>
-            </section>
+            <EmptyState
+              icon={<FileText className="h-6 w-6" />}
+              title="Aucun document"
+              description="Déposez vos premiers fichiers ci-dessus pour lancer leur vérification."
+            />
           ) : (
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section className="stagger grid grid-cols-1 md:grid-cols-2 gap-4">
               {uploadedFiles.map((document) => (
                 <DocumentCard key={document.id} file={document.file} />
               ))}
             </section>
           )}
         </div>
-      </div>
+      </PageContainer>
     </div>
-  );
-}
-
-type StatsCardProps = {
-  label: string;
-  value: number;
-  variant: "neutral" | "green" | "blue" | "orange";
-};
-
-function StatsCard({ label, value, variant }: StatsCardProps) {
-  const styles: Record<
-    StatsCardProps["variant"],
-    {
-      card: string;
-      label: string;
-      value: string;
-      icon: string;
-      iconComponent: LucideIcon;
-    }
-  > = {
-    neutral: {
-      card: "bg-white border-gray-200",
-      label: "text-gray-500",
-      value: "text-gray-900",
-      icon: "text-gray-400",
-      iconComponent: FolderOpen,
-    },
-    green: {
-      card: "bg-green-50 border-green-200",
-      label: "text-green-700",
-      value: "text-green-700",
-      icon: "text-green-500",
-      iconComponent: CheckCircle2,
-    },
-    blue: {
-      card: "bg-blue-50 border-blue-200",
-      label: "text-blue-700",
-      value: "text-blue-700",
-      icon: "text-blue-500",
-      iconComponent: Clock3,
-    },
-    orange: {
-      card: "bg-orange-50 border-orange-200",
-      label: "text-orange-700",
-      value: "text-orange-700",
-      icon: "text-orange-500",
-      iconComponent: AlertTriangle,
-    },
-  };
-
-  const variantStyle = styles[variant];
-  const Icon = variantStyle.iconComponent;
-
-  return (
-    <article
-      className={`border rounded-xl p-5 flex flex-col gap-1 ${variantStyle.card}`}
-    >
-      <div className="flex items-center justify-between">
-        <p className={`text-sm ${variantStyle.label}`}>{label}</p>
-        <Icon className={`w-4 h-4 ${variantStyle.icon}`} />
-      </div>
-      <p className={`text-2xl font-semibold ${variantStyle.value}`}>{value}</p>
-    </article>
   );
 }
 
@@ -270,22 +216,22 @@ function UploadZone({
       onDrop={onDrop}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
-      className={`border-2 border-dashed rounded-xl p-12 flex flex-col items-center justify-center gap-4 text-center bg-white transition ${
+      className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-white p-12 text-center transition ${
         isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
       }`}
     >
-      <Upload className="w-10 h-10 text-gray-400" />
-      <h2 className="text-2xl font-bold text-gray-900">Déposez vos fichier</h2>
-      <p className="text-gray-600">ou cliquez pour sélectionner des fichiers</p>
-      <button
-        type="button"
-        onClick={onSelectFiles}
-        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg transition"
-      >
-        Sélectionner des fichiers
-      </button>
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+        <Upload className="h-6 w-6" />
+      </span>
+      <h2 className="text-lg font-semibold text-gray-900">
+        Déposez vos fichiers
+      </h2>
       <p className="text-sm text-gray-500">
-        Formats acceptés : PDF, JPG, PNG (Max 10MB)
+        Glissez-les ici, ou parcourez votre appareil.
+      </p>
+      <Button onClick={onSelectFiles}>Sélectionner des fichiers</Button>
+      <p className="text-xs text-gray-400">
+        Formats acceptés : PDF, JPG, PNG — 10 Mo maximum
       </p>
     </section>
   );
@@ -300,16 +246,18 @@ function DocumentCard({ file }: DocumentCardProps) {
   const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
 
   return (
-    <article className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
+    <Card className="flex items-center gap-3 p-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+        <FileText className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-gray-900">
           {file.name}
         </p>
-        <p className="text-sm text-gray-500">
-          {extension} • {sizeInMb} MB
+        <p className="text-xs text-gray-500">
+          {extension} • {sizeInMb} Mo
         </p>
       </div>
-      <FileText className="w-5 h-5 text-gray-400 shrink-0" />
-    </article>
+    </Card>
   );
 }

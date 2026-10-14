@@ -1,2 +1,139 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+/* =========================================================================
+   Couche d'interaction d'IA-DAF
+   ========================================================================= */
+
+@theme {
+  /* Courbes partagées : "out" pour ce qui apparaît, "spring" pour ce qui réagit
+     au clic. Les définir ici évite que chaque composant invente la sienne. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* --- Animations d'entrée -------------------------------------------------- */
+
+@keyframes iadaf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes iadaf-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes iadaf-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes iadaf-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-up {
+  animation: iadaf-fade-up 0.45s var(--ease-out-soft) both;
+}
+
+.animate-fade-in {
+  animation: iadaf-fade-in 0.3s var(--ease-out-soft) both;
+}
+
+.animate-slide-in-right {
+  animation: iadaf-slide-in-right 0.35s var(--ease-out-soft) both;
+}
+
+/* Décale l'entrée des éléments d'une liste : l'œil suit la séquence au lieu
+   de recevoir tout le bloc d'un coup. Plafonné à 6 pour ne pas faire attendre
+   les listes longues. */
+.stagger > * {
+  animation: iadaf-fade-up 0.45s var(--ease-out-soft) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 300ms; }
+
+/* --- Effet de chargement -------------------------------------------------- */
+
+/* Balayage lumineux sur les squelettes : signale « ça charge » plus
+   clairement qu'un simple bloc gris pulsant. */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.65),
+    transparent
+  );
+  animation: iadaf-shimmer 1.6s infinite;
+}
+
+/* --- Confort de lecture --------------------------------------------------- */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Barre de défilement discrète : la barre native de Windows est large et
+   contraste mal avec les surfaces claires du produit. */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+}
+
+/* Empêche un ancrage sous l'en-tête collant du mobile. */
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* --- Accessibilité -------------------------------------------------------- */
+
+/* Respecte le réglage système : une plateforme pro ne doit pas imposer
+   d'animation à quelqu'un qui a demandé de les réduire (vertiges, migraines,
+   troubles vestibulaires). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,15 +1,16 @@
 # Root .dockerignore — used by Java service builds (context: .)
+#
+# Les services Java sont tous construits depuis ce contexte : chaque Dockerfile
+# copie le POM parent puis son propre module. Ne pas exclure leurs dossiers.
 **/target
 **/.git
 **/*.md
 **/.env
 **/node_modules
 **/__pycache__
+**/.idea
+**/.vscode
 front/
 ai-service/
 docker/
 tests/
-user-service/
-demarches-service/
-document-service/
-analytics-service/

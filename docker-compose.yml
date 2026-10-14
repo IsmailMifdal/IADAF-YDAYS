@@ -28,7 +28,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - C:/postgres-data:/var/lib/postgresql/data
+      # Defaults to the named volume below. Set POSTGRES_DATA_PATH to a host
+      # path to bind-mount instead — a hardcoded Windows path would break any
+      # Linux deployment.
+      - ${POSTGRES_DATA_PATH:-postgres_data}:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
     networks:
       - iadaf-network
@@ -102,10 +105,41 @@ services:
       - USE_OPENAI=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CHROMA_PERSIST_DIR=/data/vectorstore
+      - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
       - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db
-      - POSTGRES_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN is required — see .env.example}
+      - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
     volumes:
       - ai_vectorstore:/data/vectorstore
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # Le premier démarrage télécharge le modèle d'embeddings HuggingFace et
+      # initialise ChromaDB : compter ~4 min. Une fenêtre plus courte fait
+      # basculer le conteneur en "unhealthy" alors qu'il démarre normalement.
+      start_period: 360s
+
+  # --- User Service (Spring Boot / JPA) ---
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: iadaf-user
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=users
+      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
     networks:
       - iadaf-network
     depends_on:
@@ -115,10 +149,100 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 90s
+
+  # --- Demarches Service (Spring Boot / JPA) ---
+  demarches-service:
+    build:
+      context: .
+      dockerfile: demarches-service/Dockerfile
+    container_name: iadaf-demarches
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=demarches
+      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # --- Document Service (Spring Boot) ---
+  # N'expose encore aucun endpoint métier : il s'enregistre dans Eureka et
+  # répond sur /actuator/health, mais son domaine reste à implémenter.
+  document-service:
+    build:
+      context: .
+      dockerfile: document-service/Dockerfile
+    container_name: iadaf-document
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=documents
+      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # --- Analytics Service (Spring Boot) ---
+  # Agrège les données des trois services ci-dessus via RestClient.
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: iadaf-analytics
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=analytics
+      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+      - USER_SERVICE_URL=http://user-service:8081
+      - DEMARCHES_SERVICE_URL=http://demarches-service:8082
+      - DOCUMENT_SERVICE_URL=http://document-service:8083
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 90s
 
   # ====================================================================
@@ -134,12 +258,33 @@ services:
       - "3000:3000"
     environment:
       - API_GATEWAY_URL=http://api-gateway:8080
+      # Auth.js reads users straight from Postgres (schema `users`).
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET is required — see .env.example}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN is required — see .env.example}
+      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
+      - AUTH_TRUST_HOST=true
+      - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID:-}
+      - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
     networks:
       - iadaf-network
     depends_on:
       api-gateway:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      # node:20-alpine n'a pas curl, mais busybox fournit wget.
+      # 127.0.0.1 et non localhost : ce dernier résout en ::1 dans le conteneur,
+      # où le serveur Next n'écoute pas.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # ====================================================================
 #  NETWORKS & VOLUMES

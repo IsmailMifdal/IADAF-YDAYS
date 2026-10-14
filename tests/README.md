@@ -1,163 +1,127 @@
-# 🧪 IA-DAF Integration Tests
+# 🧪 IA-DAF — Tests d'intégration
 
-Suite complète de tests d'intégration pour vérifier le bon fonctionnement de tous les microservices.
+Suite de tests vérifiant que la stack complète est opérationnelle et que les
+services communiquent correctement.
 
 ## Prérequis
 
-- Bash shell
-- curl
-- jq
-- PostgreSQL client (psql)
-- Tous les services démarrés
+- Bash, `curl`
+- Docker (les scripts interrogent PostgreSQL via `docker exec` — `psql` n'est
+  pas requis sur l'hôte)
+- La stack démarrée : `docker compose up -d`
 
 ## Structure
 
 ```
 tests/
-├── integration/                      # Tests d'intégration complets
-│   ├── test-all.sh                  # Lance tous les tests
-│   ├── test-docker-infrastructure.sh # Test infrastructure Docker
-│   ├── test-eureka-registration.sh  # Test enregistrement Eureka
-│   ├── test-oauth2-flow.sh          # Test flux OAuth2
-│   └── test-inter-service-communication.sh # Test communication
-└── health-checks/                    # Vérifications rapides
-    └── check-all-services.sh        # Health check de tous les services
+├── integration/
+│   ├── test-all.sh                        # Lance toute la suite
+│   ├── test-docker-infrastructure.sh      # Conteneurs, base, schémas, tables
+│   ├── test-eureka-registration.sh        # Enregistrement des services
+│   └── test-inter-service-communication.sh # Chaîne applicative complète
+└── health-checks/
+    └── check-all-services.sh              # Vérification rapide
 ```
 
 ## Utilisation
 
-### Lancer tous les tests
+### Toute la suite
 
 ```bash
-cd tests/integration
-chmod +x *.sh
-./test-all.sh
+bash tests/integration/test-all.sh
 ```
 
-### Lancer un test spécifique
+### Un test en particulier
 
 ```bash
-# Test infrastructure Docker
-./test-docker-infrastructure.sh
-
-# Test enregistrement Eureka
-./test-eureka-registration.sh
-
-# Test OAuth2
-./test-oauth2-flow.sh
-
-# Test communication inter-services
-./test-inter-service-communication.sh
+bash tests/integration/test-docker-infrastructure.sh
+bash tests/integration/test-eureka-registration.sh
+bash tests/integration/test-inter-service-communication.sh
 ```
 
-### Health Check rapide
+### Vérification rapide
 
 ```bash
-cd tests/health-checks
-chmod +x check-all-services.sh
-./check-all-services.sh
+bash tests/health-checks/check-all-services.sh
 ```
+
+Le script renvoie le nombre de services en échec comme code de sortie —
+exploitable directement en CI.
 
 ## Ce qui est testé
 
-### Test 1: Infrastructure Docker
-- ✅ Conteneurs PostgreSQL, Keycloak, pgAdmin running
+### Test 1 — Infrastructure Docker
+
+- ✅ Conteneurs `postgres`, `discovery`, `gateway`, `ai`, `front` démarrés
 - ✅ Connexion PostgreSQL
-- ✅ Existence des schémas (users, demarches, documents, analytics, ai)
-- ✅ Santé de Keycloak
-- ✅ Configuration du realm
+- ✅ Schémas `users`, `demarches`, `documents`, `analytics`, `ai`
+- ✅ Tables `users.app_users` et `users.pack_entitlements`
 
-### Test 2: Enregistrement Eureka
-- ✅ Eureka Server disponible
-- ✅ Tous les microservices enregistrés
-- ✅ Nombre d'instances correct
+### Test 2 — Enregistrement Eureka
 
-### Test 3: Flux OAuth2
-- ✅ Obtention de token pour utilisateur admin
-- ✅ Structure du token JWT valide
-- ✅ Claims présents dans le token
-- ✅ Token accepté par API Gateway
-- ✅ Token invalide rejeté
-- ✅ Authentification de tous les utilisateurs de test
+- ✅ Serveur Eureka disponible
+- ✅ Services enregistrés
 
-### Test 4: Communication Inter-Services
-- ✅ API Gateway → User Service
-- ✅ API Gateway → Demarches Service
-- ✅ API Gateway → Document Service
-- ✅ API Gateway → Analytics Service
-- ✅ API Gateway → AI Service
-- ✅ Flux CRUD complet (Create/Read/Delete)
+### Test 3 — Communication inter-services
 
-## Interprétation des Résultats
+- ✅ API Gateway → AI Service (`/api/ai/health`, `/api/ai/chat`)
+- ✅ Frontend → API Gateway (proxy `/api/ai/*`)
+- ✅ Création de compte, refus des doublons, connexion, session active
+- ✅ Routes privées refusées sans session, accessibles avec
+- ✅ Paywall : pack non payé redirigé vers le paiement
+- ✅ Checkout refusé sans authentification et sur un pack inconnu
+- ✅ Webhook Stripe rejeté sans signature valide
 
-### ✅ Tous les tests PASSED
-Le système est complètement fonctionnel. Tous les services communiquent correctement.
+## Interprétation des résultats
 
-### ❌ Test Infrastructure FAILED
-Vérifier que Docker Compose est lancé : `docker compose up -d`
+| Échec | Pistes |
+|-------|--------|
+| **Infrastructure** | `docker compose up -d`, puis `docker compose ps` |
+| **Tables applicatives absentes** | Ouvrir http://localhost:3000 une fois — le frontend crée les tables au premier accès |
+| **Eureka** | Le Discovery Service doit démarrer en premier ; compter ~30 s |
+| **Communication** | `docker compose logs <service>` ; vérifier `OPENAI_API_KEY` si le chat échoue |
+| **Webhook autre que 400/503** | La vérification de signature Stripe ne fonctionne pas — voir [SECURITY.md](../SECURITY.md) |
 
-### ❌ Test Eureka FAILED
-- Vérifier que Discovery Service est démarré
-- Attendre 30 secondes après le démarrage des services
+## Données de test
 
-### ❌ Test OAuth2 FAILED
-- Vérifier que Keycloak est accessible
-- Vérifier la configuration du realm
-- Vérifier les credentials des utilisateurs de test
+`test-inter-service-communication.sh` crée un compte
+`test-suite-<pid>@example.com` à chaque exécution. Pour les supprimer :
 
-### ❌ Test Communication FAILED
-- Vérifier que tous les services sont démarrés
-- Vérifier les logs des services défaillants
-- Vérifier la configuration réseau
-
-## Troubleshooting
-
-### Erreur: "jq command not found"
 ```bash
-# macOS
-brew install jq
-
-# Ubuntu/Debian
-sudo apt-get install jq
-
-# CentOS/RHEL
-sudo yum install jq
+docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db \
+  -c "DELETE FROM users.app_users WHERE email LIKE 'test-suite-%';"
 ```
 
-### Erreur: "psql command not found"
-```bash
-# macOS
-brew install postgresql
+Les droits d'accès aux packs sont supprimés en cascade avec le compte.
 
-# Ubuntu/Debian
-sudo apt-get install postgresql-client
+## Dépannage
 
-# CentOS/RHEL
-sudo yum install postgresql
-```
+### Tests intermittents au démarrage
 
-### Tests échouent de manière intermittente
-- Augmenter les temps d'attente dans les scripts
-- Vérifier la charge système
-- Vérifier les ressources Docker disponibles
+L'AI Service met environ 4 minutes à démarrer la première fois (téléchargement
+du modèle d'embeddings). Attendez que `docker compose ps` l'affiche `healthy`.
 
-## CI/CD Integration
+### Conflit de port 3000
 
-Pour intégrer dans un pipeline CI/CD:
+Un `npm run dev` local empêche le conteneur `iadaf-front` de démarrer. Arrêtez
+l'un ou l'autre.
+
+## Intégration CI/CD
 
 ```yaml
-# GitHub Actions example
+# Exemple GitHub Actions
 - name: Run Integration Tests
   run: |
-    cd tests/integration
-    chmod +x test-all.sh
-    ./test-all.sh
+    docker compose up -d --build
+    bash tests/health-checks/check-all-services.sh
+    bash tests/integration/test-all.sh
 ```
 
 ## Contribution
 
 Pour ajouter de nouveaux tests :
-1. Créer un nouveau script dans `tests/integration/`
-2. Suivre le format des tests existants
+
+1. Créer un script dans `tests/integration/`
+2. Suivre le format des tests existants (sortie colorée, compteurs, code de sortie)
 3. Ajouter l'appel dans `test-all.sh`
 4. Mettre à jour ce README

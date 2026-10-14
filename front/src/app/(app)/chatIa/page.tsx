@@ -5,6 +5,7 @@ import { Sparkles, Send, Loader2, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeader from "../../components/ui/PageHeader";
+import LanguageSelector from "../../components/ui/LanguageSelector";
 import { api, type ChatResponse } from "../../lib/api";
 
 type Message = {
@@ -98,16 +99,7 @@ export default function ChatIa() {
       <PageHeader
         title="Assistant IA"
         subtitle="Posez vos questions sur les d\u00e9marches administratives"
-        className="px-6 md:px-10"
-        rightContent={
-          <button
-            type="button"
-            className="bg-blue-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-          >
-            <span>{"\ud83c\udf10"}</span>
-            Fran\u00e7ais
-          </button>
-        }
+        rightContent={<LanguageSelector variant="compact" />}
       />
 
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
@@ -116,11 +108,11 @@ export default function ChatIa() {
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
-                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
+                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                     <Bot className="w-5 h-5" />
                   </div>
                 ) : (
-                  <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-200">
+                  <div className="w-11 h-11 bg-gray-200 rounded-2xl flex items-center justify-center text-gray-600 shrink-0">
                     <span className="text-sm font-bold">U</span>
                   </div>
                 )}
@@ -158,7 +150,7 @@ export default function ChatIa() {
 
             {isLoading && (
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-sm text-gray-500 flex items-center gap-3">
@@ -173,7 +165,7 @@ export default function ChatIa() {
 
           {messages.length === 1 && (
             <div className="border-t border-gray-100 pt-4 pb-4 mt-4">
-              <p className="text-sm text-gray-500 mb-3 font-medium">💡 Suggestions :</p>
+              <p className="text-sm text-gray-500 mb-3 font-medium">Suggestions</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {suggestions.map((suggestion) => (
                   <button

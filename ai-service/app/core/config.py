@@ -41,8 +41,25 @@ class Settings(BaseSettings):
     # SQLite database (for conversation history)
     database_url: str = "sqlite+aiosqlite:///./app/data/iadaf.db"
 
-    # PostgreSQL database (for lead emails)
-    postgres_url: str = "postgresql+asyncpg://iadaf_user:iadaf_password@localhost:5432/iadaf_db"
+    # Conversations older than this are purged automatically (RGPD — limitation
+    # de la durée de conservation). Anonymous chats can't be tied to a person,
+    # so this purge is the only way they are ever erased.
+    conversation_retention_days: int = 30
+
+    # Shared secret with the frontend. Only a caller presenting it may attach a
+    # user id to a conversation or erase a user's data — without it, anyone
+    # reaching the gateway could do both for any account.
+    internal_api_token: str = ""
+
+    # CORS — comma-separated list of browser origins allowed to call this service
+    # directly. In normal operation the frontend proxies every call server-side,
+    # so this only needs to cover direct browser access (local debugging, docs).
+    cors_origins: str = "http://localhost:3000"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """`cors_origins` split into a list, ignoring blanks."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 

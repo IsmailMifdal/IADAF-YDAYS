@@ -5,41 +5,62 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
-  Folder,
   FolderOpen,
-  Plus,
-  type LucideIcon,
+  Search,
 } from "lucide-react";
-import HeaderPage from "../../components/ui/PageHeader";
+
+import PageHeader from "../../components/ui/PageHeader";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageContainer,
+  SectionTitle,
+  StatCard,
+} from "../../components/ui/primitives";
+import type { Tone } from "../../components/ui/tokens";
 
 type FolderStatus = "En préparation" | "Incomplet" | "En cours" | "Terminé";
 
 type FolderItem = {
   id: number;
   title: string;
+  organisme: string;
   status: FolderStatus;
+  /** Progression de constitution du dossier, en pourcentage. */
+  progress: number;
 };
 
 const folders: FolderItem[] = [
   {
     id: 1,
     title: "Carte de séjour",
+    organisme: "Préfecture",
     status: "En cours",
+    progress: 60,
   },
   {
     id: 2,
     title: "Aide au logement",
+    organisme: "CAF",
     status: "Terminé",
+    progress: 100,
   },
   {
     id: 3,
     title: "Inscription sécurité sociale",
+    organisme: "AMELI",
     status: "Incomplet",
+    progress: 35,
   },
   {
     id: 4,
     title: "Déclaration de revenus",
+    organisme: "Impôts",
     status: "En préparation",
+    progress: 10,
   },
 ];
 
@@ -51,41 +72,91 @@ const filterOptions: Array<"Tous" | FolderStatus> = [
   "Terminé",
 ];
 
-export default function MyFolders() {
+const statusTone: Record<FolderStatus, Tone> = {
+  "En préparation": "neutral",
+  Incomplet: "warning",
+  "En cours": "info",
+  Terminé: "success",
+};
+
+const progressColor: Record<FolderStatus, string> = {
+  "En préparation": "bg-gray-400",
+  Incomplet: "bg-amber-500",
+  "En cours": "bg-blue-600",
+  Terminé: "bg-emerald-600",
+};
+
+export default function MyFoldersPage() {
   const [selectedFilter, setSelectedFilter] = useState<"Tous" | FolderStatus>(
     "Tous",
   );
 
-  const filteredFolders = useMemo(() => {
-    if (selectedFilter === "Tous") {
-      return folders;
-    }
+  const filtered = useMemo(
+    () =>
+      selectedFilter === "Tous"
+        ? folders
+        : folders.filter((folder) => folder.status === selectedFilter),
+    [selectedFilter],
+  );
 
-    return folders.filter((folder) => folder.status === selectedFilter);
-  }, [selectedFilter]);
-
-  const stats = useMemo(() => {
-    return {
+  const stats = useMemo(
+    () => ({
       total: folders.length,
-      inProgress: folders.filter((folder) => folder.status === "En cours")
-        .length,
-      incomplete: folders.filter((folder) => folder.status === "Incomplet")
-        .length,
-      done: folders.filter((folder) => folder.status === "Terminé").length,
-    };
-  }, []);
+      inProgress: folders.filter((f) => f.status === "En cours").length,
+      incomplete: folders.filter((f) => f.status === "Incomplet").length,
+      done: folders.filter((f) => f.status === "Terminé").length,
+    }),
+    [],
+  );
 
   return (
     <div>
-      <HeaderPage
+      <PageHeader
         title="Mes Dossiers"
-        subtitle="Suivez l’avancement de toutes vos démarches"
+        subtitle="Suivez l’avancement de toutes vos démarches en cours."
+        rightContent={
+          <ButtonLink href="/procedures" variant="secondary">
+            Démarrer une démarche
+          </ButtonLink>
+        }
       />
-      <div className="bg-gray-50 min-h-screen px-4 md:px-8 py-10">
-        <div className="max-w-6xl mx-auto w-full space-y-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-            <p className="text-sm text-gray-600 font-medium">Filtrer :</p>
-            <div className="flex flex-wrap gap-3">
+
+      <PageContainer>
+        <div className="space-y-8">
+          <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Total"
+              value={stats.total}
+              icon={<FolderOpen className="h-5 w-5" />}
+              tone="neutral"
+            />
+            <StatCard
+              label="En cours"
+              value={stats.inProgress}
+              icon={<Clock3 className="h-5 w-5" />}
+              tone="info"
+            />
+            <StatCard
+              label="Incomplets"
+              value={stats.incomplete}
+              icon={<AlertTriangle className="h-5 w-5" />}
+              tone="warning"
+            />
+            <StatCard
+              label="Terminés"
+              value={stats.done}
+              icon={<CheckCircle2 className="h-5 w-5" />}
+              tone="success"
+            />
+          </div>
+
+          <section>
+            <SectionTitle
+              title="Vos dossiers"
+              description="Filtrez par état d’avancement."
+            />
+
+            <div className="mb-5 flex flex-wrap gap-2">
               {filterOptions.map((filter) => {
                 const isActive = selectedFilter === filter;
 
@@ -94,10 +165,11 @@ export default function MyFolders() {
                     key={filter}
                     type="button"
                     onClick={() => setSelectedFilter(filter)}
-                    className={`px-4 py-2 rounded-lg text-sm border transition ${
+                    aria-pressed={isActive}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
                       isActive
-                        ? "bg-blue-600 text-white font-semibold  border-blue-600"
-                        : "border-gray-200 text-black font-semibold bg-gray-100 hover:bg-gray-100"
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     {filter}
@@ -105,148 +177,65 @@ export default function MyFolders() {
                 );
               })}
             </div>
-          </div>
 
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatsCard
-              label="Total"
-              value={stats.total}
-              icon={FolderOpen}
-              variant="neutral"
-            />
-            <StatsCard
-              label="En cours"
-              value={stats.inProgress}
-              icon={Clock3}
-              variant="blue"
-            />
-            <StatsCard
-              label="Incomplets"
-              value={stats.incomplete}
-              icon={AlertTriangle}
-              variant="orange"
-            />
-            <StatsCard
-              label="Terminés"
-              value={stats.done}
-              icon={CheckCircle2}
-              variant="green"
-            />
+            {filtered.length === 0 ? (
+              <EmptyState
+                icon={<Search className="h-6 w-6" />}
+                title="Aucun dossier dans cet état"
+                description="Changez de filtre pour voir vos autres dossiers."
+                action={
+                  <Button
+                    variant="secondary"
+                    onClick={() => setSelectedFilter("Tous")}
+                  >
+                    Voir tous les dossiers
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="stagger grid grid-cols-1 gap-5 lg:grid-cols-2">
+                {filtered.map((folder) => (
+                  <FolderCard key={folder.id} folder={folder} />
+                ))}
+              </div>
+            )}
           </section>
-          <button
-            type="button"
-            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau dossier
-          </button>
-
-          {filteredFolders.length === 0 ? (
-            <section className="bg-white border border-gray-200 rounded-xl p-10 flex flex-col items-center justify-center gap-4 text-center">
-              <Folder className="w-10 h-10 text-gray-400" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Aucun dossier trouvé
-              </h2>
-              <p className="text-gray-600">
-                Commencez par créer votre premier dossier
-              </p>
-              <button
-                type="button"
-                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg"
-              >
-                Créer un dossier
-              </button>
-            </section>
-          ) : (
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredFolders.map((folder) => (
-                <FolderCard
-                  key={folder.id}
-                  title={folder.title}
-                  status={folder.status}
-                />
-              ))}
-            </section>
-          )}
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }
 
-type FolderCardProps = {
-  title: string;
-  status: FolderStatus;
-};
-
-function FolderCard({ title, status }: FolderCardProps) {
-  const statusStyle: Record<FolderStatus, string> = {
-    "En préparation": "bg-gray-100 text-gray-700",
-    Incomplet: "bg-orange-100 text-orange-700",
-    "En cours": "bg-blue-100 text-blue-700",
-    Terminé: "bg-green-100 text-green-700",
-  };
-
+function FolderCard({ folder }: { folder: FolderItem }) {
   return (
-    <article className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        <span
-          className={`px-3 py-1 text-xs rounded-full font-medium ${statusStyle[status]}`}
+    <Card interactive className="p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-gray-900">{folder.title}</h3>
+          <p className="mt-0.5 text-sm text-gray-500">{folder.organisme}</p>
+        </div>
+        <Badge tone={statusTone[folder.status]}>{folder.status}</Badge>
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-1.5 flex items-center justify-between text-xs text-gray-500">
+          <span>Progression</span>
+          <span className="font-medium text-gray-700">{folder.progress}%</span>
+        </div>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-gray-100"
+          role="progressbar"
+          aria-valuenow={folder.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Progression du dossier ${folder.title}`}
         >
-          {status}
-        </span>
+          <div
+            className={`h-full rounded-full transition-all ${progressColor[folder.status]}`}
+            style={{ width: `${folder.progress}%` }}
+          />
+        </div>
       </div>
-    </article>
-  );
-}
-
-type StatsCardProps = {
-  label: string;
-  value: number;
-  icon: LucideIcon;
-  variant: "neutral" | "blue" | "orange" | "green";
-};
-
-function StatsCard({ label, value, icon: Icon, variant }: StatsCardProps) {
-  const variantStyles = {
-    neutral: {
-      card: "bg-white border-gray-200",
-      label: "text-gray-500",
-      value: "text-gray-900",
-      icon: "text-gray-400",
-    },
-    blue: {
-      card: "bg-blue-50 border-blue-200",
-      label: "text-blue-700",
-      value: "text-blue-700",
-      icon: "text-blue-500",
-    },
-    orange: {
-      card: "bg-orange-50 border-orange-200",
-      label: "text-orange-700",
-      value: "text-orange-700",
-      icon: "text-orange-500",
-    },
-    green: {
-      card: "bg-green-50 border-green-200",
-      label: "text-green-700",
-      value: "text-green-700",
-      icon: "text-green-500",
-    },
-  };
-
-  const styles = variantStyles[variant];
-
-  return (
-    <article
-      className={`border rounded-xl p-5 flex flex-col gap-1 ${styles.card}`}
-    >
-      <div className="flex items-center justify-between">
-        <p className={`text-sm ${styles.label}`}>{label}</p>
-        <Icon className={`w-4 h-4 ${styles.icon}`} />
-      </div>
-      <p className={`text-2xl font-semibold ${styles.value}`}>{value}</p>
-    </article>
+    </Card>
   );
 }

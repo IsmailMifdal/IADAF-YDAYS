@@ -18,6 +18,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +34,28 @@ public class DemarcheService {
     private final DemarcheRepository demarcheRepository;
     private final DemarcheMapper demarcheMapper;
 
+    /** En-tête portant l'identité de l'appelant en l'absence de JWT. */
+    private static final String USER_ID_HEADER = "X-User-Id";
+
+    /**
+     * Identifiant de l'utilisateur courant, qui cloisonne les démarches.
+     *
+     * <p>Deux sources, dans cet ordre :
+     * <ol>
+     *   <li>le sujet du JWT, si un jeton est présent dans le SecurityContext ;</li>
+     *   <li>l'en-tête {@code X-User-Id}, sinon.</li>
+     * </ol>
+     *
+     * <p>Le repli par en-tête existe parce que Keycloak a été retiré de
+     * l'architecture : l'authentification vit désormais dans le frontend
+     * Next.js (Auth.js) et ce service ne reçoit plus de jeton.
+     *
+     * <p><b>Attention :</b> cet en-tête n'est pas vérifié. Tant que le port de
+     * ce service est publié, n'importe quel appelant peut se déclarer n'importe
+     * quel utilisateur. Acceptable en développement ; avant une mise en
+     * production, il faut soit fermer le port et n'autoriser que la gateway,
+     * soit valider un vrai jeton signé.
+     */
     private String getUserIdFromToken() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
@@ -39,7 +63,23 @@ public class DemarcheService {
             log.debug("Extracted userId from JWT: {}", userId);
             return userId;
         }
-        throw new UnauthorizedAccessException("Impossible d'extraire l'ID utilisateur du token JWT");
+
+        String headerUserId = currentRequestHeader(USER_ID_HEADER);
+        if (headerUserId != null && !headerUserId.isBlank()) {
+            log.debug("Extracted userId from {} header: {}", USER_ID_HEADER, headerUserId);
+            return headerUserId;
+        }
+
+        throw new UnauthorizedAccessException(
+                "Aucune identité fournie : joignez un jeton JWT ou l'en-tête " + USER_ID_HEADER);
+    }
+
+    /** Lit un en-tête de la requête HTTP en cours, ou null hors contexte web. */
+    private String currentRequestHeader(String name) {
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+            return attributes.getRequest().getHeader(name);
+        }
+        return null;
     }
 
     public DemarcheDTO createDemarche(CreateDemarcheRequest request) {

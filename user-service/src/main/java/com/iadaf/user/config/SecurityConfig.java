@@ -2,7 +2,6 @@ package com.iadaf.user.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -21,11 +20,12 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // Tous les autres endpoints nécessitent une authentification
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                // Keycloak / OAuth2 a été retiré de l'architecture :
+                // l'authentification est portée par le frontend Next.js (Auth.js).
+                // Ce service ne doit donc PAS être exposé publiquement — seul
+                // l'API Gateway, sur le réseau Docker interne, doit l'atteindre.
+                .anyRequest().permitAll()
+            );
         
         return http.build();
     }

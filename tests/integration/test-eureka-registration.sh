@@ -37,8 +37,16 @@ sleep 30
 
 echo ""
 
-# Test service registrations
-SERVICES=("API-GATEWAY" "USER-SERVICE" "DEMARCHES-SERVICE" "DOCUMENT-SERVICE" "ANALYTICS-SERVICE" "AI-SERVICE")
+# Tous les services déclarés dans docker-compose.yml et censés s'enregistrer
+# dans Eureka.
+SERVICES=(
+    "API-GATEWAY"
+    "AI-SERVICE"
+    "USER-SERVICE"
+    "DEMARCHES-SERVICE"
+    "DOCUMENT-SERVICE"
+    "ANALYTICS-SERVICE"
+)
 
 echo "Test: Vérification de l'enregistrement des services..."
 APPS=$(curl -s http://localhost:8761/eureka/apps)

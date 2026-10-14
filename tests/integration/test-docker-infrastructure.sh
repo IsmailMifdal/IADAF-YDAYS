@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test Docker Infrastructure
-# Vérifie que PostgreSQL, Keycloak et pgAdmin sont opérationnels
+# Vérifie que PostgreSQL et les conteneurs applicatifs sont opérationnels.
 
 echo "======================================"
 echo "🐳 Test Infrastructure Docker"
@@ -14,40 +14,46 @@ PASSED=0
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+PG_USER="${POSTGRES_USER:-iadaf_user}"
+PG_DB="${POSTGRES_DB:-iadaf_db}"
+
+# psql n'est pas toujours installé sur la machine hôte : on passe par le conteneur.
+psql_query() {
+    docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-iadaf_password}" iadaf-postgres \
+        psql -U "$PG_USER" -d "$PG_DB" -t -c "$1" 2>/dev/null
+}
+
+check_container() {
+    local name=$1
+    local label=$2
+    if docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
+        echo -e "${GREEN}✓ $label container is running${NC}"
+        ((PASSED++))
+    else
+        echo -e "${RED}✗ $label container is NOT running${NC}"
+        ((FAILED++))
+    fi
+}
 
 # Test 1: Docker containers running
 echo "Test 1: Vérification des conteneurs Docker..."
-if docker ps | grep -q "iadaf-postgres"; then
-    echo -e "${GREEN}✓ PostgreSQL container is running${NC}"
-    ((PASSED++))
-else
-    echo -e "${RED}✗ PostgreSQL container is NOT running${NC}"
-    ((FAILED++))
-fi
-
-if docker ps | grep -q "iadaf-keycloak"; then
-    echo -e "${GREEN}✓ Keycloak container is running${NC}"
-    ((PASSED++))
-else
-    echo -e "${RED}✗ Keycloak container is NOT running${NC}"
-    ((FAILED++))
-fi
-
-if docker ps | grep -q "iadaf-pgadmin"; then
-    echo -e "${GREEN}✓ pgAdmin container is running${NC}"
-    ((PASSED++))
-else
-    echo -e "${RED}✗ pgAdmin container is NOT running${NC}"
-    ((FAILED++))
-fi
+check_container "iadaf-postgres"  "PostgreSQL"
+check_container "iadaf-discovery" "Discovery"
+check_container "iadaf-gateway"   "API Gateway"
+check_container "iadaf-ai"        "AI Service"
+check_container "iadaf-user"      "User Service"
+check_container "iadaf-demarches" "Demarches Service"
+check_container "iadaf-document"  "Document Service"
+check_container "iadaf-analytics" "Analytics Service"
+check_container "iadaf-front"     "Frontend"
 
 echo ""
 
 # Test 2: PostgreSQL connectivity
 echo "Test 2: Connexion PostgreSQL..."
-if PGPASSWORD=iadaf_password psql -h localhost -U iadaf_user -d iadaf_db -c "SELECT 1;" > /dev/null 2>&1; then
+if psql_query "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ PostgreSQL est accessible${NC}"
     ((PASSED++))
 else
@@ -59,10 +65,10 @@ echo ""
 
 # Test 3: Verify schemas
 echo "Test 3: Vérification des schémas PostgreSQL..."
-SCHEMAS=$(PGPASSWORD=iadaf_password psql -h localhost -U iadaf_user -d iadaf_db -t -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('users', 'demarches', 'documents', 'analytics', 'ai');")
+SCHEMAS=$(psql_query "SELECT schema_name FROM information_schema.schemata;")
 
 for schema in users demarches documents analytics ai; do
-    if echo "$SCHEMAS" | grep -q "$schema"; then
+    if echo "$SCHEMAS" | grep -q "\b$schema\b"; then
         echo -e "${GREEN}✓ Schéma '$schema' existe${NC}"
         ((PASSED++))
     else
@@ -73,29 +79,19 @@ done
 
 echo ""
 
-# Test 4: Keycloak health
-echo "Test 4: Santé de Keycloak..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8180/health/ready)
-if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Keycloak est opérationnel${NC}"
-    ((PASSED++))
-else
-    echo -e "${RED}✗ Keycloak n'est PAS opérationnel (HTTP $HTTP_CODE)${NC}"
-    ((FAILED++))
-fi
-
-echo ""
-
-# Test 5: Keycloak realm configuration
-echo "Test 5: Configuration du realm Keycloak..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8180/realms/iadaf/.well-known/openid-configuration)
-if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ Realm 'iadaf' est configuré${NC}"
-    ((PASSED++))
-else
-    echo -e "${RED}✗ Realm 'iadaf' n'est PAS configuré (HTTP $HTTP_CODE)${NC}"
-    ((FAILED++))
-fi
+# Test 4: Tables d'authentification et de facturation
+# Elles sont créées à la volée au premier accès du frontend.
+echo "Test 4: Tables applicatives..."
+for table in app_users pack_entitlements; do
+    EXISTS=$(psql_query "SELECT to_regclass('users.$table');")
+    if echo "$EXISTS" | grep -q "$table"; then
+        echo -e "${GREEN}✓ Table 'users.$table' existe${NC}"
+        ((PASSED++))
+    else
+        echo -e "${RED}✗ Table 'users.$table' n'existe PAS (ouvrez le frontend une fois)${NC}"
+        ((FAILED++))
+    fi
+done
 
 echo ""
 echo "======================================"

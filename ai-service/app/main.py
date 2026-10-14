@@ -5,18 +5,20 @@ Startup sequence:
 2. Initialise LLM backend (Ollama → OpenAI fallback)
 3. Initialise RAG service (embeddings + ChromaDB)
 4. Register with Eureka discovery service
+5. Start the daily purge of expired conversations
 """
 
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from app.api.routes import chat, document, health, lead, translate
+from app.api.routes import chat, document, health, translate, users
 from app.core.config import settings
-from app.models.database import init_db
+from app.models.database import init_db, purge_expired_conversations
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
 
@@ -44,6 +46,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # 4. Register with Eureka
     _register_eureka()
 
+    # 5. Retention purge (RGPD)
+    purge_task = asyncio.create_task(_purge_conversations_daily())
+
     logger.info(
         f"✅ {settings.app_name} ready — http://{settings.app_host}:{settings.app_port}"
     )
@@ -52,12 +57,30 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Shutdown
     logger.info(f"🛑 Shutting down {settings.app_name}…")
+    purge_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await purge_task
     try:
         import py_eureka_client.eureka_client as eureka_client  # type: ignore
 
         await eureka_client.stop_async()
     except Exception:  # noqa: BLE001
         pass
+
+
+async def _purge_conversations_daily() -> None:
+    """Erase conversations past their retention period, at startup then daily."""
+    while True:
+        try:
+            deleted = await purge_expired_conversations(settings.conversation_retention_days)
+            if deleted:
+                logger.info(
+                    f"🗑️  Purged {deleted} conversation(s) inactive for more than "
+                    f"{settings.conversation_retention_days} days."
+                )
+        except Exception as exc:  # noqa: BLE001 — a failed run must not kill the loop
+            logger.error(f"Conversation purge failed: {exc}")
+        await asyncio.sleep(24 * 60 * 60)
 
 
 def _register_eureka() -> None:
@@ -111,13 +134,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS — open for development
+    # CORS — restricted to known origins.
+    #
+    # "*" together with allow_credentials=True is rejected by browsers anyway,
+    # and would expose the service to any site if it were honoured.
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
     )
 
     # Routers
@@ -125,7 +151,7 @@ def create_app() -> FastAPI:
     application.include_router(chat.router, prefix="/ai")
     application.include_router(translate.router, prefix="/ai")
     application.include_router(document.router, prefix="/ai")
-    application.include_router(lead.router, prefix="/ai")
+    application.include_router(users.router, prefix="/ai")
 
     return application
 

@@ -16,15 +16,24 @@
     <modules>
         <module>discovery-service</module>
         <module>api-gateway</module>
-        <!-- Other Java services disabled: user-service, demarches-service,
-             document-service, analytics-service are superseded by the
-             Python ai-service. See each service's README. -->
+        <module>user-service</module>
+        <module>demarches-service</module>
+        <module>document-service</module>
+        <module>analytics-service</module>
     </modules>
 
     <properties>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <!--
+          Conserve les noms des paramètres dans le bytecode.
+          spring-boot-starter-parent l'active par défaut, mais ce POM importe
+          seulement spring-boot-dependencies : sans ce flag, Spring ne peut pas
+          résoudre @PathVariable / @RequestParam sans nom explicite et échoue
+          en 500 à l'exécution.
+        -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.2.0</spring-boot.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>

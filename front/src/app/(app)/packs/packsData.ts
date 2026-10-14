@@ -10,7 +10,14 @@ export type PackIconKey =
 export type PackData = {
   slug: string;
   title: string;
-  price: string;
+  /**
+   * Authoritative price, in euro cents.
+   *
+   * Stripe bills in integer minor units, and the amount charged must never be
+   * derived from a display string — this field is the single source of truth
+   * for both the checkout session and what the UI shows.
+   */
+  priceCents: number;
   color: PackColor;
   icon: PackIconKey;
   shortDescription: string;
@@ -18,11 +25,29 @@ export type PackData = {
   requiredDocuments: string[];
 };
 
+/**
+ * Pack qui débloque tous les autres.
+ *
+ * Défini ici plutôt que dans `entitlements.ts` : c'est une notion de
+ * catalogue, et les composants qui l'utilisent n'ont pas à importer la couche
+ * base de données pour la connaître.
+ */
+export const ALL_ACCESS_SLUG = "pack-complet";
+
+/** Render a cent amount as a French euro price (30€, 12,50€). */
+export function formatPrice(priceCents: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: priceCents % 100 === 0 ? 0 : 2,
+  }).format(priceCents / 100);
+}
+
 export const packs: PackData[] = [
   {
     slug: "titre-sejour",
     title: "Titre de séjour (ANEF)",
-    price: "30€",
+    priceCents: 3000,
     color: "blue",
     icon: "id-card",
     shortDescription:
@@ -48,7 +73,7 @@ export const packs: PackData[] = [
   {
     slug: "assurance-maladie",
     title: "Assurance maladie (Ameli)",
-    price: "10€",
+    priceCents: 1000,
     color: "green",
     icon: "heart-pulse",
     shortDescription: "Création et suivi de votre dossier sécurité sociale.",
@@ -71,7 +96,7 @@ export const packs: PackData[] = [
   {
     slug: "aide-logement",
     title: "Aide logement (CAF)",
-    price: "15€",
+    priceCents: 1500,
     color: "orange",
     icon: "house",
     shortDescription: "Demande d'aide au logement simplifiée.",
@@ -94,7 +119,7 @@ export const packs: PackData[] = [
   {
     slug: "impots",
     title: "Déclaration d'impôts",
-    price: "10€",
+    priceCents: 1000,
     color: "violet",
     icon: "receipt",
     shortDescription: "Assistance pour votre déclaration fiscale.",
@@ -115,7 +140,7 @@ export const packs: PackData[] = [
   {
     slug: "pack-complet",
     title: "Pack complet",
-    price: "50€",
+    priceCents: 5000,
     color: "yellow",
     icon: "package",
     shortDescription:

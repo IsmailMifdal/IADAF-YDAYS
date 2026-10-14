@@ -15,12 +15,6 @@ spring:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: analytics
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
   cache:
     type: caffeine
     caffeine:
@@ -46,13 +40,15 @@ eureka:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
 
 # Service URLs for inter-service communication
+# Ports alignés sur ceux réellement exposés par chaque service :
+# user 8081, demarches 8082, document 8083 (ils étaient tous décalés d'un cran).
 services:
   user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8082}
+    url: ${USER_SERVICE_URL:http://localhost:8081}
   demarches-service:
-    url: ${DEMARCHES_SERVICE_URL:http://localhost:8083}
+    url: ${DEMARCHES_SERVICE_URL:http://localhost:8082}
   document-service:
-    url: ${DOCUMENT_SERVICE_URL:http://localhost:8084}
+    url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}

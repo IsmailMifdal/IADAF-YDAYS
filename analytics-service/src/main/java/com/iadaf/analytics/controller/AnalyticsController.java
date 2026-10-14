@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -22,7 +21,6 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/demarches/statut")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
     public ResponseEntity<Map<String, Long>> getDemarchesByStatut() {
         log.info("REST request to get demarches statistics by status");
         Map<String, Long> stats = analyticsService.getDemarchesByStatut();
@@ -30,7 +28,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/demarches/type")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
     public ResponseEntity<Map<String, Long>> getDemarchesByType() {
         log.info("REST request to get demarches statistics by type");
         Map<String, Long> stats = analyticsService.getDemarchesByType();
@@ -38,7 +35,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/demarches/evolution")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
     public ResponseEntity<EvolutionDTO> getDemarchesEvolution(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -50,7 +46,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/documents/stats")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
     public ResponseEntity<DocumentStatsDTO> getDocumentStats() {
         log.info("REST request to get document statistics");
         DocumentStatsDTO stats = analyticsService.getDocumentStats();
@@ -58,7 +53,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/users/activity")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
     public ResponseEntity<List<UserActivityDTO>> getUsersActivity() {
         log.info("REST request to get users activity");
         List<UserActivityDTO> activities = analyticsService.getUsersActivity();
@@ -66,7 +60,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/dashboard")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN', 'USER')")
     public ResponseEntity<DashboardSummaryDTO> getDashboardSummary() {
         log.info("REST request to get dashboard summary");
         DashboardSummaryDTO dashboard = analyticsService.getDashboardSummary();
@@ -74,7 +67,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/performance")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PerformanceMetricsDTO> getPerformanceMetrics() {
         log.info("REST request to get performance metrics");
         PerformanceMetricsDTO metrics = analyticsService.getPerformanceMetrics();

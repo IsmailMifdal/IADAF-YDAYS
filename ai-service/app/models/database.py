@@ -1,44 +1,27 @@
-"""SQLAlchemy async models for conversation persistence.
+"""SQLAlchemy async models for conversation persistence (SQLite via aiosqlite)."""
 
-Uses SQLite (via aiosqlite) for conversations.
-Uses PostgreSQL (via asyncpg) for lead emails.
-"""
+from datetime import datetime, timedelta, timezone
 
-from datetime import datetime
-
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 from app.core.config import settings
 
 # ---------------------------------------------------------------------------
-# Engines
+# Engine
 # ---------------------------------------------------------------------------
 
-# SQLite engine for conversations/messages
 engine = create_async_engine(settings.database_url, echo=False)
 
-# PostgreSQL engine for lead emails
-pg_engine = create_async_engine(settings.postgres_url, echo=False)
-
 
 # ---------------------------------------------------------------------------
-# Base declarative classes
+# Models
 # ---------------------------------------------------------------------------
 
 
 class Base(DeclarativeBase):
-    """Shared declarative base for SQLite models."""
-
-
-class PgBase(DeclarativeBase):
-    """Declarative base for PostgreSQL models."""
-
-
-# ---------------------------------------------------------------------------
-# SQLite models (conversations)
-# ---------------------------------------------------------------------------
+    """Shared declarative base."""
 
 
 class Conversation(Base):
@@ -47,6 +30,9 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(String(36), primary_key=True)
+    # Account that owns the conversation, NULL for anonymous chats (accueil).
+    # Only set from a frontend-verified identity — see app.core.security.
+    user_id = Column(String(36), nullable=True, index=True)
     language = Column(String(5), default="FR")
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -69,47 +55,49 @@ class Message(Base):
 
 
 # ---------------------------------------------------------------------------
-# PostgreSQL models (lead emails)
-# ---------------------------------------------------------------------------
-
-
-class LeadEmail(PgBase):
-    """Stores lead emails collected from the accueil chat."""
-
-    __tablename__ = "lead_emails"
-
-    id = Column(String(36), primary_key=True)
-    email = Column(String(255), nullable=False)
-    source = Column(String(50), default="accueil_chat")
-    created_at = Column(DateTime, default=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("email", "source", name="uq_lead_email_source"),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Helper: initialise tables
+# Helpers
 # ---------------------------------------------------------------------------
 
 
 async def init_db() -> None:
     """Create all database tables (idempotent)."""
-    # SQLite tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    # PostgreSQL tables
-    async with pg_engine.begin() as conn:
-        await conn.run_sync(PgBase.metadata.create_all)
+
+        # create_all never alters an existing table: databases created before
+        # conversations were tied to accounts need the column added by hand.
+        columns = await conn.execute(text("PRAGMA table_info(conversations)"))
+        if "user_id" not in {row[1] for row in columns}:
+            await conn.execute(text("ALTER TABLE conversations ADD COLUMN user_id VARCHAR(36)"))
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_conversations_user_id ON conversations (user_id)")
+            )
 
 
 async def get_session() -> AsyncSession:  # type: ignore[return]
-    """Yield an async SQLAlchemy session for SQLite."""
+    """Yield an async SQLAlchemy session."""
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
 
-async def get_pg_session() -> AsyncSession:  # type: ignore[return]
-    """Yield an async SQLAlchemy session for PostgreSQL."""
-    async with AsyncSession(pg_engine, expire_on_commit=False) as session:
-        yield session
+async def _delete_conversations(session: AsyncSession, condition) -> int:
+    """Delete the conversations matching ``condition`` and their messages."""
+    ids = select(Conversation.id).where(condition)
+    await session.execute(delete(Message).where(Message.conversation_id.in_(ids)))
+    result = await session.execute(delete(Conversation).where(condition))
+    await session.commit()
+    return result.rowcount or 0
+
+
+async def delete_user_conversations(user_id: str) -> int:
+    """Erase every conversation owned by ``user_id``. Returns how many."""
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        return await _delete_conversations(session, Conversation.user_id == user_id)
+
+
+async def purge_expired_conversations(retention_days: int) -> int:
+    """Erase conversations inactive for more than ``retention_days``."""
+    # SQLite stores naive UTC timestamps (func.now() → CURRENT_TIMESTAMP).
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        return await _delete_conversations(session, Conversation.updated_at < cutoff)

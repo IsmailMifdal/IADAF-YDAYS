@@ -10,5 +10,12 @@ FROM node:20-alpine
 WORKDIR /app
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+
+# Le serveur standalone se lie à $HOSTNAME, qui vaut l'ID du conteneur sous
+# Docker : il n'écouterait alors ni sur la loopback ni sur toutes les
+# interfaces, ce qui casse le healthcheck.
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
 EXPOSE 3000
 CMD ["node", "server.js"]

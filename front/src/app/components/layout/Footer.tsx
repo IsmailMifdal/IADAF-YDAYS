@@ -1,0 +1,158 @@
+"use client";
+
+import Link from "next/link";
+import {
+  Sparkles,
+  Mail,
+  MapPin,
+  Phone,
+  Linkedin,
+  Twitter,
+  Facebook,
+} from "lucide-react";
+import { packs } from "../../(app)/packs/packsData";
+
+const navLinks = [
+  { label: "Accueil", href: "/" },
+  { label: "Nos packs", href: "/nosPacks" },
+  { label: "Démarches", href: "/procedures" },
+  { label: "Mes Dossiers", href: "/myFolders" },
+];
+
+// Kept in sync with packsData.ts — these are the packs actually on sale.
+const packLinks = packs.map((pack) => ({
+  label: pack.title,
+  href: "/nosPacks",
+}));
+
+const socials = [
+  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Twitter, href: "#", label: "Twitter" },
+  { icon: Facebook, href: "#", label: "Facebook" },
+];
+
+export default function Footer() {
+  return (
+    <footer className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-lg">IA-DAF</p>
+                <p className="text-sm text-blue-200">Assistant Administratif</p>
+              </div>
+            </div>
+            <p className="text-blue-100 text-sm leading-relaxed">
+              Votre assistant intelligent pour simplifier vos démarches
+              administratives françaises. Accessible, multilingue et disponible
+              24/7.
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div>
+            <h3 className="font-semibold mb-4 text-white">Navigation</h3>
+            <ul className="space-y-2.5">
+              {navLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-blue-100 text-sm hover:text-white transition"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Packs */}
+          <div>
+            <h3 className="font-semibold mb-4 text-white">Nos packs</h3>
+            <ul className="space-y-2.5">
+              {packLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-blue-100 text-sm hover:text-white transition"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="font-semibold mb-4 text-white">Contact</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-blue-100 text-sm">
+                <Mail className="w-4 h-4 text-blue-300 shrink-0" />
+                contact@ia-daf.fr
+              </li>
+              <li className="flex items-center gap-3 text-blue-100 text-sm">
+                <Phone className="w-4 h-4 text-blue-300 shrink-0" />
+                +33 1 23 45 67 89
+              </li>
+              <li className="flex items-center gap-3 text-blue-100 text-sm">
+                <MapPin className="w-4 h-4 text-blue-300 shrink-0" />
+                Paris, France
+              </li>
+            </ul>
+
+            <div className="flex items-center gap-3 mt-5">
+              {socials.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    aria-label={social.label}
+                    className="w-9 h-9 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg flex items-center justify-center transition"
+                  >
+                    <Icon className="w-4 h-4 text-white" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-white/15">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-blue-200 text-sm">
+            © {new Date().getFullYear()} IA-DAF. Tous droits réservés.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link
+              href="#"
+              className="text-blue-200 text-sm hover:text-white transition"
+            >
+              Mentions légales
+            </Link>
+            <Link
+              href="#"
+              className="text-blue-200 text-sm hover:text-white transition"
+            >
+              Confidentialité
+            </Link>
+            <Link
+              href="#"
+              className="text-blue-200 text-sm hover:text-white transition"
+            >
+              CGU
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

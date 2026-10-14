@@ -31,6 +31,18 @@ export type TranslateResponse = {
   target_language: string;
 };
 
+export type DocumentAnalysisRequest = {
+  document_content: string;
+  document_type: string;
+  language?: string;
+};
+
+export type DocumentAnalysisResponse = {
+  analysis: string;
+  missing_info: string[];
+  recommendations: string[];
+};
+
 export type HealthResponse = {
   status: string;
   service: string;
@@ -65,6 +77,21 @@ export const api = {
   /** Translate text between supported languages. */
   translate(req: TranslateRequest) {
     return post<TranslateRequest, TranslateResponse>("/api/ai/translate", req);
+  },
+
+  /**
+   * Analyse la complétude d'un dossier.
+   *
+   * L'endpoint travaille sur du texte, pas sur des fichiers : on lui décrit
+   * l'état du dossier (pièces fournies / manquantes) et il renvoie les points
+   * bloquants et des recommandations. Analyser le contenu réel des PDF
+   * demanderait une extraction OCR, qui n'existe pas encore.
+   */
+  analyzeDocument(req: DocumentAnalysisRequest) {
+    return post<DocumentAnalysisRequest, DocumentAnalysisResponse>(
+      "/api/ai/analyze-document",
+      req,
+    );
   },
 
   /** Health check. */

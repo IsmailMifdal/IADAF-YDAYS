@@ -45,8 +45,7 @@ INFRA_RESULT=$?
 
 if [ $INFRA_RESULT -eq 0 ]; then
     run_test "Test 2: Eureka Registration" "test-eureka-registration.sh"
-    run_test "Test 3: OAuth2 Flow" "test-oauth2-flow.sh"
-    run_test "Test 4: Inter-Service Communication" "test-inter-service-communication.sh"
+    run_test "Test 3: Inter-Service Communication" "test-inter-service-communication.sh"
 else
     echo -e "${RED}⚠️  Infrastructure tests failed. Skipping remaining tests.${NC}"
 fi

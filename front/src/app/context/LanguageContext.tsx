@@ -2,30 +2,31 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
-export type LangCode = "fr" | "en" | "ar" | "es";
+import { LANG_COOKIE, type LangCode } from "./languages";
 
-export interface LangOption {
-  code: LangCode;
-  label: string;
-  flag: string;
-}
-
-export const LANGUAGES: LangOption[] = [
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "en", label: "English", flag: "🇬🇧" },
-  { code: "ar", label: "العربية", flag: "🇸🇦" },
-  { code: "es", label: "Español", flag: "🇪🇸" },
-];
+// Réexportés pour que les imports existants depuis ce module continuent de
+// fonctionner ; la définition vit dans `languages.ts`, utilisable côté serveur.
+export {
+  LANGUAGES,
+  LANG_COOKIE,
+  isLangCode,
+  type LangCode,
+  type LangOption,
+} from "./languages";
 
 /** All translatable UI strings keyed by language code. */
 const UI_STRINGS: Record<LangCode, Record<string, string>> = {
   fr: {
     "chat.placeholder": "Pose ta question…",
     "chat.emailPlaceholder": "ton.email@exemple.com",
-    "chat.emailPrompt": "Entre ton adresse e-mail pour continuer",
-    "chat.emailAsk": "📧 Avant de commencer, pourrais-tu me donner ton adresse e-mail ? Cela nous permettra de te recontacter et de t'offrir un meilleur suivi !",
+    "chat.emailPrompt": "Facultatif — tu peux passer cette étape",
+    "chat.emailAsk": "📧 Si tu le souhaites, laisse-moi ton adresse e-mail pour recevoir nos conseils et nos offres sur les démarches. C'est facultatif : tu peux aussi passer et poser directement ta question.",
     "chat.emailSuccess": "Merci ! 🎉 Ton e-mail a bien été enregistré. Comment puis-je t'aider ?",
     "chat.emailInvalid": "Hmm, ça ne ressemble pas à une adresse e-mail valide. 🤔 Peux-tu réessayer ? (ex: ton.email@exemple.com)",
+    "chat.emailConsent": "J'accepte de recevoir par e-mail les conseils et offres d'IA-DAF. Adresse conservée 3 ans maximum, désinscription possible à tout moment.",
+    "chat.emailSkip": "Passer",
+    "chat.emailSkipped": "Pas de souci ! Comment puis-je t'aider ?",
+    "chat.emailError": "Ton e-mail n'a pas pu être enregistré, mais on peut continuer. Comment puis-je t'aider ?",
     "chat.error": "Désolé, une erreur est survenue. Veuillez réessayer.",
     "chat.loading": "Réponse en cours…",
     "chat.online": "En ligne",
@@ -42,10 +43,14 @@ const UI_STRINGS: Record<LangCode, Record<string, string>> = {
   en: {
     "chat.placeholder": "Ask your question…",
     "chat.emailPlaceholder": "your.email@example.com",
-    "chat.emailPrompt": "Enter your email address to continue",
-    "chat.emailAsk": "📧 Before we start, could you give me your email address? This will allow us to contact you and provide better support!",
+    "chat.emailPrompt": "Optional — you can skip this step",
+    "chat.emailAsk": "📧 If you like, leave me your email address to receive our tips and offers about administrative procedures. It's optional: you can also skip and ask your question right away.",
     "chat.emailSuccess": "Thanks! 🎉 Your email has been saved. How can I help you?",
     "chat.emailInvalid": "Hmm, that doesn't look like a valid email address. 🤔 Can you try again? (e.g. your.email@example.com)",
+    "chat.emailConsent": "I agree to receive tips and offers from IA-DAF by email. Address kept for 3 years at most, unsubscribe at any time.",
+    "chat.emailSkip": "Skip",
+    "chat.emailSkipped": "No problem! How can I help you?",
+    "chat.emailError": "Your email couldn't be saved, but we can carry on. How can I help you?",
     "chat.error": "Sorry, an error occurred. Please try again.",
     "chat.loading": "Generating response…",
     "chat.online": "Online",
@@ -62,10 +67,14 @@ const UI_STRINGS: Record<LangCode, Record<string, string>> = {
   ar: {
     "chat.placeholder": "اطرح سؤالك…",
     "chat.emailPlaceholder": "بريدك@مثال.com",
-    "chat.emailPrompt": "أدخل بريدك الإلكتروني للمتابعة",
-    "chat.emailAsk": "📧 قبل أن نبدأ، هل يمكنك إعطائي بريدك الإلكتروني؟ سيسمح لنا ذلك بالتواصل معك وتقديم متابعة أفضل!",
+    "chat.emailPrompt": "اختياري — يمكنك تخطي هذه الخطوة",
+    "chat.emailAsk": "📧 إذا رغبت، اترك لي بريدك الإلكتروني لتلقي نصائحنا وعروضنا حول الإجراءات الإدارية. هذا اختياري: يمكنك أيضًا التخطي وطرح سؤالك مباشرة.",
     "chat.emailSuccess": "شكرًا! 🎉 تم تسجيل بريدك الإلكتروني. كيف يمكنني مساعدتك؟",
     "chat.emailInvalid": "هذا لا يبدو كعنوان بريد إلكتروني صحيح. 🤔 هل يمكنك المحاولة مرة أخرى؟",
+    "chat.emailConsent": "أوافق على تلقي نصائح وعروض IA-DAF عبر البريد الإلكتروني. يُحتفظ بالعنوان 3 سنوات كحد أقصى، ويمكن إلغاء الاشتراك في أي وقت.",
+    "chat.emailSkip": "تخطي",
+    "chat.emailSkipped": "لا مشكلة! كيف يمكنني مساعدتك؟",
+    "chat.emailError": "تعذّر حفظ بريدك الإلكتروني، لكن يمكننا المتابعة. كيف يمكنني مساعدتك؟",
     "chat.error": "عذرًا، حدث خطأ. يرجى المحاولة مرة أخرى.",
     "chat.loading": "جارٍ إنشاء الرد…",
     "chat.online": "متصل",
@@ -82,10 +91,14 @@ const UI_STRINGS: Record<LangCode, Record<string, string>> = {
   es: {
     "chat.placeholder": "Haz tu pregunta…",
     "chat.emailPlaceholder": "tu.email@ejemplo.com",
-    "chat.emailPrompt": "Introduce tu correo electrónico para continuar",
-    "chat.emailAsk": "📧 Antes de empezar, ¿podrías darme tu correo electrónico? Esto nos permitirá contactarte y ofrecerte un mejor seguimiento.",
+    "chat.emailPrompt": "Opcional — puedes saltar este paso",
+    "chat.emailAsk": "📧 Si quieres, déjame tu correo electrónico para recibir nuestros consejos y ofertas sobre trámites. Es opcional: también puedes saltarlo y hacer tu pregunta directamente.",
     "chat.emailSuccess": "¡Gracias! 🎉 Tu correo ha sido registrado. ¿En qué puedo ayudarte?",
     "chat.emailInvalid": "Hmm, eso no parece una dirección de correo válida. 🤔 ¿Puedes intentar de nuevo? (ej: tu.email@ejemplo.com)",
+    "chat.emailConsent": "Acepto recibir por correo los consejos y ofertas de IA-DAF. Dirección conservada 3 años como máximo, baja posible en cualquier momento.",
+    "chat.emailSkip": "Saltar",
+    "chat.emailSkipped": "¡Sin problema! ¿En qué puedo ayudarte?",
+    "chat.emailError": "No se ha podido guardar tu correo, pero podemos seguir. ¿En qué puedo ayudarte?",
     "chat.error": "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.",
     "chat.loading": "Generando respuesta…",
     "chat.online": "En línea",
@@ -113,8 +126,27 @@ const LanguageContext = createContext<LanguageContextValue>({
   t: (key) => key,
 });
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<LangCode>("fr");
+export function LanguageProvider({
+  children,
+  /**
+   * Read server-side from the cookie by the root layout. Passing it in — rather
+   * than reading localStorage in an effect — avoids a hydration mismatch and a
+   * flash of French before the real preference applies.
+   */
+  initialLang = "fr",
+}: {
+  children: ReactNode;
+  initialLang?: LangCode;
+}) {
+  const [lang, setLangState] = useState<LangCode>(initialLang);
+
+  const setLang = useCallback((next: LangCode) => {
+    setLangState(next);
+    if (typeof document !== "undefined") {
+      // One year, same-site: a display preference, nothing sensitive.
+      document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+    }
+  }, []);
 
   const t = useCallback(
     (key: string): string => UI_STRINGS[lang]?.[key] ?? UI_STRINGS.fr[key] ?? key,

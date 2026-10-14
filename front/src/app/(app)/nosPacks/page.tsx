@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Check,
@@ -9,15 +7,28 @@ import {
   IdCard,
   Package,
   Receipt,
+  Sparkles,
 } from "lucide-react";
+
+import { auth } from "../../../auth";
+import { listUnlockedPacks } from "../../lib/entitlements";
 import PageHeader from "../../components/ui/PageHeader";
-import { isPackUnlocked } from "../../lib/mockPayment";
 import {
+  Badge,
+  ButtonLink,
+  Card,
+  PageContainer,
+} from "../../components/ui/primitives";
+import {
+  ALL_ACCESS_SLUG,
+  formatPrice,
   packs,
   type PackColor,
   type PackData,
   type PackIconKey,
 } from "../packs/packsData";
+
+export const metadata: Metadata = { title: "Nos packs" };
 
 const iconByKey: Record<
   PackIconKey,
@@ -30,144 +41,182 @@ const iconByKey: Record<
   package: Package,
 };
 
-const packStyleClass: Record<
-  PackColor,
-  { bar: string; border: string; icon: string; priceTag: string }
-> = {
-  blue: {
-    bar: "bg-blue-700",
-    border: "border-blue-200",
-    icon: "text-blue-700",
-    priceTag: "border-blue-200 bg-blue-50 text-blue-700",
-  },
-  green: {
-    bar: "bg-green-600",
-    border: "border-green-200",
-    icon: "text-green-700",
-    priceTag: "border-green-200 bg-green-50 text-green-700",
-  },
-  orange: {
-    bar: "bg-orange-500",
-    border: "border-orange-200",
-    icon: "text-orange-700",
-    priceTag: "border-orange-200 bg-orange-50 text-orange-700",
-  },
-  violet: {
-    bar: "bg-violet-600",
-    border: "border-violet-200",
-    icon: "text-violet-700",
-    priceTag: "border-violet-200 bg-violet-50 text-violet-700",
-  },
-  yellow: {
-    bar: "bg-yellow-500",
-    border: "border-yellow-200",
-    icon: "text-yellow-700",
-    priceTag: "border-yellow-200 bg-yellow-50 text-yellow-700",
-  },
+/** Accent coloré par pack — seule variation admise, le reste est unifié. */
+const accentByColor: Record<PackColor, { bar: string; icon: string }> = {
+  blue: { bar: "bg-blue-600", icon: "bg-blue-50 text-blue-600" },
+  green: { bar: "bg-emerald-600", icon: "bg-emerald-50 text-emerald-600" },
+  orange: { bar: "bg-orange-500", icon: "bg-orange-50 text-orange-600" },
+  violet: { bar: "bg-violet-600", icon: "bg-violet-50 text-violet-600" },
+  yellow: { bar: "bg-amber-500", icon: "bg-amber-50 text-amber-600" },
 };
 
-export default function NosPacksPage() {
-  const [unlockedPacks, setUnlockedPacks] = useState<Record<string, boolean>>(
-    {},
-  );
+export default async function NosPacksPage() {
+  const session = await auth();
 
-  useEffect(() => {
-    const unlockedMap = packs.reduce<Record<string, boolean>>((acc, pack) => {
-      acc[pack.slug] = isPackUnlocked(pack.slug);
-      return acc;
-    }, {});
+  // Lu côté serveur : la mention « Acheté » est correcte dès le premier rendu,
+  // sans le clignotement d'un chargement client.
+  const unlocked = session?.user?.id
+    ? await listUnlockedPacks(session.user.id)
+    : [];
 
-    setUnlockedPacks(unlockedMap);
-  }, []);
+  const standardPacks = packs.filter((pack) => pack.slug !== ALL_ACCESS_SLUG);
+  const allAccessPack = packs.find((pack) => pack.slug === ALL_ACCESS_SLUG);
 
   return (
     <div>
       <PageHeader
         title="Nos packs"
-        subtitle="Voir nos offres groupées pour simplifier vos démarches administratives."
+        subtitle="Un accompagnement pas à pas pour chaque démarche : checklist personnalisée, vérification des pièces et assistant IA dédié."
       />
-      <div className="bg-gray-50 min-h-screen px-4 md:px-8 py-16">
-        <div className="max-w-7xl mx-auto">
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
-            {packs.map((pack) => (
-              <div key={pack.title}>
-                <PackCard
-                  pack={pack}
-                  isUnlocked={Boolean(unlockedPacks[pack.slug])}
-                />
-              </div>
+
+      <PageContainer width="wide">
+        <div className="space-y-8">
+          <div className="stagger grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+            {standardPacks.map((pack) => (
+              <PackCard
+                key={pack.slug}
+                pack={pack}
+                isUnlocked={unlocked.includes(pack.slug)}
+              />
             ))}
-          </section>
+          </div>
+
+          {allAccessPack && (
+            <AllAccessCard
+              pack={allAccessPack}
+              isUnlocked={unlocked.includes(allAccessPack.slug)}
+            />
+          )}
+
+          <p className="text-center text-sm text-gray-500">
+            Paiement sécurisé par Stripe. Accès immédiat après confirmation.
+          </p>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }
 
-type PackCardProps = {
+function PackCard({
+  pack,
+  isUnlocked,
+}: {
   pack: PackData;
   isUnlocked: boolean;
-};
-
-function PackCard({ pack, isUnlocked }: PackCardProps) {
-  const style = packStyleClass[pack.color];
+}) {
+  const accent = accentByColor[pack.color];
   const Icon = iconByKey[pack.icon];
-  const isBestChoice = pack.title === "Pack complet";
 
   return (
-    <article
-      className={`relative w-full max-w-sm mx-auto bg-white border rounded-2xl p-8 flex flex-col justify-between shadow-sm hover:shadow-lg transition hover:scale-[1.02] h-[560px] ${
-        isBestChoice
-          ? "border-2 border-yellow-400 shadow-lg scale-[1.03]"
-          : style.border
-      }`}
-    >
-      <div
-        className={`absolute inset-x-0 top-0 h-2 w-full rounded-t-2xl ${style.bar}`}
-      />
+    <Card interactive className="relative flex h-full flex-col overflow-hidden">
+      <span className={`absolute inset-x-0 top-0 h-1 ${accent.bar}`} />
 
-      {isBestChoice && (
-        <span className="absolute top-4 right-4 bg-yellow-400 text-white text-xs px-3 py-1 rounded-full">
-          Meilleur choix
-        </span>
-      )}
+      <div className="flex flex-1 flex-col p-6 pt-7">
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent.icon}`}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+          {isUnlocked && <Badge tone="success">Acheté</Badge>}
+        </div>
 
-      {isUnlocked && (
-        <span className="absolute top-4 left-4 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-          Acheté
-        </span>
-      )}
+        <h2 className="mt-4 font-semibold text-gray-900">{pack.title}</h2>
+        <p className="mt-1 text-sm text-gray-500">{pack.shortDescription}</p>
 
-      <div>
-        <Icon className={`w-10 h-10 mx-auto mb-4 ${style.icon}`} />
-        <h2 className="text-lg font-semibold text-gray-900 text-center mt-4">
-          {pack.title}
-        </h2>
-
-        <p className="text-4xl font-bold text-gray-900 text-center my-6">
-          {pack.price}
+        <p className="mt-5 text-3xl font-bold text-gray-900">
+          {formatPrice(pack.priceCents)}
         </p>
-        <p className="text-sm text-gray-500 text-center">/ pack</p>
+        <p className="text-xs text-gray-400">paiement unique</p>
 
-        <ul className="space-y-3 mt-4">
+        <ul className="mt-5 flex-1 space-y-2.5">
           {pack.description.map((item) => (
-            <li
-              key={item}
-              className="flex items-center gap-2 text-gray-600 text-sm"
-            >
-              <Check className="w-4 h-4 text-green-500 shrink-0" />
+            <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
               <span>{item}</span>
             </li>
           ))}
         </ul>
-      </div>
 
-      <Link
-        href={`/payment/${pack.slug}`}
-        className="mt-8 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition w-full text-center"
-      >
-        Choisir ce pack
-      </Link>
-    </article>
+        <div className="mt-6">
+          <ButtonLink
+            href={isUnlocked ? `/packs/${pack.slug}` : `/payment/${pack.slug}`}
+            variant={isUnlocked ? "secondary" : "primary"}
+            fullWidth
+          >
+            {isUnlocked ? "Accéder au pack" : "Choisir ce pack"}
+          </ButtonLink>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Le pack tout-en-un mérite sa propre bande : il débloque tous les autres. */
+function AllAccessCard({
+  pack,
+  isUnlocked,
+}: {
+  pack: PackData;
+  isUnlocked: boolean;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white shadow-sm">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+
+      <div className="relative flex flex-col gap-6 p-7 md:flex-row md:items-center md:justify-between md:p-9">
+        <div className="min-w-0">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-amber-950">
+            <Sparkles className="h-3.5 w-3.5" />
+            Meilleur choix
+          </span>
+
+          <h2 className="mt-3 text-2xl font-bold">{pack.title}</h2>
+          <p className="mt-1.5 max-w-xl text-blue-100">
+            {pack.shortDescription} Toutes les démarches ci-dessus sont incluses.
+          </p>
+
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+            {packs
+              .filter((p) => p.slug !== pack.slug)
+              .map((p) => (
+                <li
+                  key={p.slug}
+                  className="flex items-center gap-1.5 text-sm text-blue-100"
+                >
+                  <Check className="h-4 w-4 shrink-0 text-emerald-300" />
+                  {p.title}
+                </li>
+              ))}
+          </ul>
+        </div>
+
+        <div className="shrink-0 text-left md:text-right">
+          {isUnlocked ? (
+            <Badge tone="success">Acheté</Badge>
+          ) : (
+            <>
+              <p className="text-4xl font-bold">
+                {formatPrice(pack.priceCents)}
+              </p>
+              <p className="text-sm text-blue-200">au lieu de {formatPrice(
+                packs
+                  .filter((p) => p.slug !== pack.slug)
+                  .reduce((sum, p) => sum + p.priceCents, 0),
+              )}</p>
+            </>
+          )}
+
+          <div className="mt-4">
+            <Link
+              href={isUnlocked ? `/packs/${pack.slug}` : `/payment/${pack.slug}`}
+              className="inline-flex w-full items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-blue-800 transition hover:bg-blue-50 md:w-auto"
+            >
+              {isUnlocked ? "Accéder au pack" : "Tout débloquer"}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
