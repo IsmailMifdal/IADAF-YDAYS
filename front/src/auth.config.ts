@@ -17,6 +17,10 @@ const PUBLIC_ROUTES = [
   "/procedures",
   // Reached from a link in an e-mail, often without being signed in.
   "/desinscription",
+  // Legal pages must be readable before signing up or paying.
+  "/mentions-legales",
+  "/confidentialite",
+  "/cgv",
 ];
 
 function isPublicRoute(pathname: string): boolean {

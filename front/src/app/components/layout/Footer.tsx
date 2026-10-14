@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Sparkles,
-  Mail,
-  MapPin,
-  Phone,
-  Linkedin,
-  Twitter,
-  Facebook,
-} from "lucide-react";
+import { Sparkles, Mail, MapPin, Phone } from "lucide-react";
 import { packs } from "../../(app)/packs/packsData";
+import { LEGAL_INFO } from "../../lib/legalInfo";
 
 const navLinks = [
   { label: "Accueil", href: "/" },
@@ -25,10 +18,10 @@ const packLinks = packs.map((pack) => ({
   href: "/nosPacks",
 }));
 
-const socials = [
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Facebook, href: "#", label: "Facebook" },
+const legalLinks = [
+  { label: "Mentions légales", href: "/mentions-legales" },
+  { label: "Confidentialité", href: "/confidentialite" },
+  { label: "CGV", href: "/cgv" },
 ];
 
 export default function Footer() {
@@ -91,36 +84,35 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h3 className="font-semibold mb-4 text-white">Contact</h3>
+            {/* Only real details: an invented phone number or address on a
+                commercial site misleads customers. Empty fields are hidden. */}
             <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-blue-100 text-sm">
-                <Mail className="w-4 h-4 text-blue-300 shrink-0" />
-                contact@ia-daf.fr
-              </li>
-              <li className="flex items-center gap-3 text-blue-100 text-sm">
-                <Phone className="w-4 h-4 text-blue-300 shrink-0" />
-                +33 1 23 45 67 89
-              </li>
-              <li className="flex items-center gap-3 text-blue-100 text-sm">
-                <MapPin className="w-4 h-4 text-blue-300 shrink-0" />
-                Paris, France
+              {LEGAL_INFO.contactEmail && (
+                <li className="flex items-center gap-3 text-blue-100 text-sm">
+                  <Mail className="w-4 h-4 text-blue-300 shrink-0" />
+                  <a href={`mailto:${LEGAL_INFO.contactEmail}`} className="hover:text-white transition">
+                    {LEGAL_INFO.contactEmail}
+                  </a>
+                </li>
+              )}
+              {LEGAL_INFO.phone && (
+                <li className="flex items-center gap-3 text-blue-100 text-sm">
+                  <Phone className="w-4 h-4 text-blue-300 shrink-0" />
+                  {LEGAL_INFO.phone}
+                </li>
+              )}
+              {LEGAL_INFO.address && (
+                <li className="flex items-center gap-3 text-blue-100 text-sm">
+                  <MapPin className="w-4 h-4 text-blue-300 shrink-0" />
+                  {LEGAL_INFO.address}
+                </li>
+              )}
+              <li className="text-blue-100 text-sm">
+                <Link href="/mentions-legales" className="hover:text-white transition">
+                  Toutes nos coordonnées →
+                </Link>
               </li>
             </ul>
-
-            <div className="flex items-center gap-3 mt-5">
-              {socials.map((social) => {
-                const Icon = social.icon;
-                return (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    aria-label={social.label}
-                    className="w-9 h-9 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg flex items-center justify-center transition"
-                  >
-                    <Icon className="w-4 h-4 text-white" />
-                  </a>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>
@@ -132,24 +124,15 @@ export default function Footer() {
             © {new Date().getFullYear()} IA-DAF. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6">
-            <Link
-              href="#"
-              className="text-blue-200 text-sm hover:text-white transition"
-            >
-              Mentions légales
-            </Link>
-            <Link
-              href="#"
-              className="text-blue-200 text-sm hover:text-white transition"
-            >
-              Confidentialité
-            </Link>
-            <Link
-              href="#"
-              className="text-blue-200 text-sm hover:text-white transition"
-            >
-              CGU
-            </Link>
+            {legalLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-blue-200 text-sm hover:text-white transition"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

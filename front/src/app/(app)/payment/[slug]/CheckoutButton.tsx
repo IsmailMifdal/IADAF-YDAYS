@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AlertCircle, Loader2, Lock } from "lucide-react";
 
 type Props = {
@@ -11,6 +12,10 @@ type Props = {
 export default function CheckoutButton({ slug, stripeConfigured }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  // Code de la consommation, art. L221-28 13° : without this express request
+  // and acknowledgement, the buyer keeps 14 days to withdraw and be refunded.
+  // Unticked by default — a pre-ticked box is not consent.
+  const [waivesWithdrawal, setWaivesWithdrawal] = useState(false);
 
   if (!stripeConfigured) {
     return (
@@ -32,7 +37,7 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
+        body: JSON.stringify({ slug, waiveWithdrawal: waivesWithdrawal }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -64,10 +69,27 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
         </div>
       )}
 
+      <label className="mb-4 flex items-start gap-2.5 text-sm text-gray-700">
+        <input
+          type="checkbox"
+          checked={waivesWithdrawal}
+          onChange={(e) => setWaivesWithdrawal(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+        />
+        <span>
+          Je demande l’accès immédiat au pack et je reconnais perdre mon droit
+          de rétractation de 14 jours. J’accepte les{" "}
+          <Link href="/cgv" target="_blank" className="text-blue-600 underline">
+            conditions générales de vente
+          </Link>
+          .
+        </span>
+      </label>
+
       <button
         type="button"
         onClick={handleCheckout}
-        disabled={isRedirecting}
+        disabled={isRedirecting || !waivesWithdrawal}
         className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 transition shadow-sm"
       >
         {isRedirecting ? (

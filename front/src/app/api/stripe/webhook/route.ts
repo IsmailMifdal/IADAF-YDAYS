@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       userId,
       packSlug,
       amountCents: session.amount_total ?? 0,
+      currency: session.currency ?? "eur",
       stripeSessionId: session.id,
     });
     console.info(`[stripe-webhook] granted "${packSlug}" to user ${userId}`);

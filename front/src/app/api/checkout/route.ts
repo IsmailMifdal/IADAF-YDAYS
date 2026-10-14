@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { auth } from "../../../auth";
 import { getPackBySlug } from "../../(app)/packs/packsData";
 import { hasPackAccess } from "../../lib/entitlements";
+import { CGV_VERSION } from "../../lib/legalInfo";
 import { isStripeConfigured, stripe } from "../../lib/stripe";
 
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   }
 
-  let body: { slug?: string };
+  let body: { slug?: string; waiveWithdrawal?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -28,6 +29,19 @@ export async function POST(request: Request) {
   const pack = body.slug ? getPackBySlug(body.slug) : undefined;
   if (!pack) {
     return NextResponse.json({ error: "Pack inconnu." }, { status: 404 });
+  }
+
+  // Enforced here, not only by the disabled button: without the buyer's
+  // express waiver, selling immediate access would leave a 14-day refund right
+  // open (Code de la consommation, art. L221-28 13°).
+  if (body.waiveWithdrawal !== true) {
+    return NextResponse.json(
+      {
+        error:
+          "Cochez la case de demande d’accès immédiat pour poursuivre le paiement.",
+      },
+      { status: 400 },
+    );
   }
 
   if (await hasPackAccess(session.user.id, pack.slug)) {
@@ -69,6 +83,9 @@ export async function POST(request: Request) {
       metadata: {
         userId: session.user.id,
         packSlug: pack.slug,
+        // Proof of what the buyer agreed to, kept with the payment record.
+        cgvVersion: CGV_VERSION,
+        withdrawalWaivedAt: new Date().toISOString(),
       },
       success_url: `${origin}/packs/${pack.slug}?checkout=success`,
       cancel_url: `${origin}/nosPacks?checkout=cancelled`,

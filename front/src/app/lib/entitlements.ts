@@ -3,6 +3,13 @@
  *
  * Rows are only ever written by the Stripe webhook, once a checkout session is
  * confirmed as paid. Nothing on the client can grant access.
+ *
+ * Two tables, two lifetimes:
+ * - `users.pack_entitlements` — access rights, tied to the account and erased
+ *   with it (RGPD, art. 17);
+ * - `billing.sales` — the sales ledger, which holds no personal data and
+ *   outlives the account: accounting records must be kept ten years
+ *   (art. L123-22 du Code de commerce).
  */
 
 import { ALL_ACCESS_SLUG, packs } from "../(app)/packs/packsData";
@@ -20,6 +27,9 @@ export type Entitlement = {
 
 // ── Schema bootstrap ──────────────────────────────────────────────────────
 
+/** Legal retention of accounting records, after which the ledger is swept. */
+const SALES_RETENTION_YEARS = 10;
+
 const DDL = `
   CREATE TABLE IF NOT EXISTS users.pack_entitlements (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,6 +40,27 @@ const DDL = `
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_user_pack UNIQUE (user_id, pack_slug)
   );
+
+  CREATE SCHEMA IF NOT EXISTS billing;
+
+  CREATE TABLE IF NOT EXISTS billing.sales (
+    -- Links back to Stripe, which holds the customer details; nothing here
+    -- identifies the buyer on its own.
+    stripe_session_id  VARCHAR(255) PRIMARY KEY,
+    pack_slug          VARCHAR(64)  NOT NULL,
+    amount_cents       INTEGER      NOT NULL,
+    currency           CHAR(3)      NOT NULL DEFAULT 'eur',
+    paid_at            TIMESTAMPTZ  NOT NULL DEFAULT now()
+  );
+
+  -- Purchases recorded before the ledger existed.
+  INSERT INTO billing.sales (stripe_session_id, pack_slug, amount_cents, paid_at)
+       SELECT stripe_session_id, pack_slug, amount_cents, created_at
+         FROM users.pack_entitlements
+        WHERE stripe_session_id IS NOT NULL
+  ON CONFLICT DO NOTHING;
+
+  DELETE FROM billing.sales WHERE paid_at < now() - interval '${SALES_RETENTION_YEARS} years';
 `;
 
 let schemaReady: Promise<void> | undefined;
@@ -114,9 +145,19 @@ export async function grantPackAccess(input: {
   userId: string;
   packSlug: string;
   amountCents: number;
+  currency: string;
   stripeSessionId: string;
 }): Promise<void> {
   await ensureBillingSchema();
+
+  // The sale first and on its own: it must be recorded even if granting the
+  // access fails (an account deleted between payment and webhook, say).
+  await query(
+    `INSERT INTO billing.sales (stripe_session_id, pack_slug, amount_cents, currency)
+          VALUES ($1, $2, $3, $4)
+     ON CONFLICT DO NOTHING`,
+    [input.stripeSessionId, input.packSlug, input.amountCents, input.currency],
+  );
 
   await query(
     `INSERT INTO users.pack_entitlements
