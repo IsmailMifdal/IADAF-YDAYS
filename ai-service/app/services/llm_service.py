@@ -58,7 +58,7 @@ class LLMService:
             self._setup_openai()
 
     def _setup_openai(self) -> None:
-        """Set up OpenAI GPT-3.5-turbo as fallback."""
+        """Set up OpenAI (model from ``OPENAI_MODEL``)."""
         if not settings.openai_api_key:
             logger.warning(
                 "Neither Ollama nor OpenAI is available. "
@@ -70,12 +70,18 @@ class LLMService:
             from langchain_openai import ChatOpenAI  # type: ignore
 
             self._llm = ChatOpenAI(
-                model="gpt-4o-mini",
+                model=settings.openai_model,
                 openai_api_key=settings.openai_api_key,
-                temperature=0.1,
+                temperature=settings.openai_temperature,
+                max_tokens=settings.openai_max_tokens,
+                timeout=settings.openai_timeout_seconds,
+                base_url=settings.openai_base_url or None,
             )
             self._openai_available = True
-            logger.info("OpenAI fallback backend ready.")
+            logger.info(
+                f"OpenAI-compatible backend ready — model: {settings.openai_model} "
+                f"@ {settings.openai_base_url or 'api.openai.com'}"
+            )
         except Exception as exc:  # noqa: BLE001
             logger.error(f"Failed to initialise OpenAI: {exc}")
 

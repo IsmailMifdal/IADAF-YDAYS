@@ -104,6 +104,11 @@ services:
       - EUREKA_INSTANCE_HOSTNAME=ai-service
       - USE_OPENAI=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.1}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-1000}
+      - OPENAI_TIMEOUT_SECONDS=${OPENAI_TIMEOUT_SECONDS:-30}
       - CHROMA_PERSIST_DIR=/data/vectorstore
       - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
       - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db

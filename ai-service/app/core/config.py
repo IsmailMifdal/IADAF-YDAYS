@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     # OpenAI fallback
     openai_api_key: str = ""
     use_openai: bool = False
+    openai_model: str = "gpt-4o-mini"
+    # Any OpenAI-compatible endpoint. Empty means OpenAI itself (servers in the
+    # US — a transfer outside the EU under the RGPD). Set it to an EU-hosted
+    # provider to keep conversations in the EU, e.g. https://api.mistral.ai/v1
+    # with OPENAI_MODEL=mistral-small-latest and that provider's key.
+    openai_base_url: str = ""
+    # Low by default: administrative answers must be factual, not creative.
+    openai_temperature: float = 0.1
+    openai_max_tokens: int = 1000
+    openai_timeout_seconds: float = 30
 
     # ChromaDB vector store
     chroma_persist_dir: str = "./app/data/vectorstore"
