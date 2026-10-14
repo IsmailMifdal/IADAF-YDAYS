@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "../../../../auth";
+import { RATE_LIMITS, hit, tooManyRequests } from "../../../lib/rateLimit";
 import { changePassword } from "../../../lib/users";
 import { changePasswordSchema } from "../../../lib/validation";
 
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   }
+
+  // Guessing the current password from a hijacked session.
+  const limit = await hit(RATE_LIMITS.passwordChange, session.user.id);
+  if (!limit.allowed) return tooManyRequests(limit);
 
   let body: unknown;
   try {

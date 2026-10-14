@@ -2,10 +2,14 @@
 
 import { NextResponse } from "next/server";
 
+import { RATE_LIMITS, clientIp, hit, tooManyRequests } from "../../../lib/rateLimit";
 import { createCredentialsUser } from "../../../lib/users";
 import { registerSchema } from "../../../lib/validation";
 
 export async function POST(request: Request) {
+  const limit = await hit(RATE_LIMITS.register, clientIp(request.headers));
+  if (!limit.allowed) return tooManyRequests(limit);
+
   let body: unknown;
   try {
     body = await request.json();

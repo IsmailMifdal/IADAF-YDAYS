@@ -32,7 +32,11 @@ export default function LoginForm({ googleEnabled, callbackUrl }: Props) {
     });
 
     if (result?.error) {
-      setError("E-mail ou mot de passe incorrect.");
+      setError(
+        result.code === "rate_limited"
+          ? "Trop de tentatives de connexion. Réessayez dans 15 minutes."
+          : "E-mail ou mot de passe incorrect.",
+      );
       setIsSubmitting(false);
       return;
     }

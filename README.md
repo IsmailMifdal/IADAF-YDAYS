@@ -326,5 +326,5 @@ voir [SECURITY.md](SECURITY.md).
 - [ ] Servir le site en HTTPS et fixer `AUTH_URL` sur le domaine public
 - [ ] Basculer les clés Stripe de test vers les clés live, et publier CGV + mentions légales
 - [ ] Ne plus exposer les ports `5432`, `8086` et `8761` hors du réseau Docker
-- [ ] Ajouter une limitation de débit sur `/api/auth/register` et `/api/auth/callback/credentials`
+- [ ] Ne joindre le frontend (`:3000`) que via le reverse proxy : la limitation de débit se fie à `X-Forwarded-For`
 - [ ] Mettre en place les sauvegardes PostgreSQL

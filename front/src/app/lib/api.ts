@@ -51,6 +51,16 @@ export type HealthResponse = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
+/** A non-2xx answer, with its status so callers can tell a 429 from a crash. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function post<TReq, TRes>(url: string, body: TReq): Promise<TRes> {
   const res = await fetch(url, {
     method: "POST",
@@ -60,7 +70,7 @@ async function post<TReq, TRes>(url: string, body: TReq): Promise<TRes> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "Unknown error");
-    throw new Error(`API ${res.status}: ${text}`);
+    throw new ApiError(res.status, `API ${res.status}: ${text}`);
   }
 
   return res.json();

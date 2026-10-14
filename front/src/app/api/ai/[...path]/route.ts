@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "../../../../auth";
 import { GATEWAY_URL, internalHeaders } from "../../../lib/aiService";
+import { RATE_LIMITS, clientIp, hitAll, tooManyRequests } from "../../../lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,21 @@ async function proxy(
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
   const target = `${GATEWAY_URL}/api/ai/${path.join("/")}`;
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  // Every call but the health check costs an LLM request.
+  if (path[0] !== "health") {
+    const limit = await hitAll(
+      userId
+        ? [[RATE_LIMITS.aiUser, userId]]
+        : [
+            [RATE_LIMITS.aiAnonymous, clientIp(req.headers)],
+            [RATE_LIMITS.aiAnonymousGlobal, "all"],
+          ],
+    );
+    if (!limit.allowed) return tooManyRequests(limit);
+  }
 
   const headers: Record<string, string> = {};
   for (const name of FORWARDED_HEADERS) {
@@ -36,8 +52,7 @@ async function proxy(
   }
 
   // Ties conversations to the account, so deleting it can erase them.
-  const session = await auth();
-  Object.assign(headers, internalHeaders(session?.user?.id));
+  Object.assign(headers, internalHeaders(userId));
 
   const init: RequestInit = { method: req.method, headers };
   if (req.method !== "GET" && req.method !== "HEAD") {

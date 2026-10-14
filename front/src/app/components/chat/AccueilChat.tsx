@@ -5,7 +5,7 @@ import { Send, Loader2, Bot, MessageSquare, X, Mail } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { api, type ChatResponse } from "../../lib/api";
+import { api, ApiError, type ChatResponse } from "../../lib/api";
 import { useLanguage, type LangCode } from "../../context/LanguageContext";
 import LanguageSelector from "../ui/LanguageSelector";
 import { packs } from "../../(app)/packs/packsData";
@@ -16,6 +16,9 @@ type ChatMessage = {
 };
 
 const MAX_USER_MESSAGES = 3;
+
+const isRateLimited = (error: unknown) =>
+  error instanceof ApiError && error.status === 429;
 
 // Interpolated into every system prompt so the assistant can never advertise a
 // pack that is not actually on sale.
@@ -225,12 +228,12 @@ export default function AccueilChat() {
           });
           setConversationId(res.conversation_id);
           setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-        } catch {
+        } catch (error) {
           setMessages((prev) => [
             ...prev,
             {
               role: "ai",
-              content: t("chat.fallbackEnd"),
+              content: t(isRateLimited(error) ? "chat.rateLimited" : "chat.fallbackEnd"),
             },
           ]);
         } finally {
@@ -249,12 +252,12 @@ export default function AccueilChat() {
         });
         setConversationId(res.conversation_id);
         setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-      } catch {
+      } catch (error) {
         setMessages((prev) => [
           ...prev,
           {
             role: "ai",
-            content: t("chat.error"),
+            content: t(isRateLimited(error) ? "chat.rateLimited" : "chat.error"),
           },
         ]);
       } finally {

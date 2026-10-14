@@ -3,11 +3,15 @@
 import { NextResponse } from "next/server";
 
 import { saveLead } from "../../lib/leads";
+import { RATE_LIMITS, clientIp, hit, tooManyRequests } from "../../lib/rateLimit";
 import { leadSchema } from "../../lib/validation";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const limit = await hit(RATE_LIMITS.leads, clientIp(request.headers));
+  if (!limit.allowed) return tooManyRequests(limit);
+
   let body: unknown;
   try {
     body = await request.json();

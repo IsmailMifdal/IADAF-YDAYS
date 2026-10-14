@@ -7,14 +7,20 @@
  *     so the app still boots without Google credentials configured.
  */
 
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers";
 
 import { authConfig } from "./auth.config";
+import { RATE_LIMITS, clientIp, hitAll } from "./app/lib/rateLimit";
 import { findUserByEmail, upsertOAuthUser, verifyPassword } from "./app/lib/users";
 import { credentialsSchema } from "./app/lib/validation";
+
+/** Surfaces to the login form as `result.code`, distinct from a bad password. */
+class RateLimitedSignin extends CredentialsSignin {
+  code = "rate_limited";
+}
 
 const providers: Provider[] = [
   Credentials({
@@ -22,9 +28,16 @@ const providers: Provider[] = [
       email: { label: "E-mail", type: "email" },
       password: { label: "Mot de passe", type: "password" },
     },
-    async authorize(raw) {
+    async authorize(raw, request) {
       const parsed = credentialsSchema.safeParse(raw);
       if (!parsed.success) return null;
+
+      // Before the bcrypt comparison, so a flood of guesses costs us nothing.
+      const limit = await hitAll([
+        [RATE_LIMITS.loginIp, clientIp(request.headers)],
+        [RATE_LIMITS.loginEmail, parsed.data.email.trim().toLowerCase()],
+      ]);
+      if (!limit.allowed) throw new RateLimitedSignin();
 
       const user = await findUserByEmail(parsed.data.email);
       if (!user) return null;

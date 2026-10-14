@@ -140,6 +140,43 @@ navigateur (débogage, Swagger).
 
 ---
 
+## 🚦 Limitation de débit
+
+Compteurs à fenêtre fixe stockés dans PostgreSQL (schéma `ratelimit`) : ils
+survivent aux redémarrages et sont partagés entre instances, sans ajouter
+Redis. Les clés (IP, e-mail) sont stockées **hachées en HMAC**, jamais en
+clair, et purgées après 48 h. Les règles vivent dans
+[`lib/rateLimit.ts`](front/src/app/lib/rateLimit.ts).
+
+| Point d'entrée | Limite |
+|----------------|--------|
+| `/api/ai/*` anonyme | 30 / h par IP, **et 1 000 / jour au total** (plafond de coût LLM) |
+| `/api/ai/*` connecté | 200 / h par compte |
+| Connexion (Credentials) | 20 / 15 min par IP, 10 / 15 min par adresse e-mail |
+| `/api/auth/register` | 5 / h par IP |
+| `/api/account/password` | 10 / 15 min par compte |
+| `/api/leads` | 5 / h par IP |
+
+Une limite atteinte renvoie **429** avec `Retry-After`. Les règles sont
+évaluées dans l'ordre et s'arrêtent au premier refus : une IP déjà bloquée ne
+peut pas épuiser à elle seule le quota global anonyme.
+
+À connaître :
+
+- **IP du client** — lue dans la dernière entrée de `X-Forwarded-For`, celle
+  écrite par le reverse proxy. Si le port `3000` est joignable directement,
+  un client peut forger cet en-tête.
+- **Verrouillage par e-mail** — la limite par adresse empêche de deviner un
+  mot de passe depuis de nombreuses IP, mais permet à un attaquant de bloquer
+  la connexion d'un compte pendant 15 minutes.
+- **Échec ouvert** — si PostgreSQL est injoignable, la requête passe (et
+  l'erreur est journalisée) plutôt que de bloquer tous les visiteurs.
+- **Quota global anonyme** — quand il est épuisé, le chat d'accueil cesse de
+  répondre aux visiteurs non connectés jusqu'au lendemain ; c'est le prix du
+  plafond de coût.
+
+---
+
 ## 🧾 Données personnelles (RGPD)
 
 ### Liaison frontend → AI Service
@@ -233,7 +270,7 @@ de démarrer avec une configuration d'authentification incomplète.
 | **Aucune authentification côté back** | `SecurityConfig` autorise tout (`permitAll`) sur la gateway **et sur les quatre services Java**. Aucun JWT n'est validé : c'est le frontend qui porte l'auth. Toute exposition directe des ports 8080–8086 rend ces services librement appelables — y compris `/api/users`, qui expose des données personnelles. |
 | **Ports des services Java publiés** | `8081`, `8082`, `8083` et `8085` sont mappés sur l'hôte pour faciliter les tests. À retirer du mapping en production : seule la gateway devrait joindre ces services, sur le réseau Docker interne. |
 | **Identité non vérifiée sur `demarches-service`** | Ce service cloisonne les démarches par utilisateur. Faute de jeton depuis le retrait de Keycloak, il accepte l'en-tête **`X-User-Id`**, qui n'est **pas vérifiée** : tout appelant peut se déclarer n'importe quel utilisateur et lire ou modifier ses démarches. C'est un raccourci de développement assumé — voir ci-dessous. |
-| **Pas de limitation de débit** | `/api/auth/register` et `/api/auth/callback/credentials` acceptent un nombre illimité de tentatives — bruteforce et création de comptes en masse possibles. |
+| **Limitation de débit contournable par la gateway** | Les quotas s'appliquent dans le frontend. Tant que le port `8080` (ou `8086`) est publié, un appel direct à la gateway ou à l'AI Service échappe à toute limite — et consomme le crédit OpenAI. |
 | **Ports internes exposés** | `5432`, `8086` et `8761` sont publiés sur l'hôte dans `docker-compose.yml`. À restreindre au réseau Docker en production. |
 | **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. Le déploiement doit être en TLS. |
 | **Pas de réinitialisation de mot de passe** | Un utilisateur ayant perdu son mot de passe n'a aucun recours en libre-service. |
@@ -273,6 +310,6 @@ Deux façons de refermer la brèche avant une mise en production :
 - [ ] HTTPS actif, `AUTH_URL` pointant sur le domaine public
 - [ ] Clés Stripe live, webhook déclaré sur l'URL publique
 - [ ] Ports `5432` / `8086` / `8761` retirés du mapping hôte
-- [ ] Limitation de débit sur les endpoints d'authentification
+- [ ] Frontend joignable uniquement via le reverse proxy (sinon `X-Forwarded-For` peut être forgé)
 - [ ] Sauvegardes PostgreSQL configurées et restauration testée
 - [ ] CGV et mentions légales publiées (obligatoire pour encaisser)
