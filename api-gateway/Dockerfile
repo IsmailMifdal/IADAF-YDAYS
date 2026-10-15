@@ -1,16 +1,21 @@
+# syntax=docker/dockerfile:1
+# Le cache /root/.m2 est partagé entre builds (BuildKit) : les dépendances
+# ne sont téléchargées qu'une fois, et -U + les retentatives absorbent les
+# erreurs passagères de Maven Central (502, coupures) qui faisaient échouer
+# toute la stack.
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 WORKDIR /build
 
 # Copy parent POM and install it locally
 COPY pom.xml .
-RUN mvn install -N -q
+RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -q -U -Daether.connector.http.retryHandler.count=5 install -N
 
 # Copy service POM and source
 COPY api-gateway/pom.xml api-gateway/
 COPY api-gateway/src api-gateway/src
 
 # Build the service JAR
-RUN mvn -f api-gateway/pom.xml package -DskipTests -q
+RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -q -U -Daether.connector.http.retryHandler.count=5 -f api-gateway/pom.xml package -DskipTests
 
 # --- Runtime ---
 FROM eclipse-temurin:17-jre-alpine
