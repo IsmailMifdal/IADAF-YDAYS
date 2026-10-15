@@ -78,7 +78,8 @@ Puis renseigner dans `.env` :
 |----------|:-----------:|------|
 | `OPENAI_API_KEY` | ✅ | Moteur du chatbot et de l'analyse de documents |
 | `AUTH_SECRET` | ✅ | Signature des sessions Auth.js — `openssl rand -base64 32` |
-| `INTERNAL_API_TOKEN` | ✅ | Secret partagé frontend ↔ AI Service — `openssl rand -hex 32` |
+| `INTERNAL_JWT_SECRET` | ✅ | Clé des jetons internes frontend → backend (32 octets min.) — `openssl rand -hex 32` |
+| `SMTP_URL` / `MAIL_FROM` | ➖ | E-mails de réinitialisation du mot de passe ; en dev, le lien s'affiche dans les logs |
 | `POSTGRES_PASSWORD` | ✅ | À changer impérativement hors développement |
 | `STRIPE_SECRET_KEY` | ➖ | Sans elle, le bouton de paiement affiche « non configuré » |
 | `STRIPE_WEBHOOK_SECRET` | ➖ | Nécessaire pour débloquer les packs après paiement |
@@ -102,11 +103,18 @@ curl http://localhost:8086/ai/health
 # Dashboard Eureka
 open http://localhost:8761
 
-# Chatbot via la gateway
+# Chatbot via la gateway — tout appel exige un jeton interne
+TOKEN=$(INTERNAL_JWT_SECRET=<valeur du .env> node front/scripts/dev-token.mjs)
 curl -X POST http://localhost:8080/api/ai/chat \
+     -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"message": "Comment obtenir une carte de séjour ?"}'
 ```
+
+En développement, `docker-compose.override.yml` (chargé automatiquement) publie
+les ports internes sur `127.0.0.1`. En production, lancer
+`docker compose -f docker-compose.yml up -d --build` : seul le frontend est
+publié, sur la loopback, derrière le reverse proxy.
 
 Documentation Swagger interactive : http://localhost:8086/docs
 
@@ -184,7 +192,7 @@ préfixe `/api` et route vers le service enregistré dans Eureka.
 | POST | `/api/ai/chat` | Chatbot administratif (FR/EN/AR/ES) |
 | POST | `/api/ai/translate` | Traduction multilingue |
 | POST | `/api/ai/analyze-document` | Analyse de document administratif |
-| DELETE | `/api/ai/users/{id}/data` | Effacement des conversations d'un compte — **interne**, exige `X-Internal-Token` |
+| DELETE | `/api/ai/users/{id}/data` | Effacement des conversations d'un compte — **interne**, exige un jeton de scope `account:erase` pour ce compte |
 
 La collecte d'e-mails du chat d'accueil est portée par le frontend
 (`POST /api/leads`), pas par l'AI Service — voir [SECURITY.md](SECURITY.md#-données-personnelles-rgpd).
@@ -201,14 +209,13 @@ La collecte d'e-mails du chat d'accueil est portée par le frontend
 
 ### Demarches Service
 
-⚠️ Ces endpoints cloisonnent les données par utilisateur et exigent une
-identité. En l'absence de jeton, passez l'en-tête `X-User-Id` :
+Ces endpoints cloisonnent les données par utilisateur : l'identité est le
+sujet du jeton interne, jamais un en-tête.
 
 ```bash
-curl http://localhost:8080/api/demarches -H "X-User-Id: <uuid>"
+TOKEN=$(INTERNAL_JWT_SECRET=<valeur du .env> node front/scripts/dev-token.mjs <user-id>)
+curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 ```
-
-Cette en-tête n'est pas vérifiée — voir [SECURITY.md](SECURITY.md).
 
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
@@ -314,9 +321,8 @@ maturité diffère :
 aujourd'hui que `/api/ai/*`. Ils complètent l'architecture microservices et sont
 appelables directement ou via la gateway.
 
-⚠️ Aucun d'eux n'applique d'authentification (`permitAll`) : Keycloak a été
-retiré de l'architecture. Ils ne doivent donc pas être exposés publiquement —
-voir [SECURITY.md](SECURITY.md).
+Chacun exige un jeton interne signé par le frontend et revalide sa signature,
+même derrière la gateway — voir [SECURITY.md](SECURITY.md#-jetons-internes).
 
 ---
 
@@ -325,6 +331,7 @@ voir [SECURITY.md](SECURITY.md).
 - [ ] Régénérer `AUTH_SECRET` et `POSTGRES_PASSWORD` (ne jamais réutiliser ceux du dev)
 - [ ] Servir le site en HTTPS et fixer `AUTH_URL` sur le domaine public
 - [ ] Basculer les clés Stripe de test vers les clés live, et publier CGV + mentions légales
-- [ ] Ne plus exposer les ports `5432`, `8086` et `8761` hors du réseau Docker
+- [ ] Lancer avec `docker compose -f docker-compose.yml` (sans l'override de dev, qui publie les ports internes)
+- [ ] Générer un `INTERNAL_JWT_SECRET` propre à la production, et configurer `SMTP_URL`
 - [ ] Ne joindre le frontend (`:3000`) que via le reverse proxy : la limitation de débit se fie à `X-Forwarded-For`
 - [ ] Mettre en place les sauvegardes PostgreSQL

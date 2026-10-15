@@ -20,22 +20,19 @@ function timeNow(): string {
 
 export default function ChatIa() {
   const [inputValue, setInputValue] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  // No timestamp on the welcome: one computed during render would differ
+  // between the server and the client, causing a hydration mismatch.
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Bonjour ! Je suis votre assistant IA. Je peux vous aider pour vos d\u00e9marches administratives. Que souhaitez-vous faire aujourd\u2019hui ?",
+      timestamp: "",
+    },
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Set initial message on client only to avoid hydration mismatch (timeNow differs server/client)
-  useEffect(() => {
-    setMessages([
-      {
-        role: "assistant",
-        content:
-          "Bonjour ! Je suis votre assistant IA. Je peux vous aider pour vos d\u00e9marches administratives. Que souhaitez-vous faire aujourd\u2019hui ?",
-        timestamp: timeNow(),
-      },
-    ]);
-  }, []);
 
   const isSendDisabled = inputValue.trim().length === 0 || isLoading;
 
@@ -137,7 +134,9 @@ export default function ChatIa() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-1.5">
-                    <p className="text-xs text-gray-400">{msg.timestamp}</p>
+                    {msg.timestamp && (
+                      <p className="text-xs text-gray-400">{msg.timestamp}</p>
+                    )}
                     {msg.role === "assistant" && idx > 0 && (
                       <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5 flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5" /> OpenAI

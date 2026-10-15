@@ -1,6 +1,8 @@
 package com.iadaf.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iadaf.user.TestTokens;
+import com.iadaf.user.config.SecurityConfig;
 import com.iadaf.user.dto.CreateUserRequest;
 import com.iadaf.user.dto.UserDTO;
 import com.iadaf.user.exception.ResourceNotFoundException;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,8 +30,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
+@Import(SecurityConfig.class)
 @ActiveProfiles("test")
 class UserControllerTest {
+
+    /** Requêtes authentifiées comme si elles venaient du frontend. */
+    private static final String TOKEN = TestTokens.bearer("user-1");
 
     @Autowired
     private MockMvc mockMvc;
@@ -70,7 +78,7 @@ class UserControllerTest {
         when(userService.createUser(any(CreateUserRequest.class))).thenReturn(userDTO);
 
         // Act & Assert
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users").header(HttpHeaders.AUTHORIZATION, TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createUserRequest)))
                 .andExpect(status().isCreated())
@@ -90,7 +98,7 @@ class UserControllerTest {
         invalidRequest.setEmail("invalid-email");
 
         // Act & Assert
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users").header(HttpHeaders.AUTHORIZATION, TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
@@ -105,7 +113,7 @@ class UserControllerTest {
                 .thenThrow(new UserAlreadyExistsException("jean.dupont@example.com"));
 
         // Act & Assert
-        mockMvc.perform(post("/users")
+        mockMvc.perform(post("/users").header(HttpHeaders.AUTHORIZATION, TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createUserRequest)))
                 .andExpect(status().isConflict());
@@ -120,7 +128,7 @@ class UserControllerTest {
         when(userService.getAllUsers()).thenReturn(users);
 
         // Act & Assert
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/users").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].id").value(1))
@@ -135,7 +143,7 @@ class UserControllerTest {
         when(userService.getUserById(1L)).thenReturn(userDTO);
 
         // Act & Assert
-        mockMvc.perform(get("/users/1"))
+        mockMvc.perform(get("/users/1").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("jean.dupont@example.com"));
@@ -150,7 +158,7 @@ class UserControllerTest {
                 .thenThrow(new ResourceNotFoundException("Utilisateur", "id", 1L));
 
         // Act & Assert
-        mockMvc.perform(get("/users/1"))
+        mockMvc.perform(get("/users/1").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isNotFound());
 
         verify(userService, times(1)).getUserById(1L);
@@ -162,7 +170,7 @@ class UserControllerTest {
         when(userService.getUserByEmail("jean.dupont@example.com")).thenReturn(userDTO);
 
         // Act & Assert
-        mockMvc.perform(get("/users/email/jean.dupont@example.com"))
+        mockMvc.perform(get("/users/email/jean.dupont@example.com").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("jean.dupont@example.com"));
 
@@ -175,7 +183,7 @@ class UserControllerTest {
         when(userService.updateUser(eq(1L), any(CreateUserRequest.class))).thenReturn(userDTO);
 
         // Act & Assert
-        mockMvc.perform(put("/users/1")
+        mockMvc.perform(put("/users/1").header(HttpHeaders.AUTHORIZATION, TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createUserRequest)))
                 .andExpect(status().isOk())
@@ -191,7 +199,7 @@ class UserControllerTest {
         doNothing().when(userService).deleteUser(1L);
 
         // Act & Assert
-        mockMvc.perform(delete("/users/1"))
+        mockMvc.perform(delete("/users/1").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isNoContent());
 
         verify(userService, times(1)).deleteUser(1L);
@@ -204,7 +212,7 @@ class UserControllerTest {
         when(userService.getUsersByLangue("FR")).thenReturn(users);
 
         // Act & Assert
-        mockMvc.perform(get("/users/langue/FR"))
+        mockMvc.perform(get("/users/langue/FR").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].languePreferee").value("FR"));
@@ -219,7 +227,7 @@ class UserControllerTest {
         when(userService.getUsersByPays("France")).thenReturn(users);
 
         // Act & Assert
-        mockMvc.perform(get("/users/pays/France"))
+        mockMvc.perform(get("/users/pays/France").header(HttpHeaders.AUTHORIZATION, TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].paysOrigine").value("France"));

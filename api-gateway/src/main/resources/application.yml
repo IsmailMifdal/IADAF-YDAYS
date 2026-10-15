@@ -21,6 +21,12 @@ spring:
 server:
   port: 8080
 
+# Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
+# La gateway refuse de démarrer sans elle.
+iadaf:
+  security:
+    internal-jwt-secret: ${INTERNAL_JWT_SECRET:}
+
 # Configuration Eureka Client
 eureka:
   client:

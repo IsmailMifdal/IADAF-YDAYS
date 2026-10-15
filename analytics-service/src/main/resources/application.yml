@@ -52,3 +52,9 @@ services:
     url: ${DEMARCHES_SERVICE_URL:http://localhost:8082}
   document-service:
     url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}
+
+# Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
+# Le service refuse de démarrer sans elle.
+iadaf:
+  security:
+    internal-jwt-secret: ${INTERNAL_JWT_SECRET:}

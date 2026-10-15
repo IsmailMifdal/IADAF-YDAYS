@@ -7,6 +7,12 @@
 #   ai-service         :8086   (Python / FastAPI + OpenAI)
 #   frontend           :3000   (Next.js)
 #
+# Ports : en production, seul le frontend est publié, et sur la loopback
+# (derrière un reverse proxy). docker-compose.override.yml, chargé
+# automatiquement en développement, publie les autres sur 127.0.0.1.
+#   Développement : docker compose up -d --build
+#   Production    : docker compose -f docker-compose.yml up -d --build
+#
 # Lancement :  docker compose up -d --build
 # Arrêt :      docker compose down
 # Logs :       docker compose logs -f <service>
@@ -25,8 +31,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-iadaf_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
       TZ: Europe/Paris
-    ports:
-      - "5432:5432"
     volumes:
       # Defaults to the named volume below. Set POSTGRES_DATA_PATH to a host
       # path to bind-mount instead — a hardcoded Windows path would break any
@@ -48,8 +52,6 @@ services:
       context: .
       dockerfile: discovery-service/Dockerfile
     container_name: iadaf-discovery
-    ports:
-      - "8761:8761"
     environment:
       - EUREKA_INSTANCE_HOSTNAME=discovery-service
     networks:
@@ -74,11 +76,10 @@ services:
       context: .
       dockerfile: api-gateway/Dockerfile
     container_name: iadaf-gateway
-    ports:
-      - "8080:8080"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWED-ORIGINS=http://localhost:3000
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
     networks:
       - iadaf-network
     depends_on:
@@ -103,8 +104,6 @@ services:
   ai-service:
     build: ./ai-service
     container_name: iadaf-ai
-    ports:
-      - "8086:8086"
     environment:
       - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
       - EUREKA_INSTANCE_HOSTNAME=ai-service
@@ -118,7 +117,7 @@ services:
       - CHROMA_PERSIST_DIR=/data/vectorstore
       - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
       - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db
-      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN is required — see .env.example}
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
     volumes:
       - ai_vectorstore:/data/vectorstore
@@ -144,11 +143,10 @@ services:
       context: .
       dockerfile: user-service/Dockerfile
     container_name: iadaf-user
-    ports:
-      - "8081:8081"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=users
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
     networks:
@@ -175,11 +173,10 @@ services:
       context: .
       dockerfile: demarches-service/Dockerfile
     container_name: iadaf-demarches
-    ports:
-      - "8082:8082"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=demarches
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
     networks:
@@ -208,11 +205,10 @@ services:
       context: .
       dockerfile: document-service/Dockerfile
     container_name: iadaf-document
-    ports:
-      - "8083:8083"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=documents
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
     networks:
@@ -240,11 +236,10 @@ services:
       context: .
       dockerfile: analytics-service/Dockerfile
     container_name: iadaf-analytics
-    ports:
-      - "8085:8085"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=analytics
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
       - USER_SERVICE_URL=http://user-service:8081
@@ -277,20 +272,27 @@ services:
       context: ./front
       dockerfile: DockerFile
     container_name: iadaf-front
+    # Loopback only: the site is served through a reverse proxy on the host
+    # (Caddy, nginx). Rate limiting trusts X-Forwarded-For, which a client
+    # reaching port 3000 directly could forge.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - API_GATEWAY_URL=http://api-gateway:8080
       # Auth.js reads users straight from Postgres (schema `users`).
       - DATABASE_URL=postgresql://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
       - AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET is required — see .env.example}
-      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN:?INTERNAL_API_TOKEN is required — see .env.example}
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - AUTH_URL=${AUTH_URL:-http://localhost:3000}
       - AUTH_TRUST_HOST=true
       - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID:-}
       - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET:-}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      # Password-reset e-mails. Without SMTP_URL in production the reset
+      # request is logged as an error and no mail leaves.
+      - SMTP_URL=${SMTP_URL:-}
+      - MAIL_FROM=${MAIL_FROM:-}
     networks:
       - iadaf-network
     depends_on:

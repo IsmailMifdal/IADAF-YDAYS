@@ -73,27 +73,32 @@ export default function PackWorkspace() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [welcomeSent, setWelcomeSent] = useState(false);
+  // Language the chat was opened in. A change restarts the conversation —
+  // done during render, as React recommends for state derived from a prop,
+  // rather than in an effect that would render twice.
+  const [chatLang, setChatLang] = useState(lang);
+  if (chatLang !== lang) {
+    setChatLang(lang);
+    setMessages([]);
+    setConversationId(undefined);
+  }
+  // No message yet means the welcome is still on its way.
+  const isWelcoming = Boolean(pack) && messages.length === 0;
+  const isBusy = isLoading || isWelcoming;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const dropInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Reset chat when language changes so welcome is re-sent in new language
-  useEffect(() => {
-    setMessages([]);
-    setConversationId(undefined);
-    setWelcomeSent(false);
-  }, [lang]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Envoie un message de bienvenue contextuel au pack choisi
+  // Envoie un message de bienvenue contextuel au pack choisi, à l'ouverture
+  // puis à chaque changement de langue.
   useEffect(() => {
-    if (!pack || welcomeSent) return;
-    setWelcomeSent(true);
-    setIsLoading(true);
+    if (!pack) return;
+    // Une réponse arrivée après un changement de langue est ignorée.
+    let cancelled = false;
 
     const docsList = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
 
@@ -153,10 +158,12 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     api
       .chat({ message: prompt, conversation_id: undefined, language: lang })
       .then((res) => {
+        if (cancelled) return;
         setConversationId(res.conversation_id);
         setMessages([{ role: "ai", content: res.response }]);
       })
       .catch(() => {
+        if (cancelled) return;
         const fallbackDocs = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
         setMessages([
           {
@@ -164,9 +171,12 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
             content: `Bienvenue ! 🎉 Je suis là pour t'accompagner dans ta démarche **${pack.title}**.\n\n📋 **Documents à préparer :**\n${fallbackDocs}\n\nN'hésite pas à me poser tes questions, je suis là pour t'aider ! 💬`,
           },
         ]);
-      })
-      .finally(() => setIsLoading(false));
-  }, [pack, welcomeSent, lang]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pack, lang]);
 
   const uploadedCount = useMemo(() => {
     return (
@@ -238,7 +248,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
 
   const handleSendMessage = useCallback(async () => {
     const trimmed = chatInput.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isBusy) return;
 
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setChatInput("");
@@ -270,7 +280,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     } finally {
       setIsLoading(false);
     }
-  }, [chatInput, conversationId, isLoading, pack, lang, t]);
+  }, [chatInput, conversationId, isBusy, pack, lang, t]);
 
   if (!pack) {
     return (
@@ -635,7 +645,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                     </div>
                   ))}
 
-                  {isLoading && (
+                  {isBusy && (
                     <div className="flex items-start gap-3">
                       <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
                         <Bot className="w-4 h-4" />
@@ -662,13 +672,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       }
                     }}
                     placeholder={t("pack.chat.placeholder")}
-                    disabled={isLoading}
+                    disabled={isBusy}
                     className="flex-1 bg-transparent outline-none px-2 py-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
                   />
                   <button
                     type="button"
                     onClick={handleSendMessage}
-                    disabled={isLoading || chatInput.trim().length === 0}
+                    disabled={isBusy || chatInput.trim().length === 0}
                     className="h-10 w-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-50"
                   >
                     <ArrowRight className="h-4 w-4" />

@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import trusted_user_id
+from app.core.security import current_user_id
 from app.models.database import get_session
 from app.models.schemas import ChatRequest, ChatResponse
 from app.services.chat_service import chat_service
@@ -17,7 +17,7 @@ router = APIRouter(tags=["chat"])
 async def chat(
     request: ChatRequest,
     session: AsyncSession = Depends(get_session),
-    user_id: Optional[str] = Depends(trusted_user_id),
+    user_id: Optional[str] = Depends(current_user_id),
 ) -> ChatResponse:
     """Process a user chat message and return the AI response.
 

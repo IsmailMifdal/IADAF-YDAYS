@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "../../../../auth";
-import { GATEWAY_URL, internalHeaders } from "../../../lib/aiService";
+import { GATEWAY_URL, backendAuthHeaders } from "../../../lib/aiService";
 import { RATE_LIMITS, clientIp, hitAll, tooManyRequests } from "../../../lib/rateLimit";
 
 export const runtime = "nodejs";
 
 /**
  * Request headers passed on to the AI service. Anything else — cookies (the
- * session token above all), or an `X-User-Id` / `X-Internal-Token` a client
+ * session token above all), or an `Authorization` / `X-User-Id` a client
  * tried to forge — stays here.
  */
 const FORWARDED_HEADERS = ["content-type", "accept", "accept-language"];
@@ -16,7 +16,7 @@ const FORWARDED_HEADERS = ["content-type", "accept", "accept-language"];
 /**
  * AI endpoints the browser may reach. Everything else is internal: the
  * erasure endpoint in particular must never be reachable through here, since
- * this proxy attaches the internal token for any signed-in user.
+ * this proxy signs a token for any signed-in user.
  */
 const PUBLIC_PATHS = new Set(["chat", "translate", "analyze-document", "health"]);
 
@@ -51,8 +51,10 @@ async function proxy(
     if (value) headers[name] = value;
   }
 
-  // Ties conversations to the account, so deleting it can erase them.
-  Object.assign(headers, internalHeaders(userId));
+  // Signed for every call, anonymous ones included: the gateway rejects
+  // anything without it. The subject ties conversations to the account, so
+  // deleting it can erase them.
+  Object.assign(headers, await backendAuthHeaders(userId));
 
   const init: RequestInit = { method: req.method, headers };
   if (req.method !== "GET" && req.method !== "HEAD") {

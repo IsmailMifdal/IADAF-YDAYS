@@ -21,6 +21,9 @@ const PUBLIC_ROUTES = [
   "/mentions-legales",
   "/confidentialite",
   "/cgv",
+  // Account recovery: by definition, the visitor cannot sign in.
+  "/mot-de-passe-oublie",
+  "/reinitialiser-mot-de-passe",
 ];
 
 function isPublicRoute(pathname: string): boolean {

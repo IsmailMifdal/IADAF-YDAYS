@@ -40,10 +40,14 @@
             <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
         </dependency>
         
-        <!-- Spring Security (permit-all, no Keycloak) -->
+        <!-- Spring Security : validation des jetons internes signés par le frontend -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- Lombok -->

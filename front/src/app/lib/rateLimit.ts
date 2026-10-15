@@ -39,6 +39,11 @@ export const RATE_LIMITS = {
    */
   loginEmail: { name: "login-email", limit: 10, windowSeconds: 15 * 60 },
   passwordChange: { name: "password-change", limit: 10, windowSeconds: 15 * 60 },
+  /** Reset e-mails, per IP and per address: no mail-bombing a victim. */
+  passwordResetIp: { name: "password-reset-ip", limit: 5, windowSeconds: HOUR },
+  passwordResetEmail: { name: "password-reset-email", limit: 3, windowSeconds: HOUR },
+  /** Token guesses, per IP — 256-bit tokens make this belt and braces. */
+  passwordResetConfirm: { name: "password-reset-confirm", limit: 10, windowSeconds: 15 * 60 },
   leads: { name: "leads", limit: 5, windowSeconds: HOUR },
 } satisfies Record<string, RateLimitRule>;
 

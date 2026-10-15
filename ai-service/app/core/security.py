@@ -1,49 +1,63 @@
 """Trust boundary between the frontend and this service.
 
-End-user authentication lives in the frontend (Auth.js). The frontend proxies
-calls server-side and, for a signed-in user, adds two headers:
+End-user authentication lives in the frontend (Auth.js). For every call it
+signs a short-lived HS256 JWT with ``INTERNAL_JWT_SECRET``:
 
-* ``X-Internal-Token`` — the secret shared through ``INTERNAL_API_TOKEN``;
-* ``X-User-Id`` — the account id taken from the verified session.
+* ``iss=iadaf-frontend``, ``aud=iadaf-backend``, 60-second expiry;
+* ``sub`` — the signed-in account id, absent for an anonymous visitor;
+* ``scope`` — an extra right such as ``account:erase``, only ever set by the
+  frontend server itself, never on a call relayed from the browser.
 
-``X-User-Id`` is only honoured alongside a valid token: the gateway is
-reachable directly, so anyone could otherwise claim to be any user.
+The gateway already rejects calls without a valid token; checking it again
+here means reaching port 8086 directly gets nowhere either.
 """
 
-import hmac
 from typing import Optional
 
-from fastapi import Header, HTTPException, status
+import jwt
+from fastapi import Depends, Header, HTTPException, status
 
 from app.core.config import settings
 
+ISSUER = "iadaf-frontend"
+AUDIENCE = "iadaf-backend"
+ERASE_SCOPE = "account:erase"
 
-def _token_is_valid(token: Optional[str]) -> bool:
-    expected = settings.internal_api_token
-    # An unset secret must never match an absent header.
-    if not expected or not token:
-        return False
-    return hmac.compare_digest(token.encode(), expected.encode())
-
-
-async def trusted_user_id(
-    x_internal_token: Optional[str] = Header(default=None),
-    x_user_id: Optional[str] = Header(default=None),
-) -> Optional[str]:
-    """Return the caller's account id if the frontend vouched for it, else None."""
-    if x_user_id and _token_is_valid(x_internal_token):
-        return x_user_id
-    return None
+# HS256 needs a 256-bit key.
+MIN_SECRET_BYTES = 32
 
 
-async def require_internal_caller(
-    x_internal_token: Optional[str] = Header(default=None),
-) -> None:
-    """Reject any call that does not come from the frontend server."""
-    if not settings.internal_api_token:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="INTERNAL_API_TOKEN is not configured.",
+def check_secret() -> None:
+    """Refuse to start with a missing or guessable signing key."""
+    if len(settings.internal_jwt_secret.encode()) < MIN_SECRET_BYTES:
+        raise RuntimeError("INTERNAL_JWT_SECRET is missing or shorter than 32 bytes")
+
+
+async def frontend_claims(authorization: Optional[str] = Header(default=None)) -> dict:
+    """Verified claims of the caller's token; 401 if absent or invalid."""
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Missing token.")
+    try:
+        return jwt.decode(
+            token,
+            settings.internal_jwt_secret,
+            algorithms=["HS256"],  # never let the token pick its algorithm
+            issuer=ISSUER,
+            audience=AUDIENCE,
+            leeway=60,
+            options={"require": ["exp", "iss", "aud"]},
         )
-    if not _token_is_valid(x_internal_token):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+    except jwt.PyJWTError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid token.") from None
+
+
+async def current_user_id(claims: dict = Depends(frontend_claims)) -> Optional[str]:
+    """The signed-in account id, or None for an anonymous visitor."""
+    return claims.get("sub") or None
+
+
+def require_erase_right(user_id: str, claims: dict) -> None:
+    """Erasure needs the dedicated scope, for that very account."""
+    if claims.get("scope") != ERASE_SCOPE or claims.get("sub") != user_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Forbidden.")

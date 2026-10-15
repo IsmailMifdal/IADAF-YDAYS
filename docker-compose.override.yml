@@ -1,0 +1,45 @@
+# IA-DAF — développement uniquement.
+#
+# Docker Compose charge ce fichier automatiquement avec `docker compose up`.
+# Il publie les ports internes sur la loopback (127.0.0.1) pour déboguer :
+# psql, dashboard Eureka, Swagger de l'AI Service, appels directs aux services.
+#
+# Ne JAMAIS l'utiliser en production : lancer explicitement
+#   docker compose -f docker-compose.yml up -d --build
+# pour que seul le frontend soit publié.
+#
+# Les appels directs exigent quand même un jeton interne (voir SECURITY.md) :
+# seuls /actuator/health et /ai/health répondent sans jeton.
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  discovery-service:
+    ports:
+      - "127.0.0.1:8761:8761"
+
+  api-gateway:
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  ai-service:
+    ports:
+      - "127.0.0.1:8086:8086"
+
+  user-service:
+    ports:
+      - "127.0.0.1:8081:8081"
+
+  demarches-service:
+    ports:
+      - "127.0.0.1:8082:8082"
+
+  document-service:
+    ports:
+      - "127.0.0.1:8083:8083"
+
+  analytics-service:
+    ports:
+      - "127.0.0.1:8085:8085"

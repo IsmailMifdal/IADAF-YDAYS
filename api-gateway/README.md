@@ -222,48 +222,19 @@ Les logs montrent :
 
 ## Sécurité
 
-> ⚠️ **L'API Gateway n'applique aucune authentification.**
->
-> [`SecurityConfig`](src/main/java/com/iadaf/gateway/config/SecurityConfig.java)
-> autorise toutes les requêtes (`permitAll`). Le modèle OAuth2 / Keycloak décrit
-> dans les versions précédentes de ce document a été retiré : l'authentification
-> est désormais portée par le frontend Next.js via Auth.js.
+La gateway n'accepte que les appels du frontend Next.js : chacun porte un
+**JWT interne** HS256 de 60 secondes, signé avec `INTERNAL_JWT_SECRET`
+(`iss=iadaf-frontend`, `aud=iadaf-backend`). Sans jeton valide, la réponse est
+**401** — seuls `/actuator/health` et les pré-vols CORS (`OPTIONS`) passent.
+Voir [`SecurityConfig`](src/main/java/com/iadaf/gateway/config/SecurityConfig.java).
 
-### Conséquences
+[`UserIdentityFilter`](src/main/java/com/iadaf/gateway/filter/UserIdentityFilter.java)
+supprime tout en-tête `X-User-Id` envoyé par l'appelant et le réécrit à partir
+du sujet du jeton vérifié (absent pour un visiteur anonyme). Les services en
+aval revalident eux-mêmes le jeton, qui leur est relayé tel quel.
 
-- Toute requête atteignant le port 8080 est routée vers les services en aval
-  sans contrôle d'identité.
-- Le port 8080 **ne doit pas être exposé publiquement** : en production, seul le
-  frontend doit joindre la gateway, sur le réseau Docker interne.
-- Le chat d'accueil appelle `/api/ai/chat` sans session (collecte de leads).
-  C'est intentionnel, mais cela signifie qu'aucune route AI n'est protégée au
-  niveau de la gateway.
-
-### Ce qui reste actif
-
-- **CORS** — `CorsConfig`, et la variable
-  `SPRING_CLOUD_GATEWAY_GLOBALCORS_..._ALLOWED-ORIGINS` fixée sur l'origine du
-  frontend dans `docker-compose.yml`
-- **Circuit breakers** Resilience4J par service
-- **Actuator** restreint à `health,info` sous le profil `prod`
-
-### Si l'authentification doit remonter au niveau gateway
-
-Deux pistes, selon la source de vérité retenue :
-
-1. **Valider les JWT Auth.js** — en partageant `AUTH_SECRET`, la gateway devient
-   Resource Server HS256.
-2. **Réintroduire un fournisseur d'identité** (Keycloak ou autre) et repasser sur
-   OAuth2 Resource Server + filtre `TokenRelay`.
-
-Voir [SECURITY.md](../SECURITY.md) pour le modèle de sécurité global.
-
-### Évolutions futures
-
-- Ajouter un rate limiter
-- Configurer HTTPS
-- Ajouter des métriques de sécurité
-
+La gateway refuse de démarrer si `INTERNAL_JWT_SECRET` manque ou fait moins de
+32 octets. Le modèle complet est décrit dans [SECURITY.md](../SECURITY.md#-jetons-internes).
 
 ## Dépendances
 

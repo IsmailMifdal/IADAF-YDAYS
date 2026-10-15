@@ -56,10 +56,10 @@ class Settings(BaseSettings):
     # so this purge is the only way they are ever erased.
     conversation_retention_days: int = 30
 
-    # Shared secret with the frontend. Only a caller presenting it may attach a
-    # user id to a conversation or erase a user's data — without it, anyone
-    # reaching the gateway could do both for any account.
-    internal_api_token: str = ""
+    # Key of the short-lived JWTs the frontend signs for every call (HS256,
+    # 32 bytes minimum). Same value in the frontend, the gateway and every
+    # service. The service refuses to start without it.
+    internal_jwt_secret: str = ""
 
     # CORS — comma-separated list of browser origins allowed to call this service
     # directly. In normal operation the frontend proxies every call server-side,

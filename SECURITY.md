@@ -5,8 +5,8 @@ Ce document décrit le modèle de sécurité réellement implémenté.
 > **Historique** — une version antérieure reposait sur Keycloak (OAuth2 /
 > OIDC) devant quatre microservices Java. Keycloak a été retiré :
 > l'authentification est désormais portée par le frontend Next.js via Auth.js.
-> Les services Java restent déployés, mais sans authentification — voir
-> « Limites actuelles ».
+> Le backend valide désormais un jeton interne signé par le frontend — voir
+> « Jetons internes ».
 
 ---
 
@@ -16,31 +16,35 @@ Ce document décrit le modèle de sécurité réellement implémenté.
 ┌──────────────┐
 │  Navigateur  │
 └──────┬───────┘
-       │ cookie de session (JWT signé, httpOnly)
+       │ HTTPS · cookie de session (JWT Auth.js, httpOnly)
+       ▼
+┌──────────────────┐
+│  Reverse proxy   │  seul point publié (Phase 6 : Caddy)
+└──────┬───────────┘
        ▼
 ┌─────────────────────────────────────────────┐
-│  Frontend Next.js  :3000                    │
-│                                             │
-│  proxy.ts ......... protège les routes      │
-│  Auth.js .......... sessions + providers    │
-│  /api/checkout .... crée la session Stripe  │
-│  /api/stripe/... .. reçoit le webhook       │
+│  Frontend Next.js  127.0.0.1:3000           │
+│  proxy.ts ........ protège les pages        │
+│  Auth.js ......... sessions + providers     │
+│  rateLimit ....... quotas (Postgres)        │
+│  aiService ....... signe un JWT interne     │
 └──────┬──────────────────────────┬───────────┘
-       │                          │
-       │ SQL (pool pg)            │ HTTP serveur-à-serveur
+       │ SQL                      │ Authorization: Bearer <JWT 60 s>
        ▼                          ▼
-┌──────────────┐          ┌──────────────┐
-│  PostgreSQL  │          │ API Gateway  │
-│ schéma users │          │    :8080     │
-└──────────────┘          └──────┬───────┘
-                                 │  aucune authentification
+┌──────────────┐          ┌──────────────────────────────┐
+│  PostgreSQL  │          │ API Gateway                  │
+│              │          │ · rejette tout appel sans    │
+└──────────────┘          │   jeton valide (401)         │
+                          │ · réécrit X-User-Id depuis   │
+                          │   le jeton                   │
+                          └──────────────┬───────────────┘
+                     réseau Docker interne uniquement
              ┌─────────┬─────────┼──────────┬──────────┐
              ▼         ▼         ▼          ▼          ▼
           ┌──────┐ ┌──────┐ ┌─────────┐ ┌────────┐ ┌─────────┐
           │  AI  │ │ User │ │Demarches│ │Document│ │Analytics│
-          │ 8086 │ │ 8081 │ │  8082   │ │  8083  │ │  8085   │
           └──────┘ └──────┘ └─────────┘ └────────┘ └─────────┘
-                        tous en permitAll
+              chacun revalide le même jeton
 ```
 
 ---
@@ -140,6 +144,76 @@ navigateur (débogage, Swagger).
 
 ---
 
+## 🎫 Jetons internes
+
+Le frontend porte l'authentification des personnes ; le backend, lui, doit
+savoir qu'un appel **vient du frontend**, et pour quel utilisateur. Pour chaque
+appel, le frontend signe un JWT ([`lib/aiService.ts`](front/src/app/lib/aiService.ts)) :
+
+| Claim | Valeur |
+|-------|--------|
+| `alg` | HS256, clé `INTERNAL_JWT_SECRET` (32 octets minimum) |
+| `iss` / `aud` | `iadaf-frontend` / `iadaf-backend` |
+| `exp` | 60 secondes |
+| `sub` | Identifiant du compte connecté — **absent** pour un visiteur |
+| `scope` | `account:erase` pour l'effacement d'un compte, jamais sur un appel relayé depuis le navigateur |
+
+**Vérifié deux fois** : par la gateway, qui rejette en 401 tout appel sans
+jeton valide, puis par chaque service (Spring Security OAuth2 Resource Server
+pour les services Java, PyJWT pour l'AI Service). Un appel direct à un
+service, sans passer par le frontend, n'aboutit donc nulle part — et ne
+contourne plus la limitation de débit. Seuls `/actuator/health` et
+`/ai/health` répondent sans jeton.
+
+**L'identité vient du jeton, et de lui seul.** `demarches-service` prend
+l'utilisateur dans `sub` ; l'ancien repli sur l'en-tête `X-User-Id`, que
+n'importe qui pouvait forger, est supprimé. La gateway retire tout `X-User-Id`
+envoyé par l'appelant et le réécrit à partir du jeton.
+
+Chaque service **refuse de démarrer** sans clé ou avec une clé de moins de
+32 octets. Les tests couvrent : jeton absent, signature forgée, expiré,
+mauvais émetteur, mauvaise audience, `alg: none`, `X-User-Id` forgé.
+
+Pour appeler un service à la main en développement :
+
+```bash
+TOKEN=$(INTERNAL_JWT_SECRET=<valeur du .env> node front/scripts/dev-token.mjs <user-id>)
+curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
+```
+
+> **Limite.** Le frontend détient la clé et peut signer pour n'importe quel
+> compte : c'est lui la frontière de confiance. Une compromission du serveur
+> frontend compromet tout le backend ; sans elle, plus rien n'est appelable.
+
+---
+
+## 🔁 Réinitialisation du mot de passe
+
+`/mot-de-passe-oublie` envoie un lien par e-mail (SMTP, `SMTP_URL`) :
+
+- jeton aléatoire de 256 bits, dont **seule l'empreinte SHA-256** est stockée
+  (`users.password_reset_tokens`) : une fuite de la base ne livre aucun lien ;
+- **usage unique** (consommé par un `DELETE … RETURNING` atomique), valable
+  **30 minutes** ; une nouvelle demande annule le lien précédent ;
+- le lien est construit avec `AUTH_URL`, jamais avec l'en-tête `Host` de la
+  requête, qu'un attaquant pourrait falsifier pour recevoir le lien ;
+- réponse identique et **immédiate** que le compte existe ou non (l'e-mail
+  part en arrière-plan) : ni le message ni le temps de réponse ne révèlent
+  quelles adresses sont inscrites ;
+- limité à 5 demandes / h par IP et 3 / h par adresse, 10 essais / 15 min sur
+  la confirmation ;
+- comptes Google : aucun e-mail (pas de mot de passe à réinitialiser).
+
+> **Limite.** Les sessions sont des JWT sans état : changer de mot de passe ne
+> déconnecte pas une session déjà ouverte ailleurs (elle expire au plus tard
+> au bout de 7 jours).
+
+Sans `SMTP_URL`, le lien est affiché dans les logs du frontend en
+développement ; en production, la demande échoue (journalisée) plutôt que de
+prétendre avoir envoyé un e-mail.
+
+---
+
 ## 🚦 Limitation de débit
 
 Compteurs à fenêtre fixe stockés dans PostgreSQL (schéma `ratelimit`) : ils
@@ -182,14 +256,12 @@ peut pas épuiser à elle seule le quota global anonyme.
 ### Liaison frontend → AI Service
 
 Le proxy `/api/ai/*` du frontend ne transmet que `Content-Type`, `Accept` et
-`Accept-Language` — jamais les cookies de session. Pour un utilisateur
-connecté, il ajoute `X-User-Id` (tiré de la session vérifiée) et
-`X-Internal-Token` (`INTERNAL_API_TOKEN`).
-
-L'AI Service n'accorde foi à `X-User-Id` **que si le jeton est valide** : un
-appel direct à la gateway avec un `X-User-Id` forgé est traité comme anonyme.
-Le proxy n'expose que `chat`, `translate`, `analyze-document` et `health` —
-l'endpoint d'effacement n'est pas joignable depuis le navigateur.
+`Accept-Language` — jamais les cookies de session ni un `Authorization` venu
+du navigateur. Il y joint un jeton interne (voir « Jetons internes ») dont le
+sujet est l'utilisateur connecté, ce qui rattache ses conversations à son
+compte. Le proxy n'expose que `chat`, `translate`, `analyze-document` et
+`health` : l'endpoint d'effacement n'est pas joignable depuis le navigateur,
+et exige de toute façon le scope `account:erase` pour ce même compte.
 
 Une conversation n'est reprise que par son propriétaire : connaître son
 identifiant ne suffit pas à lire ou compléter l'historique d'un autre.
@@ -246,7 +318,8 @@ partielle comme complète.
 | Secret | Où | Remarque |
 |--------|-----|----------|
 | `AUTH_SECRET` | `.env` / `.env.local` | **Régénérer par environnement** — `openssl rand -base64 32` |
-| `INTERNAL_API_TOKEN` | `.env` / `.env.local` / `ai-service/.env` | Même valeur partout — `openssl rand -hex 32` |
+| `INTERNAL_JWT_SECRET` | `.env` / `.env.local` / `ai-service/.env` | Même valeur partout, 32 octets minimum — `openssl rand -hex 32` |
+| `SMTP_URL` | `.env` | Fournisseur d'e-mails transactionnels (réinitialisation du mot de passe) |
 | `POSTGRES_PASSWORD` | `.env` | La valeur de dev ne doit jamais atteindre la production |
 | `OPENAI_API_KEY` | `.env` | |
 | `STRIPE_SECRET_KEY` | `.env` | Clé `sk_test_` en développement |
@@ -256,7 +329,7 @@ partielle comme complète.
 `.env.example` documentent les variables sans valeur réelle.
 
 `docker-compose.yml` échoue au démarrage si `AUTH_SECRET` ou
-`INTERNAL_API_TOKEN` est absent, plutôt que
+`INTERNAL_JWT_SECRET` est absent, plutôt que
 de démarrer avec une configuration d'authentification incomplète.
 
 ---
@@ -267,40 +340,11 @@ de démarrer avec une configuration d'authentification incomplète.
 
 | Point | Détail |
 |-------|--------|
-| **Aucune authentification côté back** | `SecurityConfig` autorise tout (`permitAll`) sur la gateway **et sur les quatre services Java**. Aucun JWT n'est validé : c'est le frontend qui porte l'auth. Toute exposition directe des ports 8080–8086 rend ces services librement appelables — y compris `/api/users`, qui expose des données personnelles. |
-| **Ports des services Java publiés** | `8081`, `8082`, `8083` et `8085` sont mappés sur l'hôte pour faciliter les tests. À retirer du mapping en production : seule la gateway devrait joindre ces services, sur le réseau Docker interne. |
-| **Identité non vérifiée sur `demarches-service`** | Ce service cloisonne les démarches par utilisateur. Faute de jeton depuis le retrait de Keycloak, il accepte l'en-tête **`X-User-Id`**, qui n'est **pas vérifiée** : tout appelant peut se déclarer n'importe quel utilisateur et lire ou modifier ses démarches. C'est un raccourci de développement assumé — voir ci-dessous. |
-| **Limitation de débit contournable par la gateway** | Les quotas s'appliquent dans le frontend. Tant que le port `8080` (ou `8086`) est publié, un appel direct à la gateway ou à l'AI Service échappe à toute limite — et consomme le crédit OpenAI. |
-| **Ports internes exposés** | `5432`, `8086` et `8761` sont publiés sur l'hôte dans `docker-compose.yml`. À restreindre au réseau Docker en production. |
+| **Ports en développement** | `docker-compose.override.yml` publie les ports internes, sur `127.0.0.1` uniquement. En production, lancer `docker compose -f docker-compose.yml up` : seul le frontend est publié, et sur la loopback. |
 | **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. Le déploiement doit être en TLS. |
-| **Pas de réinitialisation de mot de passe** | Un utilisateur ayant perdu son mot de passe n'a aucun recours en libre-service. |
+| **Sessions non révocables** | Voir « Réinitialisation du mot de passe ». |
+| **Dépendances** | `npm audit` : 2 alertes modérées restantes (`@tailwindcss/typography` → `postcss-selector-parser`, CPU à la compilation d'un CSS non fiable). Seul notre propre CSS est compilé ; le correctif proposé est une rétrogradation. Accepté. |
 | **Contenu des packs côté client** | Voir la limite décrite plus haut. |
-
----
-
-## 🪪 L'en-tête `X-User-Id`
-
-`demarches-service` a besoin d'un identifiant d'utilisateur pour cloisonner les
-données. Il le cherche dans cet ordre :
-
-1. le sujet (`sub`) d'un JWT présent dans le `SecurityContext` ;
-2. l'en-tête `X-User-Id`, sinon.
-
-```bash
-curl http://localhost:8082/demarches -H "X-User-Id: <uuid>"
-```
-
-Le second chemin existe uniquement parce que Keycloak a été retiré et qu'aucun
-jeton n'atteint plus ce service. **Il ne constitue pas une authentification.**
-
-Deux façons de refermer la brèche avant une mise en production :
-
-- **Isolement réseau** — retirer le mapping du port `8082` et n'autoriser que
-  l'API Gateway sur le réseau Docker interne. La gateway devient alors le seul
-  point où l'en-tête peut être posée, à partir d'une identité qu'elle a validée.
-- **Vraie validation** — décoder dans le service le JWT Auth.js signé avec
-  `AUTH_SECRET` (HS256) et reprendre le chemin n°1. Plus coûteux, mais c'est la
-  seule option qui rend l'identité vérifiable de bout en bout.
 
 ---
 
@@ -309,7 +353,9 @@ Deux façons de refermer la brèche avant une mise en production :
 - [ ] `AUTH_SECRET` et `POSTGRES_PASSWORD` régénérés
 - [ ] HTTPS actif, `AUTH_URL` pointant sur le domaine public
 - [ ] Clés Stripe live, webhook déclaré sur l'URL publique
-- [ ] Ports `5432` / `8086` / `8761` retirés du mapping hôte
+- [ ] Lancement avec `docker compose -f docker-compose.yml` (sans l'override de dev)
+- [ ] `INTERNAL_JWT_SECRET` propre à la production, différent du dev
+- [ ] `SMTP_URL` et `MAIL_FROM` configurés (réinitialisation du mot de passe)
 - [ ] Frontend joignable uniquement via le reverse proxy (sinon `X-Forwarded-For` peut être forgé)
 - [ ] Sauvegardes PostgreSQL configurées et restauration testée
 - [ ] CGV et mentions légales publiées (obligatoire pour encaisser)

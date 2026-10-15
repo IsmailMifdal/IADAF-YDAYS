@@ -58,6 +58,15 @@ export const leadSchema = z.object({
   consent: z.literal(true),
 });
 
+export const passwordResetRequestSchema = z.object({
+  email: z.string().trim().email("Adresse e-mail invalide.").max(255),
+});
+
+export const passwordResetConfirmSchema = z.object({
+  token: z.string().regex(/^[0-9a-f]{64}$/, "Lien de réinitialisation invalide."),
+  password: passwordSchema,
+});
+
 export const unsubscribeSchema = z.object({
   token: z.string().regex(/^[0-9a-f]{64}$/),
 });

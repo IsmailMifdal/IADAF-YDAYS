@@ -1,22 +1,60 @@
 /**
- * Server-side access to the AI service, through the API gateway.
+ * Server-side access to the backend, through the API gateway.
  *
- * Calls carry the shared INTERNAL_API_TOKEN so the AI service can tell them
- * apart from anyone else reaching the gateway: it only trusts an `X-User-Id`,
- * and only allows erasing data, when the token is present.
+ * Every call carries a short-lived internal JWT signed with
+ * INTERNAL_JWT_SECRET. The gateway rejects any call without one, so the
+ * backend is only reachable through this frontend — and its rate limiting.
+ * The gateway and each service verify the token again (defence in depth) and
+ * take the user's identity from its `sub` claim, never from a header.
  */
+
+import { SignJWT } from "jose";
 
 export const GATEWAY_URL =
   process.env.API_GATEWAY_URL ??
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ??
   "http://localhost:8080";
 
-const INTERNAL_API_TOKEN = process.env.INTERNAL_API_TOKEN ?? "";
+/** Must match the gateway's and the services' expectations. */
+const ISSUER = "iadaf-frontend";
+const AUDIENCE = "iadaf-backend";
+/** Long enough for one request and its fan-out (analytics), no longer. */
+const TOKEN_TTL_SECONDS = 60;
 
-/** Headers vouching for a signed-in user, or none when the token is unset. */
-export function internalHeaders(userId?: string): Record<string, string> {
-  if (!INTERNAL_API_TOKEN || !userId) return {};
-  return { "X-Internal-Token": INTERNAL_API_TOKEN, "X-User-Id": userId };
+let signingKey: Uint8Array | undefined;
+
+function key(): Uint8Array {
+  if (!signingKey) {
+    const secret = process.env.INTERNAL_JWT_SECRET ?? "";
+    // HS256 needs 256 bits; the backend refuses to start with less anyway.
+    if (Buffer.byteLength(secret, "utf8") < 32) {
+      throw new Error("INTERNAL_JWT_SECRET is missing or shorter than 32 bytes");
+    }
+    signingKey = new TextEncoder().encode(secret);
+  }
+  return signingKey;
+}
+
+/**
+ * `Authorization` header for one backend call.
+ *
+ * @param userId the signed-in user, or undefined for an anonymous visitor
+ * @param scope  extra right, e.g. "account:erase" — never granted to a call
+ *               relayed from the browser
+ */
+export async function backendAuthHeaders(
+  userId?: string,
+  scope?: string,
+): Promise<Record<string, string>> {
+  const jwt = new SignJWT(scope ? { scope } : {})
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(`${TOKEN_TTL_SECONDS}s`);
+  if (userId) jwt.setSubject(userId);
+
+  return { Authorization: `Bearer ${await jwt.sign(key())}` };
 }
 
 /**
@@ -25,15 +63,11 @@ export function internalHeaders(userId?: string): Record<string, string> {
  * it isn't.
  */
 export async function eraseAiData(userId: string): Promise<void> {
-  // Without the token no conversation was ever tied to an account, so there
-  // is nothing to erase.
-  if (!INTERNAL_API_TOKEN) return;
-
   const res = await fetch(
     `${GATEWAY_URL}/api/ai/users/${encodeURIComponent(userId)}/data`,
     {
       method: "DELETE",
-      headers: { "X-Internal-Token": INTERNAL_API_TOKEN },
+      headers: await backendAuthHeaders(userId, "account:erase"),
       signal: AbortSignal.timeout(10_000),
     },
   );

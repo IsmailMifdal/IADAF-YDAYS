@@ -12,12 +12,13 @@ import asyncio
 from contextlib import asynccontextmanager, suppress
 from typing import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.api.routes import chat, document, health, translate, users
 from app.core.config import settings
+from app.core.security import check_secret, frontend_claims
 from app.models.database import init_db, purge_expired_conversations
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
@@ -32,6 +33,7 @@ from app.services.rag_service import rag_service
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup and shutdown lifecycle."""
     logger.info(f"🚀 Starting {settings.app_name} v{settings.app_version}…")
+    check_secret()
 
     # 1. Initialise database tables
     await init_db()
@@ -148,10 +150,12 @@ def create_app() -> FastAPI:
 
     # Routers
     application.include_router(health.router)  # /ai/health, /actuator/health
-    application.include_router(chat.router, prefix="/ai")
-    application.include_router(translate.router, prefix="/ai")
-    application.include_router(document.router, prefix="/ai")
-    application.include_router(users.router, prefix="/ai")
+    # Everything but the health check needs a token signed by the frontend.
+    protected = [Depends(frontend_claims)]
+    application.include_router(chat.router, prefix="/ai", dependencies=protected)
+    application.include_router(translate.router, prefix="/ai", dependencies=protected)
+    application.include_router(document.router, prefix="/ai", dependencies=protected)
+    application.include_router(users.router, prefix="/ai", dependencies=protected)
 
     return application
 
