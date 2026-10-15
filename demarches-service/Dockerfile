@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Le cache /root/.m2 est partagé entre builds (BuildKit) : les dépendances
 # ne sont téléchargées qu'une fois, et -U + les retentatives absorbent les
 # erreurs passagères de Maven Central (502, coupures) qui faisaient échouer
