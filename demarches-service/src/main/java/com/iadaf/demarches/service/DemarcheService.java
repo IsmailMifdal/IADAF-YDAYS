@@ -75,7 +75,6 @@ public class DemarcheService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     /**
      * Dossier de suivi d'un pack : le renvoie s'il existe, le crée sinon.
      *
@@ -151,6 +150,7 @@ public class DemarcheService {
         return deleted;
     }
 
+    @Transactional(readOnly = true)
     public DemarcheDTO getDemarcheById(Long id) {
         String userId = getUserIdFromToken();
         log.info("Récupération de la démarche avec ID: {} pour l'utilisateur: {}", id, userId);
