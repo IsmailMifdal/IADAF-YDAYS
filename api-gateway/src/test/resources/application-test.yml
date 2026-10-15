@@ -4,12 +4,14 @@ spring:
   
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: false
-      httpclient:
-        connect-timeout: 5000
-        response-timeout: 10s
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          httpclient:
+            connect-timeout: 5000
+            response-timeout: 10s
 
 server:
   port: 8080

@@ -35,12 +35,65 @@
         -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <!--
+          Spring Boot 4 / Spring Framework 7. La 3.2.0 n'était plus maintenue
+          (12 failles critiques relevées par Trivy, dont Tomcat) ; la 3.5,
+          dernière 3.x, ne reçoit plus de correctifs gratuits de Spring
+          Framework 6.2, et Trivy y relevait encore des failles critiques
+          corrigées seulement en 7.0.x.
+        -->
+        <spring-boot.version>4.0.8</spring-boot.version>
+        <spring-cloud.version>2025.1.3</spring-cloud.version>
+        <!--
+          Versions plus récentes que celles du BOM Spring Boot, qui restent
+          vulnérables à des failles critiques (Trivy) : Tomcat 11.0.24 (< 11.0.25),
+          BouncyCastle 1.80 (< 1.85, tiré par Spring Cloud), FreeMarker 2.3.34
+          (< 2.3.35, tableau de bord Eureka).
+        -->
+        <tomcat.version>11.0.26</tomcat.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
+        <freemarker.version>2.3.35</freemarker.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Versions épinglées : une déclaration directe l'emporte sur les BOM importés. -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>${freemarker.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+
             <!-- Spring Boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -58,21 +111,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
-            <!-- PostgreSQL Driver -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>42.7.2</version>
-            </dependency>
-
-            <!-- Lombok -->
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
-                <scope>provided</scope>
-            </dependency>
+            <!-- Driver PostgreSQL et Lombok : versions gérées par Spring Boot. -->
         </dependencies>
     </dependencyManagement>
 

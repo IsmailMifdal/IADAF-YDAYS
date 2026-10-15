@@ -10,7 +10,7 @@ développement** avec rechargement à chaud sur le frontend.
 | Outil | Requis pour |
 |-------|-------------|
 | 🐳 Docker + Docker Compose | Toute la stack |
-| 📦 Node.js 20+ | Développement frontend |
+| 📦 Node.js 24 LTS | Développement frontend (Node 20 est en fin de vie) |
 | 🐍 Python 3.12+ | Développement de l'AI Service |
 | ☕ Java 17 + Maven 3.8+ | Développement des services Spring |
 

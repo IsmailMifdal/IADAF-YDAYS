@@ -337,6 +337,21 @@ même derrière la gateway — voir [SECURITY.md](SECURITY.md#-jetons-internes).
 
 ---
 
+## ✅ Tests et intégration continue
+
+| | Commande |
+|---|---|
+| Java | `mvn verify` |
+| Python | `cd ai-service && pip install -r requirements-dev.txt && pytest` |
+| Frontend | `cd front && npx tsc --noEmit && npx eslint src && npm run build` |
+| Bout en bout | stack lancée, puis `bash tests/e2e/run-all.sh` |
+
+La CI GitHub Actions joue les trois premiers à chaque PR, puis construit et
+scanne (Trivy) les 8 images ; la suite de bout en bout tourne chaque nuit.
+Détails dans [tests/README.md](tests/README.md).
+
+---
+
 ## ⚠️ Avant une mise en production
 
 - [ ] Régénérer `AUTH_SECRET` et `POSTGRES_PASSWORD` (ne jamais réutiliser ceux du dev)

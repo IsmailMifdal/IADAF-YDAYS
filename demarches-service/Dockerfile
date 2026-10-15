@@ -20,6 +20,11 @@ RUN --mount=type=cache,target=/root/.m2,sharing=locked mvn -B -q -U -Daether.con
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /build/demarches-service/target/*.jar app.jar
-RUN apk add --no-cache curl
+# Alpine security fixes published since the base image; curl for the
+# healthcheck; an unprivileged user to run the service.
+RUN apk upgrade --no-cache \
+ && apk add --no-cache curl \
+ && addgroup -S app && adduser -S -G app app
+USER app
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "app.jar"]

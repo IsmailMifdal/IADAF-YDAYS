@@ -78,7 +78,6 @@ services:
     container_name: iadaf-gateway
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
-      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWED-ORIGINS=http://localhost:3000
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
     networks:
       - iadaf-network

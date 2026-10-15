@@ -29,7 +29,7 @@ class UserIdentityFilterTest {
     void forgedHeaderIsDroppedForAnAnonymousToken() {
         ServerHttpRequest relayed = relay(forgedRequest(), token(null));
 
-        assertThat(relayed.getHeaders().containsKey("X-User-Id")).isFalse();
+        assertThat(relayed.getHeaders().containsHeader("X-User-Id")).isFalse();
     }
 
     private static MockServerHttpRequest forgedRequest() {

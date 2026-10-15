@@ -1,0 +1,56 @@
+# Whole stack, end to end: every night and on demand. Too heavy for every
+# pull request (eight images, five JVMs, ~10 minutes to start).
+name: E2E
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  stack:
+    name: docker compose + tests/e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - name: Install jose (signs the test tokens)
+        working-directory: front
+        run: npm ci
+
+      - name: Throwaway secrets for this run
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          {
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)"
+            echo "AUTH_SECRET=$(openssl rand -base64 32)"
+            echo "INTERNAL_JWT_SECRET=$(openssl rand -hex 32)"
+            echo "DOCUMENT_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
+          } > .env
+
+      - name: "Start the stack (dev override: loopback ports, Mailpit, pre-check on)"
+        run: docker compose up -d --build --wait --wait-timeout 1800
+
+      - name: End-to-end suite
+        env:
+          # Without an OpenAI key, skip only the checks that call the LLM.
+          E2E_SKIP_LLM: ${{ secrets.OPENAI_API_KEY == '' && '1' || '0' }}
+        run: bash tests/e2e/run-all.sh
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

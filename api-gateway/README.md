@@ -238,7 +238,7 @@ La gateway refuse de démarrer si `INTERNAL_JWT_SECRET` manque ou fait moins de
 
 ## Dépendances
 
-- Spring Boot 3.2.0
+- Spring Boot 4.0.8 (Spring Framework 7)
 - Spring Cloud Gateway
 - Spring Cloud Netflix Eureka Client
 - Resilience4J Circuit Breaker

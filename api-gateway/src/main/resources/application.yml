@@ -4,19 +4,19 @@ spring:
 
   cloud:
     gateway:
-      # Découverte automatique des services via Eureka
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      # Configuration des timeouts
-      httpclient:
-        connect-timeout: 5000
-        response-timeout: 30s
-      # Routes explicites gérées dans GatewayConfig.java (avec circuit breaker)
-      # Filtre par défaut
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+      server:
+        webflux:
+          # Routes explicites uniquement (GatewayConfig.java). Le « locator »
+          # créait une route par service enregistré dans Eureka, Eureka compris
+          # (/discovery-service/**) : de la surface sans usage.
+          discovery:
+            locator:
+              enabled: false
+          httpclient:
+            connect-timeout: 5000
+            response-timeout: 30s
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
 server:
   port: 8080
@@ -68,23 +68,22 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10000
 
-# Actuator
+# Actuator — santé seulement, et sans détail : /actuator/health répond sans
+# jeton (healthchecks). L'endpoint « gateway » a été retiré : il listait les
+# routes et permettait d'en créer à quiconque détenait un jeton.
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info
   endpoint:
     health:
-      show-details: always
-    gateway:
-      enabled: true
+      show-details: never
 
-# Logging
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
-    com.iadaf.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    com.iadaf.gateway: INFO
 
 ---
 # Profil PRODUCTION

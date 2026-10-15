@@ -1,127 +1,42 @@
-# 🧪 IA-DAF — Tests d'intégration
+# 🧪 IA-DAF — Tests
 
-Suite de tests vérifiant que la stack complète est opérationnelle et que les
-services communiquent correctement.
+| Niveau | Où | Lancer |
+|--------|----|--------|
+| Unitaires Java (JUnit, MockMvc, jetons réels) | `*-service/src/test` | `mvn verify` |
+| Unitaires Python (pytest) | `ai-service/tests` | `cd ai-service && pip install -r requirements-dev.txt && pytest` |
+| Python sur PostgreSQL | `ai-service/tests/test_conversations_pg.py` | idem, avec `TEST_DATABASE_URL=postgresql+asyncpg://…` |
+| Frontend (types, lint, build) | `front/` | `npx tsc --noEmit && npx eslint src && npm run build` |
+| **De bout en bout** | `tests/e2e/` | stack lancée, puis `bash tests/e2e/run-all.sh` |
+| Santé rapide | `tests/health-checks/` | `bash tests/health-checks/check-all-services.sh` |
 
-## Prérequis
+La CI (`.github/workflows/ci.yml`) joue les quatre premiers niveaux à chaque
+PR ; la suite de bout en bout tourne chaque nuit et à la demande
+(`.github/workflows/e2e.yml`).
 
-- Bash, `curl`
-- Docker (les scripts interrogent PostgreSQL via `docker exec` — `psql` n'est
-  pas requis sur l'hôte)
-- La stack démarrée : `docker compose up -d`
+## Suite de bout en bout
 
-## Structure
-
-```
-tests/
-├── integration/
-│   ├── test-all.sh                        # Lance toute la suite
-│   ├── test-docker-infrastructure.sh      # Conteneurs, base, schémas, tables
-│   ├── test-eureka-registration.sh        # Enregistrement des services
-│   └── test-inter-service-communication.sh # Chaîne applicative complète
-└── health-checks/
-    └── check-all-services.sh              # Vérification rapide
-```
-
-## Utilisation
-
-### Toute la suite
+Contre une stack de **développement** (avec `docker-compose.override.yml`,
+qui publie les ports sur `127.0.0.1` et ajoute Mailpit) :
 
 ```bash
-bash tests/integration/test-all.sh
+docker compose up -d --build
+bash tests/e2e/run-all.sh          # code de sortie = nombre de scripts en échec
 ```
 
-### Un test en particulier
+| Script | Ce qu'il vérifie |
+|--------|------------------|
+| `security.sh` | Rien ne répond sans jeton interne : gateway, chaque service en direct, `X-User-Id` forgé, jeton signé avec une autre clé, effacement sans scope |
+| `accounts.sh` | Inscription, connexion, mot de passe oublié via Mailpit (un seul e-mail, lien à usage unique, jeton haché), consentement aux e-mails, limitation de débit, suppression |
+| `documents.sh` | Dossier créé par pack, dépôt et retrait de pièces, étape cochée, faux PDF refusé, cloisonnement, chiffrement en base, effacement RGPD sur tous les services |
+| `precheck.sh` | Pré-vérification : titre expiré, justificatif récent, cloisonnement, statistiques anonymes et leur lecture réservée |
 
-```bash
-bash tests/integration/test-docker-infrastructure.sh
-bash tests/integration/test-eureka-registration.sh
-bash tests/integration/test-inter-service-communication.sh
-```
+Configuration par variables d'environnement (voir `tests/e2e/lib.sh`) :
+`BASE_URL`, `GATEWAY_URL`, `MAILPIT_URL`, `ENV_FILE`, `PG_CONTAINER`, et
+`E2E_SKIP_LLM=1` pour sauter les contrôles qui appellent le LLM.
 
-### Vérification rapide
+> ⚠️ Les scripts créent des comptes, simulent des achats en écrivant
+> directement en base et vident les compteurs de limitation de débit : **à ne
+> jamais lancer contre une base de production.**
 
-```bash
-bash tests/health-checks/check-all-services.sh
-```
-
-Le script renvoie le nombre de services en échec comme code de sortie —
-exploitable directement en CI.
-
-## Ce qui est testé
-
-### Test 1 — Infrastructure Docker
-
-- ✅ Conteneurs `postgres`, `discovery`, `gateway`, `ai`, `front` démarrés
-- ✅ Connexion PostgreSQL
-- ✅ Schémas `users`, `demarches`, `documents`, `analytics`, `ai`
-- ✅ Tables `users.app_users` et `users.pack_entitlements`
-
-### Test 2 — Enregistrement Eureka
-
-- ✅ Serveur Eureka disponible
-- ✅ Services enregistrés
-
-### Test 3 — Communication inter-services
-
-- ✅ API Gateway → AI Service (`/api/ai/health`, `/api/ai/chat`)
-- ✅ Frontend → API Gateway (proxy `/api/ai/*`)
-- ✅ Création de compte, refus des doublons, connexion, session active
-- ✅ Routes privées refusées sans session, accessibles avec
-- ✅ Paywall : pack non payé redirigé vers le paiement
-- ✅ Checkout refusé sans authentification et sur un pack inconnu
-- ✅ Webhook Stripe rejeté sans signature valide
-
-## Interprétation des résultats
-
-| Échec | Pistes |
-|-------|--------|
-| **Infrastructure** | `docker compose up -d`, puis `docker compose ps` |
-| **Tables applicatives absentes** | Ouvrir http://localhost:3000 une fois — le frontend crée les tables au premier accès |
-| **Eureka** | Le Discovery Service doit démarrer en premier ; compter ~30 s |
-| **Communication** | `docker compose logs <service>` ; vérifier `OPENAI_API_KEY` si le chat échoue |
-| **Webhook autre que 400/503** | La vérification de signature Stripe ne fonctionne pas — voir [SECURITY.md](../SECURITY.md) |
-
-## Données de test
-
-`test-inter-service-communication.sh` crée un compte
-`test-suite-<pid>@example.com` à chaque exécution. Pour les supprimer :
-
-```bash
-docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db \
-  -c "DELETE FROM users.app_users WHERE email LIKE 'test-suite-%';"
-```
-
-Les droits d'accès aux packs sont supprimés en cascade avec le compte.
-
-## Dépannage
-
-### Tests intermittents au démarrage
-
-L'AI Service met environ 4 minutes à démarrer la première fois (téléchargement
-du modèle d'embeddings). Attendez que `docker compose ps` l'affiche `healthy`.
-
-### Conflit de port 3000
-
-Un `npm run dev` local empêche le conteneur `iadaf-front` de démarrer. Arrêtez
-l'un ou l'autre.
-
-## Intégration CI/CD
-
-```yaml
-# Exemple GitHub Actions
-- name: Run Integration Tests
-  run: |
-    docker compose up -d --build
-    bash tests/health-checks/check-all-services.sh
-    bash tests/integration/test-all.sh
-```
-
-## Contribution
-
-Pour ajouter de nouveaux tests :
-
-1. Créer un script dans `tests/integration/`
-2. Suivre le format des tests existants (sortie colorée, compteurs, code de sortie)
-3. Ajouter l'appel dans `test-all.sh`
-4. Mettre à jour ce README
+Prérequis : Bash, `curl`, Python 3, Node (pour signer les jetons de test avec
+`front/scripts/dev-token.mjs`, donc `npm ci` dans `front/`), Docker.

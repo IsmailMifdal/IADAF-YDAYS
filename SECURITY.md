@@ -407,6 +407,33 @@ de démarrer avec une configuration d'authentification incomplète.
 
 ---
 
+## 📦 Chaîne d'approvisionnement
+
+- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)), à chaque PR :
+  types, lint, build, `npm audit` (échec sur toute faille élevée ou critique),
+  tests Java et Python, construction des 8 images et **scan Trivy bloquant**
+  sur toute faille critique corrigeable. Les images ne sont publiées (GHCR)
+  que depuis `main`, après ces contrôles.
+- **Actions GitHub épinglées sur un commit** (version en commentaire) : un tag
+  déplacé ou détourné ne change pas ce qui s'exécute.
+- **Versions mûres** : une dépendance publiée depuis moins de deux semaines
+  n'est pas adoptée sans raison (risque de paquet compromis), sauf correctif
+  de sécurité qui l'impose.
+- **Images** : correctifs du système appliqués à la construction
+  (`apk upgrade` / `apt-get upgrade`), **aucun service ne tourne en root**,
+  npm et yarn retirés de l'image du frontend (inutiles à l'exécution).
+- **Socle à jour** : Spring Boot 4.0.8 / Spring Framework 7 (la 3.2.0 n'était
+  plus maintenue : 12 failles critiques relevées par Trivy, dont Tomcat ; la
+  3.5 ne reçoit plus de correctifs gratuits de Spring Framework 6.2), Spring
+  Cloud 2025.1.3, Node 24 LTS (Node 20 est en fin de vie depuis avril 2026).
+  Tomcat, BouncyCastle et FreeMarker sont épinglés au-dessus des versions du
+  BOM, encore vulnérables (voir `pom.xml`).
+- **Surface réduite** : `/actuator/gateway` (lister et créer des routes) et la
+  découverte automatique de routes Eureka sont désactivés ; la santé ne publie
+  plus son détail.
+
+---
+
 ## 📋 Checklist avant mise en production
 
 - [ ] `AUTH_SECRET` et `POSTGRES_PASSWORD` régénérés

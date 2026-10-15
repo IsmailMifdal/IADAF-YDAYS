@@ -16,7 +16,7 @@ This service provides statistical analysis and metrics aggregation across the pl
 
 ## Technologies
 
-- Spring Boot 3.2.0
+- Spring Boot 4.0.8 (Spring Framework 7)
 - Spring Cloud Netflix Eureka (Service Discovery)
 - Spring Security OAuth2 Resource Server (JWT)
 - Spring Cache with Caffeine

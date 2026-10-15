@@ -133,8 +133,8 @@ Pour sécuriser Eureka en production :
 
 ## Dépendances
 
-- Spring Boot 3.2.0
-- Spring Cloud 2023.0.0
+- Spring Boot 4.0.8 (Spring Framework 7)
+- Spring Cloud 2025.1.3
 - Netflix Eureka Server
 
 ## Logs
