@@ -60,7 +60,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      # Eureka met jusqu'à ~85 s à démarrer sur une machine chargée (5 JVM qui
+      # démarrent ensemble) : 40 s faisait échouer toute la stack, dont chaque
+      # service attend ce healthcheck.
+      start_period: 120s
 
   # ====================================================================
   #  GATEWAY
@@ -87,7 +90,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # ====================================================================
   #  BACKEND SERVICES
@@ -158,7 +164,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # --- Demarches Service (Spring Boot / JPA) ---
   demarches-service:
@@ -186,7 +195,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # --- Document Service (Spring Boot) ---
   # N'expose encore aucun endpoint métier : il s'enregistre dans Eureka et
@@ -216,7 +228,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # --- Analytics Service (Spring Boot) ---
   # Agrège les données des trois services ci-dessus via RestClient.
@@ -248,7 +263,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # ====================================================================
   #  FRONTEND

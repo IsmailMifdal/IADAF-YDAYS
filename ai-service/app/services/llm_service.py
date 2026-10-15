@@ -8,6 +8,8 @@ from loguru import logger
 
 from app.core.config import settings
 
+DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+
 
 class LLMService:
     """Abstraction layer over Ollama / OpenAI language models."""
@@ -75,12 +77,16 @@ class LLMService:
                 temperature=settings.openai_temperature,
                 max_tokens=settings.openai_max_tokens,
                 timeout=settings.openai_timeout_seconds,
-                base_url=settings.openai_base_url or None,
+                # Always explicit: the OpenAI SDK also reads OPENAI_BASE_URL
+                # from the environment, and docker-compose passes it as an
+                # empty string when unset — which the SDK takes for a URL and
+                # fails every request with "Connection error".
+                base_url=settings.openai_base_url or DEFAULT_OPENAI_BASE_URL,
             )
             self._openai_available = True
             logger.info(
                 f"OpenAI-compatible backend ready — model: {settings.openai_model} "
-                f"@ {settings.openai_base_url or 'api.openai.com'}"
+                f"@ {settings.openai_base_url or DEFAULT_OPENAI_BASE_URL}"
             )
         except Exception as exc:  # noqa: BLE001
             logger.error(f"Failed to initialise OpenAI: {exc}")
