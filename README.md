@@ -193,7 +193,8 @@ préfixe `/api` et route vers le service enregistré dans Eureka.
 | GET | `/api/ai/health` | Santé du service |
 | POST | `/api/ai/chat` | Chatbot administratif (FR/EN/AR/ES) |
 | POST | `/api/ai/translate` | Traduction multilingue |
-| POST | `/api/ai/analyze-document` | Analyse de document administratif |
+| POST | `/api/ai/analyze-document` | Conseils de complétude d'un dossier (LLM, sur la liste des pièces) |
+| POST | `/api/ai/documents/{id}/analyze` | Pré-vérification automatique d'une pièce déposée — désactivée par défaut (`DOCUMENT_ANALYSIS_ENABLED`) |
 | DELETE | `/api/ai/users/{id}/data` | Effacement des conversations d'un compte — **interne**, exige un jeton de scope `account:erase` pour ce compte |
 
 La collecte d'e-mails du chat d'accueil est portée par le frontend

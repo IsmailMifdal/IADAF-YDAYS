@@ -47,6 +47,8 @@ export const RATE_LIMITS = {
   leads: { name: "leads", limit: 5, windowSeconds: HOUR },
   /** Document uploads, per account: storage and future OCR both cost. */
   documentUpload: { name: "document-upload", limit: 60, windowSeconds: HOUR },
+  /** Automated pre-checks, per account (OCR, when enabled, is billed per page). */
+  documentAnalysis: { name: "document-analysis", limit: 60, windowSeconds: HOUR },
 } satisfies Record<string, RateLimitRule>;
 
 /** Counters older than this are swept: longer than the longest window. */

@@ -16,7 +16,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from app.api.routes import chat, document, health, translate, users
+from app.api.routes import chat, document, document_analysis, health, translate, users
 from app.core.config import settings
 from app.core.security import check_secret, frontend_claims
 from app.models.database import purge_expired_conversations, run_migrations
@@ -156,6 +156,7 @@ def create_app() -> FastAPI:
     application.include_router(translate.router, prefix="/ai", dependencies=protected)
     application.include_router(document.router, prefix="/ai", dependencies=protected)
     application.include_router(users.router, prefix="/ai", dependencies=protected)
+    application.include_router(document_analysis.router, prefix="/ai", dependencies=protected)
 
     return application
 

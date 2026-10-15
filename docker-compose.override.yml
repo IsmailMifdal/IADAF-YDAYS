@@ -28,6 +28,10 @@ services:
   ai-service:
     ports:
       - "127.0.0.1:8086:8086"
+    environment:
+      # Pré-vérification des pièces active en développement (désactivée par
+      # défaut en production, voir docker-compose.yml).
+      - DOCUMENT_ANALYSIS_ENABLED=true
 
   user-service:
     ports:

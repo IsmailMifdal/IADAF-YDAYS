@@ -108,9 +108,18 @@ export default function PrivacyPage() {
         avec votre compte s’il est supprimé.
       </p>
       <p>
-        Leur contenu n’est pas transmis à l’assistant IA : pour la
-        vérification de votre dossier, seule la liste des pièces fournies ou
-        manquantes lui est envoyée.
+        Quand vous demandez la vérification de votre dossier, chaque pièce fait
+        l’objet d’une <strong>pré-vérification automatique</strong> sur nos
+        serveurs : qualité de l’image, date de validité, ancienneté d’un
+        justificatif, clé de contrôle d’un IBAN. Elle est indicative : elle ne
+        décide de rien et ne garantit pas l’acceptation de votre dossier, seule
+        l’administration est compétente. Seuls des comptes anonymes de ses
+        résultats sont conservés, sans lien avec vous ni avec vos pièces.
+      </p>
+      <p>
+        Le contenu de vos pièces n’est pas transmis à l’assistant IA : il reçoit
+        la liste des pièces fournies ou manquantes, et les points relevés, sans
+        aucune date, nom ni numéro lus dans vos documents.
       </p>
 
       <h2>Destinataires et sous-traitants</h2>

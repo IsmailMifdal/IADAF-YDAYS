@@ -61,6 +61,23 @@ class Settings(BaseSettings):
     # service. The service refuses to start without it.
     internal_jwt_secret: str = ""
 
+    # Gateway, to fetch a filed document from document-service with the
+    # caller's own token (document-service checks ownership).
+    gateway_url: str = "http://localhost:8080"
+
+    # Automated pre-check of filed documents. Off by default: it is automated
+    # processing of identity documents, to switch on only once the AIPD is done
+    # (docs/rgpd/aipd-preparation.md).
+    document_analysis_enabled: bool = False
+
+    # OCR of scans and photos. Off unless configured: it sends the image of an
+    # identity document to a third party (DPA, EU hosting, AIPD required).
+    ocr_provider: str = ""  # "mistral" or empty
+    ocr_api_key: str = ""
+    ocr_api_url: str = "https://api.mistral.ai/v1/ocr"
+    ocr_model: str = "mistral-ocr-latest"
+    ocr_timeout_seconds: float = 60
+
     # CORS — comma-separated list of browser origins allowed to call this service
     # directly. In normal operation the frontend proxies every call server-side,
     # so this only needs to cover direct browser access (local debugging, docs).

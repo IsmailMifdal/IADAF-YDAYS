@@ -105,7 +105,16 @@
 > ⚠️ Ce traitement relève de l'**AIPD** ([`aipd-preparation.md`](aipd-preparation.md)),
 > à mener **avant** l'ouverture au public.
 
-## T7 — Analyse automatisée des pièces *(Phase 4, non encore en production)*
+## T7 — Pré-vérification automatique des pièces *(désactivée par défaut)*
 
-À compléter avant la mise en service : OCR par un sous-traitant, champs
-extraits, consentement séparé pour l'entraînement du modèle.
+| Rubrique | Contenu |
+|---|---|
+| Finalité | Signaler à l'utilisateur, avant dépôt à l'administration, une pièce expirée, un justificatif trop ancien, une photo illisible, un IBAN erroné |
+| Base légale | Exécution du contrat (service demandé par l'utilisateur, à sa demande) |
+| Données | Contenu des pièces, lu en mémoire ; seuls sont retenus le type de pièce, l'état de la bande MRZ et une date de validité ou d'émission — jamais le nom, le numéro, la nationalité ni la date de naissance |
+| Traitement | Règles déterministes (ai-service, `app/documents`), sans modèle de langage ; rien n'est stocké |
+| Décision automatisée (art. 22) | Non : résultat indicatif, aucune conséquence automatique ; l'utilisateur garde la main |
+| Sous-traitant | Aucun par défaut. OCR des photos et scans (`OCR_PROVIDER`) : **désactivé** — l'activer suppose un DPA, un hébergement UE et une mise à jour de ce registre |
+| Statistiques | Comptes anonymes par jour, catégorie et issue de contrôle (`analytics.document_check_counts`), sans utilisateur ni document |
+| Activation | `DOCUMENT_ANALYSIS_ENABLED=false` en production tant que l'**AIPD** n'est pas menée |
+| Hors périmètre | Aucune collecte pour l'entraînement d'un modèle à ce stade |

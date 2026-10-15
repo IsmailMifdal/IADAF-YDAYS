@@ -120,6 +120,14 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
+      # Pré-vérification des pièces (Phase 4) : désactivée tant que l'AIPD n'est
+      # pas menée. docker-compose.override.yml l'active en développement.
+      - DOCUMENT_ANALYSIS_ENABLED=${DOCUMENT_ANALYSIS_ENABLED:-false}
+      - GATEWAY_URL=http://api-gateway:8080
+      # OCR des photos et scans : envoie l'image des pièces à un tiers (DPA,
+      # hébergement UE, AIPD requis). Vide = désactivé.
+      - OCR_PROVIDER=${OCR_PROVIDER:-}
+      - OCR_API_KEY=${OCR_API_KEY:-}
     volumes:
       - ai_vectorstore:/data/vectorstore
     networks:

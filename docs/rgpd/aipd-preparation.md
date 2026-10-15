@@ -42,13 +42,13 @@ Upload ─► document-service ─► MinIO (chiffré)
 |---|---|---|
 | Fuite des pièces | Chiffrement AES-256-GCM par le service avant écriture en base, clé hors base ; accès réservé au titulaire ; téléchargement en pièce jointe | Fait — journalisation des accès à faire |
 | Conservation excessive | Purge 180 jours après le dépôt, effacement au retrait et à la suppression du compte | Fait — à resserrer à 30 jours après la fin de la démarche |
-| Collecte excessive | N'extraire que les champs utiles aux règles (pas le numéro de document) | À faire |
-| Transfert hors UE | OCR chez un prestataire hébergé en UE ; le LLM ne reçoit aucune identité | À faire |
-| Décision automatisée (art. 22) | Résultat présenté comme indicatif ; l'utilisateur peut passer outre et contester | À faire |
+| Collecte excessive | Seuls le type, l'état de la MRZ et une date sont retenus ; nom, numéro, nationalité, naissance lus pour les sommes de contrôle puis écartés ; rien n'est stocké | Fait |
+| Transfert hors UE | Pré-vérification sans LLM ; l'assistant ne reçoit que noms de pièces et intitulés de contrôles ; OCR tiers désactivé par défaut | Fait — OCR à encadrer avant activation |
+| Décision automatisée (art. 22) | Résultat indicatif, sans conséquence automatique, mention explicite ; « non vérifiable » n'est jamais présenté comme conforme | Fait |
 | Réutilisation pour l'entraînement | Consentement séparé, décoché par défaut, horodaté, retirable ; retrait ⇒ exclusion du jeu et ré-entraînement périodique | À faire |
 | Mémorisation par le modèle | Entraînement uniquement sur des champs pseudonymisés ; tests d'extraction de données mémorisées | À faire |
 | Exactitude | Mesure du taux de faux « conforme » sur un jeu de référence avant chaque mise en production du modèle | À faire |
-| Droits des personnes | Effacement complet à la suppression du compte (déjà en place pour comptes, conversations et e-mails) | Partiel |
+| Droits des personnes | Effacement complet à la suppression du compte : compte, conversations, démarches, pièces, e-mails | Fait |
 
 ## Parties à consulter
 

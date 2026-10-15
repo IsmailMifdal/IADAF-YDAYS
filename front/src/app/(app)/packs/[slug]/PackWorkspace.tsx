@@ -16,9 +16,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { PackData } from "../packsData";
 import {
+  CHECK_LABELS,
   DOCUMENT_RETENTION_DAYS,
   EXTRA_DOCUMENT_PREFIX,
   MAX_DOCUMENT_BYTES,
+  type CheckStatus,
+  type DocumentAnalysis,
   type StoredDocument,
 } from "../../../lib/documentTypes";
 import HeaderPage from "../../../components/ui/PageHeader";
@@ -47,6 +50,34 @@ function validateFile(file: File) {
   }
 
   return null;
+}
+
+const CHECK_STYLE: Record<CheckStatus, string> = {
+  ok: "text-emerald-700",
+  warning: "text-amber-700",
+  error: "text-red-700",
+  unknown: "text-gray-500",
+};
+
+const CHECK_MARK: Record<CheckStatus, string> = {
+  ok: "✓",
+  warning: "!",
+  error: "✕",
+  unknown: "?",
+};
+
+/** Result of the automated pre-check, under a filed piece. */
+function PrecheckResult({ analysis }: { analysis: DocumentAnalysis }) {
+  return (
+    <ul className="mt-1.5 mb-1 ml-14 space-y-0.5 text-xs" aria-label="Pré-vérification automatique">
+      {analysis.checks.map((check) => (
+        <li key={check.id} className={`flex gap-1.5 ${CHECK_STYLE[check.status]}`}>
+          <span aria-hidden className="font-semibold">{CHECK_MARK[check.status]}</span>
+          <span>{check.message}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 type ChatMessage = {
@@ -84,6 +115,10 @@ export default function PackWorkspace({
     () => Object.fromEntries(documents.map((d) => [d.documentType, d])) as Record<string, StoredDocument>,
     [documents],
   );
+  /** Latest pre-check per document id. */
+  const [analyses, setAnalyses] = useState<Record<string, DocumentAnalysis>>({});
+  /** Set when the automated pre-check is switched off on this server. */
+  const [precheckUnavailable, setPrecheckUnavailable] = useState(false);
   const extraDocuments = useMemo(
     () => documents.filter((d) => d.documentType.startsWith(EXTRA_DOCUMENT_PREFIX)),
     [documents],
@@ -210,6 +245,42 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
    */
   const handleAnalyze = useCallback(async () => {
     if (isAnalyzing) return;
+    setIsAnalyzing(true);
+
+    // 1. Automated pre-check of each filed piece, one at a time.
+    const results: Record<string, DocumentAnalysis> = {};
+    let unavailable = false;
+    for (const document of documents) {
+      try {
+        const res = await fetch(`/api/documents/${document.id}/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentType: document.documentType }),
+        });
+        if (res.status === 503) {
+          unavailable = true;
+          break;
+        }
+        if (res.ok) results[document.id] = await res.json();
+      } catch {
+        // A failed piece keeps no result; the others still get theirs.
+      }
+    }
+    setAnalyses(results);
+    setPrecheckUnavailable(unavailable);
+
+    // 2. Completeness advice from the assistant. It gets the pieces' names and
+    //    which checks raised a point — never a date, name or number read in
+    //    a document.
+    const flagged = documents
+      .map((d) => [d, results[d.id]] as const)
+      .filter(([, a]) => a && (a.status === "error" || a.status === "warning"))
+      .map(([d, a]) => {
+        const points = a!.checks
+          .filter((c) => c.status === "error" || c.status === "warning")
+          .map((c) => `${c.status === "error" ? "problème" : "à vérifier"} (${CHECK_LABELS[c.id] ?? c.id})`);
+        return `- ${d.documentType} : ${points.join(", ")}`;
+      });
 
     const provided = pack.requiredDocuments.filter((d) => bySlot[d]);
     const missing = pack.requiredDocuments.filter((d) => !bySlot[d]);
@@ -225,9 +296,11 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       ...(extraDocuments.length
         ? ["", `Fichiers supplémentaires : ${extraDocuments.length}`]
         : []),
+      ...(flagged.length
+        ? ["", "Points relevés par la pré-vérification automatique :", ...flagged]
+        : []),
     ].join("\n");
 
-    setIsAnalyzing(true);
     try {
       const res = await api.analyzeDocument({
         document_content: summary,
@@ -259,7 +332,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     } finally {
       setIsAnalyzing(false);
     }
-  }, [pack, isAnalyzing, bySlot, extraDocuments, lang, toast]);
+  }, [pack, isAnalyzing, documents, bySlot, extraDocuments, lang, toast]);
 
   const handleSendMessage = useCallback(async () => {
     const trimmed = chatInput.trim();
@@ -432,9 +505,10 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                 {pack.requiredDocuments.map((document) => {
                   const file = bySlot[document];
                   const isBusy = busySlot === document;
+                  const analysis = file ? analyses[file.id] : undefined;
                   return (
+                    <div key={document}>
                     <label
-                      key={document}
                       className={`group flex items-center gap-4 p-3.5 rounded-xl border cursor-pointer transition duration-200 ease-out active:scale-[0.99] motion-reduce:active:scale-100 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${
                         file
                           ? "border-emerald-200 bg-emerald-50/60"
@@ -510,6 +584,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                         }}
                       />
                     </label>
+                    {analysis && <PrecheckResult analysis={analysis} />}
+                    </div>
                   );
                 })}
               </div>
@@ -620,6 +696,19 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   </>
                 )}
               </button>
+
+              {precheckUnavailable && (
+                <p className="mt-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  La vérification automatique des pièces n’est pas encore ouverte :
+                  l’assistant contrôle pour l’instant la complétude de votre dossier.
+                </p>
+              )}
+              {Object.keys(analyses).length > 0 && (
+                <p className="mt-3 text-xs text-gray-500">
+                  Pré-vérification indicative, sous chaque pièce : elle ne garantit pas
+                  l’acceptation de votre dossier, seule l’administration en décide.
+                </p>
+              )}
 
               <p className="mt-2 text-center text-xs text-gray-400">
                 {uploadedCount === 0

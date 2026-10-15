@@ -286,6 +286,27 @@ Gérées par `document-service`, stockées dans PostgreSQL (schéma `documents`)
 
 ---
 
+## 🔍 Pré-vérification automatique des pièces
+
+`POST /ai/documents/{id}/analyze` (ai-service, [`app/documents`](ai-service/app/documents)) :
+
+- **Déterministe, sans modèle de langage** : qualité de l'image (netteté,
+  lumière, résolution), texte des PDF, bande MRZ (OACI 9303, sommes de
+  contrôle), dates de validité et d'émission, clé IBAN. Messages fixes,
+  testés ; « non vérifiable » n'est jamais présenté comme conforme.
+- **Cloisonnée par document-service** : ai-service récupère la pièce avec le
+  jeton de l'appelant, donc un utilisateur n'analyse que ses propres pièces ;
+  aucun fichier ne transite par le frontend.
+- **Minimisée** : seuls le type, l'état de la MRZ et une date sont retenus ;
+  rien n'est stocké. Les statistiques envoyées à analytics-service sont des
+  comptes anonymes au vocabulaire fermé (validé côté serveur).
+- **Désactivée par défaut** (`DOCUMENT_ANALYSIS_ENABLED=false`) : traitement
+  automatisé de pièces d'identité, à n'activer qu'après l'AIPD.
+- **OCR** (`OCR_PROVIDER`) désactivé : il enverrait l'image des pièces à un
+  tiers. Sans lui, les photos sont seulement contrôlées en qualité.
+
+---
+
 ## 🧾 Données personnelles (RGPD)
 
 ### Liaison frontend → AI Service
