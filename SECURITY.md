@@ -208,9 +208,11 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 > déconnecte pas une session déjà ouverte ailleurs (elle expire au plus tard
 > au bout de 7 jours).
 
-Sans `SMTP_URL`, le lien est affiché dans les logs du frontend en
-développement ; en production, la demande échoue (journalisée) plutôt que de
-prétendre avoir envoyé un e-mail.
+En développement, `docker-compose.override.yml` branche le frontend sur
+**Mailpit**, qui capture tous les e-mails sans rien envoyer : ils sont lisibles
+sur http://127.0.0.1:8025. Avec `npm run dev` sans `SMTP_URL`, le lien est
+affiché dans la console. En production, sans `SMTP_URL`, la demande échoue
+(journalisée) plutôt que de prétendre avoir envoyé un e-mail.
 
 ---
 

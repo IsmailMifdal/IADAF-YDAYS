@@ -112,7 +112,8 @@ curl -X POST http://localhost:8080/api/ai/chat \
 ```
 
 En développement, `docker-compose.override.yml` (chargé automatiquement) publie
-les ports internes sur `127.0.0.1`. En production, lancer
+les ports internes sur `127.0.0.1`, et ajoute Mailpit, qui capture les e-mails
+envoyés (réinitialisation du mot de passe) : http://127.0.0.1:8025. En production, lancer
 `docker compose -f docker-compose.yml up -d --build` : seul le frontend est
 publié, sur la loopback, derrière le reverse proxy.
 

@@ -3,6 +3,7 @@
 # Docker Compose charge ce fichier automatiquement avec `docker compose up`.
 # Il publie les ports internes sur la loopback (127.0.0.1) pour déboguer :
 # psql, dashboard Eureka, Swagger de l'AI Service, appels directs aux services.
+# Il ajoute Mailpit, qui capture les e-mails de développement.
 #
 # Ne JAMAIS l'utiliser en production : lancer explicitement
 #   docker compose -f docker-compose.yml up -d --build
@@ -43,3 +44,20 @@ services:
   analytics-service:
     ports:
       - "127.0.0.1:8085:8085"
+
+  # Faux serveur SMTP : capture les e-mails envoyés (réinitialisation du mot de
+  # passe) et les affiche sur http://127.0.0.1:8025. Rien ne part vers
+  # l'extérieur, quelle que soit l'adresse du destinataire.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    container_name: iadaf-mailpit
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks:
+      - iadaf-network
+    restart: unless-stopped
+
+  frontend:
+    environment:
+      - SMTP_URL=smtp://mailpit:1025
+      - MAIL_FROM=IA-DAF (dev) <no-reply@iadaf.local>
