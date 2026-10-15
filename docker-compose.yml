@@ -7,11 +7,12 @@
 #   ai-service         :8086   (Python / FastAPI + OpenAI)
 #   frontend           :3000   (Next.js)
 #
-# Ports : en production, seul le frontend est publié, et sur la loopback
-# (derrière un reverse proxy). docker-compose.override.yml, chargé
-# automatiquement en développement, publie les autres sur 127.0.0.1.
+# Ports : seul le frontend est publié, sur la loopback.
+# docker-compose.override.yml, chargé automatiquement en développement, publie
+# les autres sur 127.0.0.1. En production, docker-compose.prod.yml ajoute Caddy
+# (HTTPS), retire ce port et tire les images de GHCR : voir DEPLOYMENT.md.
 #   Développement : docker compose up -d --build
-#   Production    : docker compose -f docker-compose.yml up -d --build
+#   Production    : docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
 # Lancement :  docker compose up -d --build
 # Arrêt :      docker compose down
@@ -54,6 +55,9 @@ services:
     container_name: iadaf-discovery
     environment:
       - EUREKA_INSTANCE_HOSTNAME=discovery-service
+      # Sert le registre sans le cache de 30 s : un service qui (re)démarre est
+      # visible de la gateway tout de suite, pas une minute et demie plus tard.
+      - EUREKA_SERVER_USEREADONLYRESPONSECACHE=false
     networks:
       - iadaf-network
     restart: unless-stopped
@@ -79,6 +83,12 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      # Par défaut, la gateway relit le registre toutes les 30 s et garde sa
+      # liste d'instances 35 s : après un démarrage ou une mise à jour, les
+      # appels échouaient (503) pendant plus d'une minute alors que les
+      # services étaient déjà « healthy ».
+      - EUREKA_CLIENT_REGISTRYFETCHINTERVALSECONDS=5
+      - SPRING_CLOUD_LOADBALANCER_CACHE_TTL=5s
     networks:
       - iadaf-network
     depends_on:
@@ -129,6 +139,11 @@ services:
       - OCR_API_KEY=${OCR_API_KEY:-}
     volumes:
       - ai_vectorstore:/data/vectorstore
+      # Modèles téléchargés au premier démarrage (~450 Mo : embeddings Hugging
+      # Face, ONNX de ChromaDB). Sans ce volume, chaque mise à jour les
+      # retéléchargerait, et une panne de Hugging Face empêcherait le service
+      # de redémarrer.
+      - ai_model_cache:/home/app/.cache
     networks:
       - iadaf-network
     depends_on:
@@ -285,9 +300,9 @@ services:
       context: ./front
       dockerfile: DockerFile
     container_name: iadaf-front
-    # Loopback only: the site is served through a reverse proxy on the host
-    # (Caddy, nginx). Rate limiting trusts X-Forwarded-For, which a client
-    # reaching port 3000 directly could forge.
+    # Loopback only. Rate limiting trusts X-Forwarded-For, which a client
+    # reaching port 3000 directly could forge. docker-compose.prod.yml drops
+    # the port: Caddy reaches the frontend on the internal network.
     ports:
       - "127.0.0.1:3000:3000"
     environment:
@@ -315,10 +330,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      # node:20-alpine n'a pas curl, mais busybox fournit wget.
+      # node:24-alpine n'a pas curl, mais busybox fournit wget.
       # 127.0.0.1 et non localhost : ce dernier résout en ::1 dans le conteneur,
       # où le serveur Next n'écoute pas.
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -336,4 +351,6 @@ volumes:
   postgres_data:
     driver: local
   ai_vectorstore:
+    driver: local
+  ai_model_cache:
     driver: local

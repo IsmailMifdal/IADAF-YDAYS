@@ -8,7 +8,7 @@
 
 ```
                     Navigateur
-                        │
+                        │  HTTPS — en production, par Caddy (deploy/Caddyfile)
                         ▼
         ┌───────────────────────────────┐
         │   Frontend (Next.js)  :3000   │
@@ -114,9 +114,9 @@ curl -X POST http://localhost:8080/api/ai/chat \
 
 En développement, `docker-compose.override.yml` (chargé automatiquement) publie
 les ports internes sur `127.0.0.1`, et ajoute Mailpit, qui capture les e-mails
-envoyés (réinitialisation du mot de passe) : http://127.0.0.1:8025. En production, lancer
-`docker compose -f docker-compose.yml up -d --build` : seul le frontend est
-publié, sur la loopback, derrière le reverse proxy.
+envoyés (réinitialisation du mot de passe) : http://127.0.0.1:8025. La production
+utilise la surcouche `docker-compose.prod.yml` (Caddy en HTTPS, images GHCR,
+limites mémoire) : voir [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Documentation Swagger interactive : http://localhost:8086/docs
 
@@ -354,10 +354,7 @@ Détails dans [tests/README.md](tests/README.md).
 
 ## ⚠️ Avant une mise en production
 
-- [ ] Régénérer `AUTH_SECRET` et `POSTGRES_PASSWORD` (ne jamais réutiliser ceux du dev)
-- [ ] Servir le site en HTTPS et fixer `AUTH_URL` sur le domaine public
-- [ ] Basculer les clés Stripe de test vers les clés live, et publier CGV + mentions légales
-- [ ] Lancer avec `docker compose -f docker-compose.yml` (sans l'override de dev, qui publie les ports internes)
-- [ ] Générer un `INTERNAL_JWT_SECRET` propre à la production, et configurer `SMTP_URL`
-- [ ] Ne joindre le frontend (`:3000`) que via le reverse proxy : la limitation de débit se fie à `X-Forwarded-For`
-- [ ] Mettre en place les sauvegardes PostgreSQL
+Tout est dans [DEPLOYMENT.md](DEPLOYMENT.md) : préparation du VPS, secrets
+(`deploy/generate-secrets.sh`), HTTPS par Caddy, Stripe live, sauvegardes
+chiffrées et test de restauration, mises à jour et retour arrière, et la
+liste de contrôle avant l'ouverture au public.

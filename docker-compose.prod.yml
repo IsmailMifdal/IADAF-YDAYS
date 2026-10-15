@@ -1,0 +1,133 @@
+# IA-DAF — surcouche de production (VPS). Voir DEPLOYMENT.md.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Par rapport à docker-compose.yml :
+#   - Caddy termine le HTTPS (Let's Encrypt) : seuls les ports 80 et 443 sont
+#     publiés ; le frontend n'est plus publié du tout, même sur la loopback ;
+#   - les images viennent de GHCR (construites, testées et scannées par la CI) :
+#     rien n'est compilé sur le serveur. IMAGE_TAG = le SHA d'un commit de main
+#     (retour arrière : redéployer le SHA précédent) ;
+#   - limites mémoire calibrées pour un VPS de 8 Go, logs plafonnés ;
+#   - les secrets qui n'ont pas de valeur par défaut acceptable en production
+#     sont exigés : le déploiement échoue plutôt que le site, plus tard.
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+# Les JVM ne voient que la limite du conteneur : 70 % pour le tas, le reste
+# pour le métaspace, les threads et les tampons réseau.
+x-java: &java
+  <<: *logging
+  build: !reset null
+  environment:
+    - JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+  deploy:
+    resources:
+      limits:
+        memory: 512m
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: iadaf-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - DOMAIN=${DOMAIN:?DOMAIN is required — see DEPLOYMENT.md}
+      - ACME_EMAIL=${ACME_EMAIL:?ACME_EMAIL is required — see DEPLOYMENT.md}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificats et clés ACME : à conserver, sinon chaque redémarrage
+      # redemande un certificat (et Let's Encrypt limite les demandes).
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - iadaf-network
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    <<: *logging
+
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — run deploy/generate-secrets.sh}
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    <<: *logging
+
+  discovery-service:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-discovery-service:${IMAGE_TAG:-latest}
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+
+  api-gateway:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-api-gateway:${IMAGE_TAG:-latest}
+
+  user-service:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-user-service:${IMAGE_TAG:-latest}
+
+  demarches-service:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-demarches-service:${IMAGE_TAG:-latest}
+
+  document-service:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-document-service:${IMAGE_TAG:-latest}
+
+  analytics-service:
+    <<: *java
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-analytics-service:${IMAGE_TAG:-latest}
+
+  ai-service:
+    build: !reset null
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-ai-service:${IMAGE_TAG:-latest}
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      - CORS_ORIGINS=https://${DOMAIN:?DOMAIN is required}
+    # Modèle d'embeddings chargé en mémoire (~1 Go au repos).
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    <<: *logging
+
+  frontend:
+    build: !reset null
+    image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-frontend:${IMAGE_TAG:-latest}
+    # Joignable par Caddy seulement, sur le réseau interne.
+    ports: !reset []
+    environment:
+      - AUTH_URL=https://${DOMAIN:?DOMAIN is required}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:?STRIPE_SECRET_KEY is required (sk_live_…)}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:?STRIPE_WEBHOOK_SECRET is required}
+      - SMTP_URL=${SMTP_URL:?SMTP_URL is required — password reset mails}
+      - MAIL_FROM=${MAIL_FROM:?MAIL_FROM is required}
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    <<: *logging
+
+volumes:
+  caddy_data:
+  caddy_config:

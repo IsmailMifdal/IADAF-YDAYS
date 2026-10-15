@@ -63,7 +63,11 @@ Pour ré-indexer manuellement les données dans ChromaDB :
 python scripts/ingest_data.py
 ```
 
-L'indexation automatique se fait au démarrage si le vector store est vide.
+L'indexation se fait au démarrage : si le vector store est vide, ou si les fiches
+(ou le modèle d'embeddings) ont changé depuis la dernière indexation — une
+empreinte SHA-256 est conservée à côté de l'index (`knowledge-base.sha256`).
+Une mise à jour de la base de connaissances est donc prise en compte au
+redéploiement, sans vider le volume.
 
 ## Architecture
 

@@ -8,9 +8,12 @@
 | Frontend (types, lint, build) | `front/` | `npx tsc --noEmit && npx eslint src && npm run build` |
 | **De bout en bout** | `tests/e2e/` | stack lancée, puis `bash tests/e2e/run-all.sh` |
 | Santé rapide | `tests/health-checks/` | `bash tests/health-checks/check-all-services.sh` |
+| Fichiers de déploiement (shellcheck, compose de production, Caddyfile) | `deploy/`, `docker-compose.prod.yml` | job `deploy` de la CI |
+| **Après un déploiement** | `deploy/smoke-test.sh` | `deploy/smoke-test.sh <domaine>` — sans écriture, sûr en production |
+| Restauration d'une sauvegarde | `deploy/restore-test.sh` | voir [DEPLOYMENT.md](../DEPLOYMENT.md), étape 6 |
 
-La CI (`.github/workflows/ci.yml`) joue les quatre premiers niveaux à chaque
-PR ; la suite de bout en bout tourne chaque nuit et à la demande
+La CI (`.github/workflows/ci.yml`) joue les quatre premiers niveaux et les
+contrôles des fichiers de déploiement à chaque PR ; la suite de bout en bout tourne chaque nuit et à la demande
 (`.github/workflows/e2e.yml`).
 
 ## Suite de bout en bout

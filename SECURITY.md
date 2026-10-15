@@ -19,11 +19,11 @@ Ce document décrit le modèle de sécurité réellement implémenté.
        │ HTTPS · cookie de session (JWT Auth.js, httpOnly)
        ▼
 ┌──────────────────┐
-│  Reverse proxy   │  seul point publié (Phase 6 : Caddy)
+│  Caddy           │  HTTPS, en-têtes — seul point publié (80/443)
 └──────┬───────────┘
        ▼
 ┌─────────────────────────────────────────────┐
-│  Frontend Next.js  127.0.0.1:3000           │
+│  Frontend Next.js  frontend:3000 (interne)  │
 │  proxy.ts ........ protège les pages        │
 │  Auth.js ......... sessions + providers     │
 │  rateLimit ....... quotas (Postgres)        │
@@ -245,8 +245,10 @@ peut pas épuiser à elle seule le quota global anonyme.
 À connaître :
 
 - **IP du client** — lue dans la dernière entrée de `X-Forwarded-For`, celle
-  écrite par le reverse proxy. Si le port `3000` est joignable directement,
-  un client peut forger cet en-tête.
+  écrite par le reverse proxy. En production, Caddy remplace l'en-tête envoyé
+  par le client par l'adresse réelle de la connexion, et le port `3000` n'est
+  pas publié. Si le frontend était joignable directement, un client pourrait
+  forger cet en-tête.
 - **Verrouillage par e-mail** — la limite par adresse empêche de deviner un
   mot de passe depuis de nombreuses IP, mais permet à un attaquant de bloquer
   la connexion d'un compte pendant 15 minutes.
@@ -400,8 +402,10 @@ de démarrer avec une configuration d'authentification incomplète.
 
 | Point | Détail |
 |-------|--------|
-| **Ports en développement** | `docker-compose.override.yml` publie les ports internes, sur `127.0.0.1` uniquement. En production, lancer `docker compose -f docker-compose.yml up` : seul le frontend est publié, et sur la loopback. |
-| **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. Le déploiement doit être en TLS. |
+| **Ports en développement** | `docker-compose.override.yml` publie les ports internes, sur `127.0.0.1` uniquement. En production, `docker-compose.prod.yml` (voir [DEPLOYMENT.md](DEPLOYMENT.md)) ne publie que les ports 80 et 443 de Caddy ; le frontend n'est plus publié du tout. |
+| **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. En production, Caddy sert le site en HTTPS (certificat Let's Encrypt, HSTS) et redirige le HTTP. |
+| **CSP partielle** | `deploy/Caddyfile` interdit cadres, plugins et `<base>` détourné, mais pas les scripts en ligne (Next.js en injecte ; une politique stricte demande des *nonces*). |
+| **Un seul rôle PostgreSQL** | Tous les services partagent le compte propriétaire de la base : une injection SQL dans l'un atteindrait les schémas des autres. Des rôles par service, limités à leur schéma, sont la prochaine étape. |
 | **Sessions non révocables** | Voir « Réinitialisation du mot de passe ». |
 | **Dépendances** | `npm audit` : 2 alertes modérées restantes (`@tailwindcss/typography` → `postcss-selector-parser`, CPU à la compilation d'un CSS non fiable). Seul notre propre CSS est compilé ; le correctif proposé est une rétrogradation. Accepté. |
 
@@ -436,12 +440,15 @@ de démarrer avec une configuration d'authentification incomplète.
 
 ## 📋 Checklist avant mise en production
 
+Procédure complète : [DEPLOYMENT.md](DEPLOYMENT.md).
+
 - [ ] `AUTH_SECRET` et `POSTGRES_PASSWORD` régénérés
 - [ ] HTTPS actif, `AUTH_URL` pointant sur le domaine public
 - [ ] Clés Stripe live, webhook déclaré sur l'URL publique
-- [ ] Lancement avec `docker compose -f docker-compose.yml` (sans l'override de dev)
+- [ ] Lancement avec la surcouche `docker-compose.prod.yml` (`COMPOSE_FILE` du `.env` généré par `deploy/generate-secrets.sh`)
 - [ ] `INTERNAL_JWT_SECRET` propre à la production, différent du dev
 - [ ] `SMTP_URL` et `MAIL_FROM` configurés (réinitialisation du mot de passe)
 - [ ] Frontend joignable uniquement via le reverse proxy (sinon `X-Forwarded-For` peut être forgé)
-- [ ] Sauvegardes PostgreSQL configurées et restauration testée
+- [ ] Sauvegardes chiffrées planifiées (`deploy/backup.sh`), copie hors serveur, et `deploy/restore-test.sh` passé
+- [ ] `DOCUMENT_ENCRYPTION_KEY` et `BACKUP_PASSPHRASE` copiées dans un coffre hors du serveur
 - [ ] CGV et mentions légales publiées (obligatoire pour encaisser)

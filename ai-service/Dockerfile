@@ -23,6 +23,7 @@ COPY . .
 # The entrypoint is normalised to LF: a Windows checkout turns it into CRLF,
 # which /bin/sh cannot run.
 RUN useradd --create-home --uid 10001 app \
+    && install -d -o app -g app /home/app/.cache \
     && chown -R app:app /app \
     && sed -i 's/\r$//' /app/docker-entrypoint.sh \
     && install -m 755 /app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

@@ -5,9 +5,10 @@
 # psql, dashboard Eureka, Swagger de l'AI Service, appels directs aux services.
 # Il ajoute Mailpit, qui capture les e-mails de développement.
 #
-# Ne JAMAIS l'utiliser en production : lancer explicitement
-#   docker compose -f docker-compose.yml up -d --build
-# pour que seul le frontend soit publié.
+# Ne JAMAIS l'utiliser en production : la production nomme ses fichiers
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# (COMPOSE_FILE dans le .env de production, voir DEPLOYMENT.md), ce qui
+# écarte celui-ci.
 #
 # Les appels directs exigent quand même un jeton interne (voir SECURITY.md) :
 # seuls /actuator/health et /ai/health répondent sans jeton.

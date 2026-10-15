@@ -10,7 +10,9 @@
 | Stripe | Paiement | Identité de l'acheteur, paiement | UE / États-Unis | ☐ à archiver | Sans objet | ☐ à vérifier |
 | OpenAI | LLM du chat | Messages des utilisateurs | États-Unis | ☐ à accepter | ☐ à vérifier pour l'API | ☐ DPF ou CCT à documenter |
 | Google | Connexion OAuth (optionnelle) | Nom, e-mail, photo | États-Unis | ☐ à vérifier | Sans objet | ☐ à vérifier |
-| Hébergeur *[à choisir]* | Hébergement | Toutes | UE (recommandé) | ☐ | Sans objet | Sans objet si UE |
+| Hébergeur *[recommandé : Scaleway]* | Hébergement (VPS) | Toutes | UE (exigé) | ☐ | Sans objet | Sans objet si UE |
+| Fournisseur SMTP *[idem]* | E-mails de réinitialisation du mot de passe | E-mail, lien de réinitialisation | UE (recommandé) | ☐ | Sans objet | Sans objet si UE |
+| Stockage objet *[idem]* | Copie hors serveur des sauvegardes | Toutes, chiffrées (T8) | UE (exigé) | ☐ | Sans objet | Sans objet si UE |
 | Fournisseur OCR *[Phase 4]* | Lecture des pièces | Pièces d'identité | UE (exigé) | ☐ | ☐ **exigé** | Sans objet si UE |
 
 ## Recommandation

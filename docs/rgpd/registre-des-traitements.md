@@ -12,7 +12,7 @@
 | Responsable de traitement | *[raison sociale — voir `front/src/app/lib/legalInfo.ts`]* |
 | Contact RGPD | *[adresse `privacyEmail`]* |
 | DPO | *[désigné / non désigné — à décider]* |
-| Dernière mise à jour | 14 octobre 2026 |
+| Dernière mise à jour | 15 octobre 2026 |
 
 ---
 
@@ -118,3 +118,15 @@
 | Statistiques | Comptes anonymes par jour, catégorie et issue de contrôle (`analytics.document_check_counts`), sans utilisateur ni document |
 | Activation | `DOCUMENT_ANALYSIS_ENABLED=false` en production tant que l'**AIPD** n'est pas menée |
 | Hors périmètre | Aucune collecte pour l'entraînement d'un modèle à ce stade |
+
+## T8 — Sauvegardes
+
+| Rubrique | Contenu |
+|---|---|
+| Finalité | Restaurer le service après un incident (panne, erreur, attaque) |
+| Base légale | Obligation de sécurité (art. 32) ; intérêt légitime (art. 6.1.f) |
+| Données | Toutes celles des traitements T1 à T7 conservées en base (sans les compteurs de T5) ; les pièces y restent chiffrées par `DOCUMENT_ENCRYPTION_KEY`, absente des sauvegardes |
+| Stockage | Fichiers chiffrés (GnuPG, AES-256, phrase `BACKUP_PASSPHRASE`) sur le serveur et sur un stockage objet en UE (`deploy/backup.sh`) |
+| Accès | Les seuls exploitants du service |
+| Durée | 14 jours (`BACKUP_RETENTION_DAYS`, règle de cycle de vie identique côté stockage objet) |
+| Droit à l'effacement | Un compte supprimé subsiste dans les sauvegardes jusqu'à leur expiration (14 jours au plus), sans être consulté. Après une restauration, les comptes effacés depuis la date de la sauvegarde réapparaissent et doivent être supprimés à nouveau ([DEPLOYMENT.md](../../DEPLOYMENT.md), étape 9) — limite connue : aucun journal des effacements n'est encore tenu hors de la base |

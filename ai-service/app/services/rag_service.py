@@ -5,6 +5,7 @@ with multilingual sentence-transformers, stores vectors in ChromaDB, and
 provides a ``query`` method that combines retrieval + LLM generation.
 """
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -21,6 +22,21 @@ from app.services.llm_service import llm_service
 
 _DATA_DIR = Path(__file__).parent.parent / "data" / "knowledge_base"
 _VECTORSTORE_DIR = Path(settings.chroma_persist_dir)
+_EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+# Fingerprint of what the persisted index was built from (knowledge base files
+# and embedding model). The vector store lives in a volume that outlives the
+# image: without this, a release that edits the knowledge base would keep
+# answering from the previous version.
+_FINGERPRINT_FILE = "knowledge-base.sha256"
+
+
+def knowledge_base_fingerprint(data_dir: Path, model_name: str) -> str:
+    """SHA-256 of the embedding model name and every knowledge-base file."""
+    digest = hashlib.sha256(model_name.encode())
+    for path in sorted(data_dir.glob("*.json")):
+        digest.update(b"\0" + path.name.encode() + b"\0")
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -159,7 +175,8 @@ class RAGService:
     def initialise(self) -> None:
         """Initialise embeddings, vector store and retriever.
 
-        Indexes the knowledge base when the vector store is empty.
+        Indexes the knowledge base when the vector store is empty, and
+        rebuilds the index when the knowledge base or the model has changed.
         """
         try:
             self._setup_embeddings()
@@ -173,7 +190,7 @@ class RAGService:
         from langchain_community.embeddings import HuggingFaceEmbeddings  # type: ignore
 
         self._embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            model_name=_EMBEDDING_MODEL,
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )
@@ -198,9 +215,20 @@ class RAGService:
         except Exception:  # noqa: BLE001
             is_empty = True
 
-        if is_empty:
-            logger.info("Vector store is empty — indexing knowledge base…")
+        fingerprint_file = _VECTORSTORE_DIR / _FINGERPRINT_FILE
+        current = knowledge_base_fingerprint(_DATA_DIR, _EMBEDDING_MODEL)
+        indexed = fingerprint_file.read_text().strip() if fingerprint_file.exists() else None
+
+        if is_empty or indexed != current:
+            if is_empty:
+                logger.info("Vector store is empty — indexing knowledge base…")
+            else:
+                logger.info("Knowledge base changed since last indexing — rebuilding the index…")
+                stale = self._vectorstore.get()["ids"]
+                if stale:
+                    self._vectorstore.delete(ids=stale)
             self._index_knowledge_base()
+            fingerprint_file.write_text(current)
 
         self._retriever = self._vectorstore.as_retriever(
             search_type="similarity",

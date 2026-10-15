@@ -11,6 +11,14 @@ import { isStripeConfigured, stripe } from "../../lib/stripe";
 
 export const runtime = "nodejs";
 
+async function publicOrigin(): Promise<string> {
+  if (process.env.AUTH_URL) return process.env.AUTH_URL.replace(/\/+$/, "");
+  // Development fallback only.
+  const headerList = await headers();
+  const protocol = headerList.get("x-forwarded-proto") ?? "http";
+  return `${protocol}://${headerList.get("host") ?? "localhost:3000"}`;
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -57,10 +65,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const headerList = await headers();
-  const host = headerList.get("host") ?? "localhost:3000";
-  const protocol = headerList.get("x-forwarded-proto") ?? "http";
-  const origin = `${protocol}://${host}`;
+  // Return URLs come from AUTH_URL, not from the request's Host header: a
+  // forged Host must not be able to send buyers back to another site.
+  const origin = await publicOrigin();
 
   try {
     const checkout = await stripe.checkout.sessions.create({
