@@ -28,6 +28,7 @@ public class DemarcheDTO {
     private LocalDate dateDebut;
     private LocalDate dateFin;
     private String notes;
+    private String packSlug;
     private Boolean active;
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;

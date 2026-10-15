@@ -314,13 +314,13 @@ maturité diffère :
 | Service | État | Remarque |
 |---------|------|----------|
 | `user-service` | Fonctionnel | CRUD utilisateurs. Ne porte **pas** l'authentification — celle-ci vit dans le frontend (Auth.js). |
-| `demarches-service` | Fonctionnel | Domaine complet : démarches, étapes, commentaires. |
+| `demarches-service` | Fonctionnel, branché | Démarches, étapes, commentaires. Alimente « Mes dossiers » et le tableau de bord : un dossier par pack débloqué, une étape par pièce à réunir. Schéma géré par Flyway. |
 | `analytics-service` | Fonctionnel | Agrège les données des trois autres via RestClient. |
 | `document-service` | Coquille vide | S'enregistre dans Eureka et répond sur `/actuator/health`, mais n'expose **aucun endpoint métier** — le domaine reste à implémenter. |
 
-⚠️ Ces services ne sont **pas** consommés par le frontend, qui n'appelle
-aujourd'hui que `/api/ai/*`. Ils complètent l'architecture microservices et sont
-appelables directement ou via la gateway.
+Le frontend appelle `/api/ai/*` et `/api/demarches/*`. `user-service` et
+`analytics-service` (statistiques tous utilisateurs confondus, destinées à
+l'administration) ne sont pas encore consommés.
 
 Chacun exige un jeton interne signé par le frontend et revalide sa signature,
 même derrière la gateway — voir [SECURITY.md](SECURITY.md#-jetons-internes).

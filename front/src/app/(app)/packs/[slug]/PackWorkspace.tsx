@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
 import {
   ArrowRight,
   Bot,
@@ -16,7 +14,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getPackBySlug } from "../packsData";
+import type { PackData } from "../packsData";
 import HeaderPage from "../../../components/ui/PageHeader";
 import { api, type ChatResponse } from "../../../lib/api";
 import { useToast } from "../../../components/ui/Toast";
@@ -50,16 +48,17 @@ type ChatMessage = {
   content: string;
 };
 
+/** A pack with its paid content, handed over by the server once access is verified. */
+export type PackWithContent = PackData & { requiredDocuments: string[] };
+
 /**
  * Interactive workspace for a pack the user owns.
  *
  * Access is enforced by the server component in `page.tsx` — by the time this
- * renders, entitlement has already been verified against the database.
+ * renders, entitlement has already been verified against the database, and the
+ * paid content arrives as props rather than from a module in the bundle.
  */
-export default function PackWorkspace() {
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug ?? "";
-  const pack = getPackBySlug(slug);
+export default function PackWorkspace({ pack }: { pack: PackWithContent }) {
   const { lang, t } = useLanguage();
   const { toast } = useToast();
 
@@ -83,7 +82,7 @@ export default function PackWorkspace() {
     setConversationId(undefined);
   }
   // No message yet means the welcome is still on its way.
-  const isWelcoming = Boolean(pack) && messages.length === 0;
+  const isWelcoming = messages.length === 0;
   const isBusy = isLoading || isWelcoming;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const dropInputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +95,6 @@ export default function PackWorkspace() {
   // Envoie un message de bienvenue contextuel au pack choisi, à l'ouverture
   // puis à chaque changement de langue.
   useEffect(() => {
-    if (!pack) return;
     // Une réponse arrivée après un changement de langue est ignorée.
     let cancelled = false;
 
@@ -194,7 +192,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
    * discussion, là où l'utilisateur lit déjà les réponses de l'assistant.
    */
   const handleAnalyze = useCallback(async () => {
-    if (!pack || isAnalyzing) return;
+    if (isAnalyzing) return;
 
     const provided = pack.requiredDocuments.filter((d) => filesByDocument[d]);
     const missing = pack.requiredDocuments.filter((d) => !filesByDocument[d]);
@@ -281,27 +279,6 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       setIsLoading(false);
     }
   }, [chatInput, conversationId, isBusy, pack, lang, t]);
-
-  if (!pack) {
-    return (
-      <div className="bg-gray-50 min-h-screen">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-12">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Pack introuvable
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Le pack demandé n’existe pas ou n’est plus disponible.
-          </p>
-          <Link
-            href="/nosPacks"
-            className="inline-block mt-6 bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
-            Retour aux packs
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   const handleDocumentInput = (documentName: string, file: File | null) => {
     if (!file) return;

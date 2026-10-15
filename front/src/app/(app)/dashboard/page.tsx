@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   ArrowRight,
   FileText,
+  FolderOpen,
   MessageSquare,
   Package,
   Receipt,
@@ -10,6 +11,7 @@ import {
 import Link from "next/link";
 
 import { auth } from "../../../auth";
+import { listFolders, type Folder } from "../../lib/demarches";
 import { listPurchases, listUnlockedPacks } from "../../lib/entitlements";
 import { formatPrice, getPackBySlug, packs } from "../packs/packsData";
 import PageHeader from "../../components/ui/PageHeader";
@@ -35,6 +37,21 @@ export default async function DashboardPage() {
         listPurchases(session.user.id),
       ])
     : [[], []];
+
+  // Best effort: the rest of the dashboard still renders if the service is down.
+  let folders: Folder[] | null = null;
+  if (session?.user?.id) {
+    folders = await listFolders(session.user.id).catch((error) => {
+      console.error("[dashboard] could not load folders", error);
+      return null;
+    });
+  }
+  const openFolders = folders?.filter(
+    (f) => f.statut !== "TERMINEE" && f.statut !== "ANNULEE",
+  );
+  const averageProgress = openFolders?.length
+    ? Math.round(openFolders.reduce((sum, f) => sum + (f.progression ?? 0), 0) / openFolders.length)
+    : 0;
 
   const totalSpent = purchases.reduce((sum, p) => sum + p.amount_cents, 0);
   const firstName = session?.user?.name?.split(" ")[0];
@@ -67,10 +84,16 @@ export default async function DashboardPage() {
                 tone="success"
               />
               <StatCard
-                label="Démarches couvertes"
-                value={packs.length}
-                hint="CPAM, CAF, ANEF, impôts…"
-                icon={<FileText className="w-5 h-5" />}
+                label="Dossiers en cours"
+                value={openFolders ? openFolders.length : "—"}
+                hint={
+                  !openFolders
+                    ? "Suivi momentanément indisponible"
+                    : openFolders.length > 0
+                      ? `${averageProgress} % des pièces réunies en moyenne`
+                      : "Aucun dossier ouvert"
+                }
+                icon={<FolderOpen className="w-5 h-5" />}
                 tone="neutral"
               />
             </div>

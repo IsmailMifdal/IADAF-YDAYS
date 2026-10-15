@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./app/data/vectorstore"
 
     # SQLite database (for conversation history)
-    database_url: str = "sqlite+aiosqlite:///./app/data/iadaf.db"
+    database_url: str = "postgresql+asyncpg://iadaf_user:iadaf_password@localhost:5432/iadaf_db"
 
     # Conversations older than this are purged automatically (RGPD — limitation
     # de la durée de conservation). Anonymous chats can't be tied to a person,

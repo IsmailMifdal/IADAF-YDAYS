@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "../../../../auth";
 import { hasPackAccess } from "../../../lib/entitlements";
+import { getRequiredDocuments } from "../packContent";
 import { getPackBySlug } from "../packsData";
 import PackWorkspace from "./PackWorkspace";
 
@@ -61,5 +62,10 @@ export default async function PackPage({
     redirect(`/payment/${pack.slug}`);
   }
 
-  return <PackWorkspace />;
+  // Paid content leaves the server only here, once access is confirmed.
+  return (
+    <PackWorkspace
+      pack={{ ...pack, requiredDocuments: getRequiredDocuments(pack.slug) }}
+    />
+  );
 }

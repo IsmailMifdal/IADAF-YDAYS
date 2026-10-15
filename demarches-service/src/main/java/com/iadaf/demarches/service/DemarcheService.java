@@ -2,9 +2,12 @@ package com.iadaf.demarches.service;
 
 import com.iadaf.demarches.dto.CreateDemarcheRequest;
 import com.iadaf.demarches.dto.DemarcheDTO;
+import com.iadaf.demarches.dto.EnsurePackFolderRequest;
 import com.iadaf.demarches.dto.UpdateDemarcheRequest;
 import com.iadaf.demarches.dto.UpdateStatutRequest;
 import com.iadaf.demarches.entity.Demarche;
+import com.iadaf.demarches.entity.EtapeDemarche;
+import com.iadaf.demarches.enums.PrioriteDemarche;
 import com.iadaf.demarches.enums.StatutDemarche;
 import com.iadaf.demarches.enums.TypeDemarche;
 import com.iadaf.demarches.exception.ResourceNotFoundException;
@@ -72,6 +75,58 @@ public class DemarcheService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Dossier de suivi d'un pack : le renvoie s'il existe, le crée sinon.
+     *
+     * <p>Idempotent — le frontend l'appelle à chaque affichage des dossiers
+     * pour chaque pack débloqué, ce qui répare un dossier manquant (service
+     * indisponible au moment de l'achat, par exemple) sans dépendre du
+     * webhook de paiement.
+     */
+    public DemarcheDTO ensurePackFolder(String packSlug, EnsurePackFolderRequest request) {
+        String userId = getUserIdFromToken();
+
+        return demarcheRepository.findByUserIdAndPackSlug(userId, packSlug)
+                .map(demarcheMapper::toDTO)
+                .orElseGet(() -> {
+                    Demarche demarche = new Demarche();
+                    demarche.setTitre(request.getTitre());
+                    demarche.setTypeDemarche(request.getTypeDemarche());
+                    demarche.setOrganismeConcerne(request.getOrganismeConcerne());
+                    demarche.setStatut(StatutDemarche.EN_ATTENTE);
+                    demarche.setPriorite(PrioriteDemarche.MOYENNE);
+                    demarche.setUserId(userId);
+                    demarche.setPackSlug(packSlug);
+                    demarche.setActive(true);
+                    demarche.setDateDebut(LocalDate.now());
+
+                    List<String> etapes = request.getEtapes();
+                    for (int i = 0; i < etapes.size(); i++) {
+                        EtapeDemarche etape = new EtapeDemarche();
+                        etape.setTitre(etapes.get(i));
+                        etape.setOrdre(i + 1);
+                        etape.setCompletee(false);
+                        etape.setDemarche(demarche);
+                        demarche.getEtapes().add(etape);
+                    }
+
+                    log.info("Création du dossier du pack {} pour l'utilisateur {}", packSlug, userId);
+                    return demarcheMapper.toDTO(demarcheRepository.save(demarche));
+                });
+    }
+
+    /**
+     * Efface définitivement toutes les démarches du compte, y compris celles
+     * supprimées « en douce » (active=false) : droit à l'effacement (RGPD,
+     * art. 17), appelé par le frontend à la suppression du compte.
+     */
+    public int eraseCurrentUserData() {
+        String userId = getUserIdFromToken();
+        int deleted = demarcheRepository.deleteAllByUserId(userId);
+        log.info("Effacement de {} démarche(s) pour un compte supprimé", deleted);
+        return deleted;
+    }
+
     public DemarcheDTO getDemarcheById(Long id) {
         String userId = getUserIdFromToken();
         log.info("Récupération de la démarche avec ID: {} pour l'utilisateur: {}", id, userId);

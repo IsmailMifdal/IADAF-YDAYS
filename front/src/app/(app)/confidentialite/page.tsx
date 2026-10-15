@@ -31,6 +31,12 @@ const PROCESSINGS = [
     retention: "30 jours après le dernier message, puis effacement automatique ; immédiatement à la suppression du compte",
   },
   {
+    purpose: "Suivre vos dossiers",
+    data: "Démarches liées à vos packs : statut, échéances, pièces réunies, commentaires",
+    basis: "Exécution du contrat",
+    retention: "Tant que le compte existe ; effacés à sa suppression",
+  },
+  {
     purpose: "Vous envoyer nos conseils et offres par e-mail",
     data: "Adresse e-mail, date et texte du consentement",
     basis: "Votre consentement, facultatif et retirable à tout moment",

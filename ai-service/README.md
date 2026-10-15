@@ -10,7 +10,7 @@ Service d'intelligence artificielle pour IA-DAF, réécrit en Python avec FastAP
 | LLM | Ollama (Mistral 7B) avec fallback OpenAI |
 | RAG | LangChain + ChromaDB |
 | Embeddings | sentence-transformers multilingue |
-| DB | SQLite (aiosqlite) |
+| DB | PostgreSQL, schéma `ai` (asyncpg, migrations Alembic) |
 | Discovery | py-eureka-client |
 
 ## Endpoints

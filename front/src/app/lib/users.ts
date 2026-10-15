@@ -8,6 +8,7 @@
 import bcrypt from "bcryptjs";
 
 import { eraseAiData } from "./aiService";
+import { eraseDemarchesData } from "./demarches";
 import { pool, query } from "./db";
 import { deleteLeadsForEmail } from "./leads";
 
@@ -182,15 +183,17 @@ export async function changePassword(
 
 /**
  * Erase an account and every personal datum tied to it (RGPD, art. 17):
- * AI conversations, e-mail leads for its address, and the account itself —
- * pack entitlements go with it via ON DELETE CASCADE.
+ * AI conversations, démarches, e-mail leads for its address, and the account
+ * itself — pack entitlements go with it via ON DELETE CASCADE. The sales
+ * ledger (billing.sales) holds no identity and is kept for accounting.
  *
- * The AI service is erased first: if it fails, the account still exists and
- * the user can retry, instead of being told their data is gone when it isn't.
+ * Back-end data is erased first: if a service fails, the account still exists
+ * and the user can retry, instead of being told their data is gone when it
+ * isn't. Both erasures are idempotent, so a retry is safe.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   await ensureAuthSchema();
-  await eraseAiData(userId);
+  await Promise.all([eraseAiData(userId), eraseDemarchesData(userId)]);
 
   const client = await pool.connect();
   try {

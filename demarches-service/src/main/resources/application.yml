@@ -8,13 +8,23 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Le schéma appartient aux migrations Flyway : Hibernate se contente de
+      # vérifier qu'il correspond aux entités, et refuse de démarrer sinon.
+      ddl-auto: validate
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: demarches
+
+  flyway:
+    schemas: demarches
+    default-schema: demarches
+    # Bases créées avant Flyway (par Hibernate, ddl-auto=update) : leur schéma
+    # correspond à V1, qui est donc marquée appliquée sans être rejouée.
+    baseline-on-migrate: true
+    baseline-version: 1
 
 server:
   port: 8082

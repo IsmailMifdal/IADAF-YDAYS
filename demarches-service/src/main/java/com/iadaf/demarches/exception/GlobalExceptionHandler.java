@@ -1,16 +1,22 @@
 package com.iadaf.demarches.exception;
 
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -52,14 +58,34 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    /** Paramètre de chemin invalide (slug de pack, par exemple). */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        return error(HttpStatus.BAD_REQUEST, "Paramètre invalide");
+    }
+
+    /** Corps illisible ou identifiant non numérique : faute de l'appelant, pas du service. */
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
+        return error(HttpStatus.BAD_REQUEST, "Requête invalide");
+    }
+
+    /** Doublon concurrent, typiquement deux créations simultanées du même dossier de pack. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
+        return error(HttpStatus.CONFLICT, "Conflit avec une donnée existante, réessayez");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Une erreur interne s'est produite: " + ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        // Journalisé en détail, jamais renvoyé : le message d'une exception peut
+        // contenir du SQL, des noms de tables ou des données d'un autre utilisateur.
+        log.error("Erreur non gérée", ex);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur interne s'est produite");
+    }
+
+    private static ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
+        return new ResponseEntity<>(new ErrorResponse(status.value(), message, LocalDateTime.now()), status);
     }
 
     public static class ErrorResponse {

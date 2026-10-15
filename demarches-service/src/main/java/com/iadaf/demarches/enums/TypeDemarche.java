@@ -9,6 +9,10 @@ public enum TypeDemarche {
     ASILE("Demande d'asile"),
     RECOURS("Recours"),
     RENOUVELLEMENT("Renouvellement"),
+    // Démarches des packs vendus (titre de séjour : TITRE_SEJOUR ci-dessus).
+    ASSURANCE_MALADIE("Assurance maladie"),
+    AIDE_LOGEMENT("Aide au logement"),
+    IMPOTS("Déclaration d'impôts"),
     AUTRE("Autre");
 
     private final String libelle;

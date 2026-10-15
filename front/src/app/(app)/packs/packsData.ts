@@ -7,6 +7,13 @@ export type PackIconKey =
   | "receipt"
   | "package";
 
+/**
+ * Public catalogue — what anyone may see before buying.
+ *
+ * Imported by client components rendered on public pages (footer, welcome
+ * chat), so everything here ships in the browser bundle. Paid content lives
+ * in `packContent.ts`, which is server-only.
+ */
 export type PackData = {
   slug: string;
   title: string;
@@ -22,7 +29,6 @@ export type PackData = {
   icon: PackIconKey;
   shortDescription: string;
   description: string[];
-  requiredDocuments: string[];
 };
 
 /**
@@ -60,15 +66,6 @@ export const packs: PackData[] = [
       "Assistance IA avancée",
       "Alertes (dates, RDV)",
     ],
-    requiredDocuments: [
-      "Passeport",
-      "Visa",
-      "Carte d'identité",
-      "Justificatif de domicile",
-      "Justificatif de ressources",
-      "Assurance maladie",
-      "Acte de naissance",
-    ],
   },
   {
     slug: "assurance-maladie",
@@ -83,14 +80,6 @@ export const packs: PackData[] = [
       "Vérification des documents",
       "Assistance IA avancée",
       "Alertes documents manquants",
-    ],
-    requiredDocuments: [
-      "Carte d'identité / passeport",
-      "Visa ou titre de séjour",
-      "Acte de naissance traduit",
-      "Justificatif de domicile",
-      "RIB",
-      "Contrat de travail ou certificat de scolarité",
     ],
   },
   {
@@ -107,14 +96,6 @@ export const packs: PackData[] = [
       "Suivi dossier",
       "Notifications",
     ],
-    requiredDocuments: [
-      "Contrat de location",
-      "Attestation de loyer",
-      "RIB",
-      "Pièce d'identité",
-      "Justificatif de revenus",
-      "Numéro de sécurité sociale",
-    ],
   },
   {
     slug: "impots",
@@ -129,13 +110,6 @@ export const packs: PackData[] = [
       "Vérification des données",
       "Simulation",
     ],
-    requiredDocuments: [
-      "Numéro fiscal",
-      "Relevé de revenus",
-      "RIB",
-      "Situation familiale",
-      "Justificatif de domicile",
-    ],
   },
   {
     slug: "pack-complet",
@@ -146,32 +120,6 @@ export const packs: PackData[] = [
     shortDescription:
       "Toutes les démarches incluses avec accompagnement total.",
     description: ["Le contenu de tous les packs réunis en un seul !"],
-    requiredDocuments: [
-      "[Assurance maladie] Carte d'identité / passeport",
-      "[Assurance maladie] Visa ou titre de séjour",
-      "[Assurance maladie] Acte de naissance traduit",
-      "[Assurance maladie] Justificatif de domicile",
-      "[Assurance maladie] RIB",
-      "[Assurance maladie] Contrat de travail ou certificat de scolarité",
-      "[Aides au logement] Contrat de location",
-      "[Aides au logement] Attestation de loyer",
-      "[Aides au logement] RIB",
-      "[Aides au logement] Pièce d'identité",
-      "[Aides au logement] Justificatif de revenus",
-      "[Aides au logement] Numéro de sécurité sociale",
-      "[Titre de séjour] Passeport",
-      "[Titre de séjour] Visa",
-      "[Titre de séjour] Carte d'identité",
-      "[Titre de séjour] Justificatif de domicile",
-      "[Titre de séjour] Justificatif de ressources",
-      "[Titre de séjour] Assurance maladie",
-      "[Titre de séjour] Acte de naissance",
-      "[Déclaration d'impôt] Numéro fiscal",
-      "[Déclaration d'impôt] Relevé de revenus",
-      "[Déclaration d'impôt] RIB",
-      "[Déclaration d'impôt] Situation familiale",
-      "[Déclaration d'impôt] Justificatif de domicile",
-    ],
   },
 ];
 

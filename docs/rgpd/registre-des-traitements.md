@@ -51,11 +51,21 @@
 | Base légale | Exécution du contrat (connectés) ; intérêt légitime (chat d'accueil anonyme) |
 | Personnes concernées | Utilisateurs et visiteurs |
 | Données | Contenu des messages (peut contenir des données personnelles saisies librement, y compris sensibles : situation administrative, nationalité, santé) ; langue |
-| Stockage | SQLite de l'AI Service (`conversations`, `messages`), liées au compte si connecté |
+| Stockage | PostgreSQL, schéma `ai` (`conversations`, `messages`), liées au compte si connecté |
 | Destinataires | Fournisseur LLM (OpenAI par défaut, ou fournisseur UE via `OPENAI_BASE_URL`) |
 | Transferts hors UE | **Oui avec OpenAI (États-Unis)** — *[garantie à documenter : DPF ou CCT]* |
 | Durée | 30 jours d'inactivité (`CONVERSATION_RETENTION_DAYS`), purge quotidienne ; effacement immédiat à la suppression du compte |
 | Sécurité | Proxy limité aux endpoints publics, cookies non transmis ; conversation lisible par son seul propriétaire ; limitation de débit |
+
+## T3 bis — Suivi des dossiers
+
+| Rubrique | Contenu |
+|---|---|
+| Finalité | Suivre l'avancement de chaque démarche du compte (un dossier par pack, une étape par pièce) |
+| Base légale | Exécution du contrat |
+| Données | Titre et type de démarche, organisme, statut, échéances, étapes, commentaires |
+| Stockage | PostgreSQL, schéma `demarches` (demarches-service) |
+| Durée | Durée de vie du compte ; effacement à la suppression (`DELETE /demarches/me`) |
 
 ## T4 — Prospection par e-mail
 

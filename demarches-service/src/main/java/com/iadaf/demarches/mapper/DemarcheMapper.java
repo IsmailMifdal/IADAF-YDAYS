@@ -32,6 +32,7 @@ public class DemarcheMapper {
         dto.setDateDebut(demarche.getDateDebut());
         dto.setDateFin(demarche.getDateFin());
         dto.setNotes(demarche.getNotes());
+        dto.setPackSlug(demarche.getPackSlug());
         dto.setActive(demarche.getActive());
         dto.setDateCreation(demarche.getDateCreation());
         dto.setDateModification(demarche.getDateModification());

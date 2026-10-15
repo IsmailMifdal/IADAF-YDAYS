@@ -1,7 +1,7 @@
 """IA-DAF AI Service — FastAPI application entry point.
 
 Startup sequence:
-1. Initialise SQLite database
+1. Apply database migrations (PostgreSQL, schema ai)
 2. Initialise LLM backend (Ollama → OpenAI fallback)
 3. Initialise RAG service (embeddings + ChromaDB)
 4. Register with Eureka discovery service
@@ -19,7 +19,7 @@ from loguru import logger
 from app.api.routes import chat, document, health, translate, users
 from app.core.config import settings
 from app.core.security import check_secret, frontend_claims
-from app.models.database import init_db, purge_expired_conversations
+from app.models.database import purge_expired_conversations, run_migrations
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
 
@@ -35,9 +35,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info(f"🚀 Starting {settings.app_name} v{settings.app_version}…")
     check_secret()
 
-    # 1. Initialise database tables
-    await init_db()
-    logger.info("✅ Database initialised.")
+    # 1. Bring the database schema up to date
+    await run_migrations()
+    logger.info("✅ Database migrations applied.")
 
     # 2. Initialise LLM backend
     llm_service.initialise()

@@ -116,7 +116,8 @@ services:
       - OPENAI_TIMEOUT_SECONDS=${OPENAI_TIMEOUT_SECONDS:-30}
       - CHROMA_PERSIST_DIR=/data/vectorstore
       - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
-      - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db
+      # Conversations in PostgreSQL (schema `ai`), migrated at startup.
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
     volumes:
@@ -125,6 +126,8 @@ services:
       - iadaf-network
     depends_on:
       discovery-service:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:

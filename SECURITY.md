@@ -120,12 +120,17 @@ Le webhook ignore également les sessions dont `payment_status` n'est pas `paid`
 Vérifié **côté serveur** à chaque affichage de `/packs/[slug]`, contre la table
 `users.pack_entitlements`. Une absence de droit redirige vers `/payment/[slug]`.
 
-> ⚠️ **Limite connue.** Le catalogue `packsData.ts` est importé par une page
-> cliente (`/nosPacks`), donc la liste des documents requis part dans le bundle
-> navigateur pour tout le monde. Le paywall protège **l'espace de travail** du
-> pack (assistant IA contextualisé, dépôt de pièces, suivi), pas cette liste.
-> Pour la protéger réellement, il faudrait séparer le catalogue public des
-> contenus réservés et ne servir ces derniers que depuis le serveur.
+Le contenu payant est séparé du catalogue public :
+
+- [`packsData.ts`](front/src/app/(app)/packs/packsData.ts) — titre, prix,
+  description : importé par des composants clients (footer, chat d'accueil),
+  donc présent dans le bundle navigateur ;
+- [`packContent.ts`](front/src/app/(app)/packs/packContent.ts) — les pièces à
+  réunir, marqué `server-only` : l'importer depuis un composant client fait
+  échouer la compilation. Il n'atteint le navigateur qu'en props de l'espace de
+  travail, une fois le droit vérifié.
+
+Vérifié sur le build de production : aucune pièce réservée dans `.next/static`.
 
 ---
 
@@ -272,13 +277,16 @@ identifiant ne suffit pas à lire ou compléter l'historique d'un autre.
 
 La suppression d'un compte efface, dans cet ordre :
 
-1. ses conversations IA (`DELETE /ai/users/{id}/data`, protégé par le jeton) ;
+1. en parallèle, ses conversations IA (`DELETE /ai/users/{id}/data`) et ses
+   démarches, étapes et commentaires compris (`DELETE /demarches/me`) — tous
+   deux exigent un jeton de scope `account:erase` pour ce compte ;
 2. puis, dans une transaction : ses e-mails de prospection et le compte, avec
    ses droits d'accès aux packs (`ON DELETE CASCADE`).
 
-Si l'AI Service ne confirme pas l'effacement, le compte n'est pas supprimé et
-l'utilisateur peut réessayer — on ne lui annonce jamais une suppression
-partielle comme complète.
+Si un service ne confirme pas l'effacement, le compte n'est pas supprimé et
+l'utilisateur peut réessayer (les deux effacements sont idempotents) — on ne
+lui annonce jamais une suppression partielle comme complète. Le registre des
+ventes (`billing.sales`), sans identité, est conservé pour la comptabilité.
 
 ### Durées de conservation
 
@@ -346,7 +354,6 @@ de démarrer avec une configuration d'authentification incomplète.
 | **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. Le déploiement doit être en TLS. |
 | **Sessions non révocables** | Voir « Réinitialisation du mot de passe ». |
 | **Dépendances** | `npm audit` : 2 alertes modérées restantes (`@tailwindcss/typography` → `postcss-selector-parser`, CPU à la compilation d'un CSS non fiable). Seul notre propre CSS est compilé ; le correctif proposé est une rétrogradation. Accepté. |
-| **Contenu des packs côté client** | Voir la limite décrite plus haut. |
 
 ---
 
