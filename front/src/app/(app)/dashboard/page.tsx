@@ -113,8 +113,8 @@ export default async function DashboardPage() {
               />
               <QuickAction
                 href="/documents"
-                title="Déposer des documents"
-                description="Ajoutez et organisez vos pièces justificatives."
+                title="Mes documents"
+                description="Retrouvez les pièces déposées dans vos packs."
                 icon={<Upload className="w-5 h-5" />}
               />
               <QuickAction

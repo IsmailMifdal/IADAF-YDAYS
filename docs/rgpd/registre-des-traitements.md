@@ -89,9 +89,23 @@
 | Stockage | `ratelimit.counters` |
 | Durée | 48 heures |
 
-## T6 — Analyse de documents *(non encore en production)*
+## T6 — Conservation des pièces des dossiers
 
-À compléter **avant** la mise en service de l'analyse réelle des pièces
-(Phase 4 de la roadmap) : pièces d'identité et titres de séjour, OCR par un
-sous-traitant, consentement séparé pour l'entraînement du modèle. Ce traitement
-déclenche une **AIPD** — voir [`aipd-preparation.md`](aipd-preparation.md).
+| Rubrique | Contenu |
+|---|---|
+| Finalité | Conserver les pièces déposées dans l'espace d'un pack, pour constituer le dossier |
+| Base légale | Exécution du contrat |
+| Données | Pièces d'identité, titres de séjour, justificatifs (domicile, revenus, RIB…) — données à caractère hautement personnel |
+| Stockage | PostgreSQL, schéma `documents` (document-service), **contenu chiffré AES-256-GCM** par le service, clé hors base (`DOCUMENT_ENCRYPTION_KEY`) |
+| Accès | Le seul titulaire du compte (identité tirée du jeton interne vérifié) |
+| Destinataires | Aucun : le contenu n'est transmis à aucun tiers, ni au fournisseur LLM |
+| Durée | 180 jours après le dépôt (`DOCUMENT_RETENTION_DAYS`), purge quotidienne ; effacement immédiat au retrait de la pièce ou à la suppression du compte |
+| Sécurité | Type réel vérifié (PDF, JPEG, PNG), 10 Mo max, téléchargement toujours en pièce jointe (`nosniff`) |
+
+> ⚠️ Ce traitement relève de l'**AIPD** ([`aipd-preparation.md`](aipd-preparation.md)),
+> à mener **avant** l'ouverture au public.
+
+## T7 — Analyse automatisée des pièces *(Phase 4, non encore en production)*
+
+À compléter avant la mise en service : OCR par un sous-traitant, champs
+extraits, consentement séparé pour l'entraînement du modèle.

@@ -45,6 +45,8 @@ export const RATE_LIMITS = {
   /** Token guesses, per IP — 256-bit tokens make this belt and braces. */
   passwordResetConfirm: { name: "password-reset-confirm", limit: 10, windowSeconds: 15 * 60 },
   leads: { name: "leads", limit: 5, windowSeconds: HOUR },
+  /** Document uploads, per account: storage and future OCR both cost. */
+  documentUpload: { name: "document-upload", limit: 60, windowSeconds: HOUR },
 } satisfies Record<string, RateLimitRule>;
 
 /** Counters older than this are swept: longer than the longest window. */

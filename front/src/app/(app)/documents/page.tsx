@@ -1,263 +1,137 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, FileText, FolderOpen } from "lucide-react";
 
-import { useMemo, useRef, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock3,
-  FileText,
-  FolderOpen,
-  Upload,
-} from "lucide-react";
+import { auth } from "../../../auth";
 import PageHeader from "../../components/ui/PageHeader";
 import {
   Alert,
-  Button,
+  ButtonLink,
   Card,
   EmptyState,
   PageContainer,
-  StatCard,
 } from "../../components/ui/primitives";
+import { listDocuments, type StoredDocument } from "../../lib/documents";
+import { DOCUMENT_RETENTION_DAYS } from "../../lib/documentTypes";
+import { listUnlockedPacks } from "../../lib/entitlements";
+import { getRequiredDocuments } from "../packs/packContent";
+import { getPackBySlug } from "../packs/packsData";
 
-type AnalysisStatus = "Conforme" | "En analyse";
+export const metadata: Metadata = { title: "Mes documents" };
 
-type UploadedDocument = {
-  id: string;
-  file: File;
-  status: AnalysisStatus;
+type PackDocuments = {
+  slug: string;
+  title: string;
+  required: number;
+  filed: StoredDocument[] | null;
 };
 
-const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+function formatSize(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} Ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
 
-export default function Documents() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedDocument[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [rejectedCount, setRejectedCount] = useState(0);
+/**
+ * Every piece filed across the user's packs. Filing and removing happen in
+ * each pack's workspace, next to the list of pieces that pack requires.
+ */
+export default async function DocumentsPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  const stats = useMemo(() => {
-    const total = uploadedFiles.length;
-    const conformes = uploadedFiles.filter(
-      (doc) => doc.status === "Conforme",
-    ).length;
-    const enAnalyse = uploadedFiles.filter(
-      (doc) => doc.status === "En analyse",
-    ).length;
-
-    return {
-      total,
-      conformes,
-      enAnalyse,
-      aCorriger: rejectedCount,
-    };
-  }, [uploadedFiles, rejectedCount]);
-
-  const addFiles = (files: File[]) => {
-    const validFiles: UploadedDocument[] = [];
-    let hasInvalidFile = false;
-
-    files.forEach((file) => {
-      const isValidType = ALLOWED_TYPES.includes(file.type);
-      const isValidSize = file.size <= MAX_FILE_SIZE;
-
-      if (!isValidType || !isValidSize) {
-        hasInvalidFile = true;
-        return;
-      }
-
-      validFiles.push({
-        id: `${file.name}-${file.lastModified}-${Math.random()}`,
-        file,
-        status: file.type === "application/pdf" ? "Conforme" : "En analyse",
+  const packs: PackDocuments[] = [];
+  if (userId) {
+    for (const slug of await listUnlockedPacks(userId)) {
+      const pack = getPackBySlug(slug);
+      if (!pack) continue;
+      const filed = await listDocuments(userId, slug).catch((error) => {
+        console.error(`[documents] could not list documents of ${slug}`, error);
+        return null;
       });
-    });
-
-    if (validFiles.length > 0) {
-      setUploadedFiles((prev) => [...prev, ...validFiles]);
-      setErrorMessage("");
+      packs.push({ slug, title: pack.title, required: getRequiredDocuments(slug).length, filed });
     }
-
-    if (hasInvalidFile) {
-      setRejectedCount((prev) => prev + (files.length - validFiles.length));
-      setErrorMessage(
-        "Certains fichiers sont invalides. Formats acceptés : PDF, JPG, PNG (Max 10MB).",
-      );
-    }
-  };
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
-    addFiles(files);
-    event.target.value = "";
-  };
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-  };
-
-  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragActive(true);
-  };
-
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragActive(false);
-  };
-
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragActive(false);
-    const files = Array.from(event.dataTransfer.files ?? []);
-    if (files.length === 0) return;
-    addFiles(files);
-  };
+  }
 
   return (
     <div>
       <PageHeader
-        title="Mes Documents"
-        subtitle="Déposez vos pièces justificatives : elles sont vérifiées automatiquement."
+        title="Mes documents"
+        subtitle="Les pièces que vous avez déposées, pack par pack."
       />
-
       <PageContainer>
-        <div className="space-y-6">
-          <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard
-              label="Total"
-              value={stats.total}
-              icon={<FolderOpen className="h-5 w-5" />}
-              tone="neutral"
-            />
-            <StatCard
-              label="Conformes"
-              value={stats.conformes}
-              icon={<CheckCircle2 className="h-5 w-5" />}
-              tone="success"
-            />
-            <StatCard
-              label="En analyse"
-              value={stats.enAnalyse}
-              icon={<Clock3 className="h-5 w-5" />}
-              tone="info"
-            />
-            <StatCard
-              label="À corriger"
-              value={stats.aCorriger}
-              icon={<AlertTriangle className="h-5 w-5" />}
-              tone="warning"
-            />
+        {packs.length === 0 ? (
+          <EmptyState
+            icon={<FolderOpen className="h-6 w-6" />}
+            title="Aucun pack pour le moment"
+            description="Les pièces se déposent dans l’espace d’un pack, à côté de la liste de celles que la démarche demande."
+            action={<ButtonLink href="/nosPacks">Découvrir les packs</ButtonLink>}
+          />
+        ) : (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">
+              Vos pièces sont chiffrées et conservées {DOCUMENT_RETENTION_DAYS} jours au
+              plus. Leur dépôt ne vaut pas vérification : seule l’administration
+              décide de la conformité d’un dossier.
+            </p>
+
+            {packs.map((pack) => (
+              <Card key={pack.slug} className="p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-gray-900">{pack.title}</h2>
+                    {pack.filed && (
+                      <p className="mt-0.5 text-sm text-gray-500">
+                        {pack.filed.length} pièce(s) déposée(s)
+                        {pack.required > 0 ? ` · ${pack.required} demandée(s)` : ""}
+                      </p>
+                    )}
+                  </div>
+                  <Link
+                    href={`/packs/${pack.slug}`}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Gérer dans l’espace du pack
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+
+                {pack.filed === null ? (
+                  <div className="mt-4">
+                    <Alert tone="warning">
+                      Les pièces de ce pack n’ont pas pu être chargées. Réessayez dans un instant.
+                    </Alert>
+                  </div>
+                ) : pack.filed.length === 0 ? (
+                  <p className="mt-4 text-sm text-gray-400">Aucune pièce déposée.</p>
+                ) : (
+                  <ul className="mt-4 divide-y divide-gray-100">
+                    {pack.filed.map((document) => (
+                      <li key={document.id} className="flex items-center gap-3 py-2.5 text-sm">
+                        <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-gray-800">
+                            {document.documentType}
+                          </span>
+                          <span className="block truncate text-xs text-gray-400">
+                            {document.originalFilename} · {formatSize(document.sizeBytes)}
+                          </span>
+                        </span>
+                        <a
+                          href={`/api/documents/${document.id}`}
+                          className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          Télécharger
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            ))}
           </div>
-
-          <UploadZone
-            isDragActive={isDragActive}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onSelectFiles={() => inputRef.current?.click()}
-          />
-
-          <input
-            ref={inputRef}
-            type="file"
-            hidden
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={handleInputChange}
-          />
-
-          {errorMessage && (
-            <Alert tone="danger">{errorMessage}</Alert>
-          )}
-
-          {uploadedFiles.length === 0 ? (
-            <EmptyState
-              icon={<FileText className="h-6 w-6" />}
-              title="Aucun document"
-              description="Déposez vos premiers fichiers ci-dessus pour lancer leur vérification."
-            />
-          ) : (
-            <section className="stagger grid grid-cols-1 md:grid-cols-2 gap-4">
-              {uploadedFiles.map((document) => (
-                <DocumentCard key={document.id} file={document.file} />
-              ))}
-            </section>
-          )}
-        </div>
+        )}
       </PageContainer>
     </div>
-  );
-}
-
-type UploadZoneProps = {
-  isDragActive: boolean;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragEnter: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragLeave: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onSelectFiles: () => void;
-};
-
-function UploadZone({
-  isDragActive,
-  onDragOver,
-  onDragEnter,
-  onDragLeave,
-  onDrop,
-  onSelectFiles,
-}: UploadZoneProps) {
-  return (
-    <section
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnter={onDragEnter}
-      onDragLeave={onDragLeave}
-      className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-white p-12 text-center transition ${
-        isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-      }`}
-    >
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-        <Upload className="h-6 w-6" />
-      </span>
-      <h2 className="text-lg font-semibold text-gray-900">
-        Déposez vos fichiers
-      </h2>
-      <p className="text-sm text-gray-500">
-        Glissez-les ici, ou parcourez votre appareil.
-      </p>
-      <Button onClick={onSelectFiles}>Sélectionner des fichiers</Button>
-      <p className="text-xs text-gray-400">
-        Formats acceptés : PDF, JPG, PNG — 10 Mo maximum
-      </p>
-    </section>
-  );
-}
-
-type DocumentCardProps = {
-  file: File;
-};
-
-function DocumentCard({ file }: DocumentCardProps) {
-  const extension = file.name.split(".").pop()?.toUpperCase() ?? "Fichier";
-  const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
-
-  return (
-    <Card className="flex items-center gap-3 p-4">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
-        <FileText className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">
-          {file.name}
-        </p>
-        <p className="text-xs text-gray-500">
-          {extension} • {sizeInMb} Mo
-        </p>
-      </div>
-    </Card>
   );
 }

@@ -40,8 +40,8 @@ Upload ─► document-service ─► MinIO (chiffré)
 
 | Risque | Mesure | État |
 |---|---|---|
-| Fuite des pièces | Chiffrement au repos (MinIO), URL signées courtes, accès journalisé | À faire |
-| Conservation excessive | Fichier original supprimé 30 jours après la fin de la démarche | À faire |
+| Fuite des pièces | Chiffrement AES-256-GCM par le service avant écriture en base, clé hors base ; accès réservé au titulaire ; téléchargement en pièce jointe | Fait — journalisation des accès à faire |
+| Conservation excessive | Purge 180 jours après le dépôt, effacement au retrait et à la suppression du compte | Fait — à resserrer à 30 jours après la fin de la démarche |
 | Collecte excessive | N'extraire que les champs utiles aux règles (pas le numéro de document) | À faire |
 | Transfert hors UE | OCR chez un prestataire hébergé en UE ; le LLM ne reçoit aucune identité | À faire |
 | Décision automatisée (art. 22) | Résultat présenté comme indicatif ; l'utilisateur peut passer outre et contester | À faire |

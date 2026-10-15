@@ -15,6 +15,12 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { PackData } from "../packsData";
+import {
+  DOCUMENT_RETENTION_DAYS,
+  EXTRA_DOCUMENT_PREFIX,
+  MAX_DOCUMENT_BYTES,
+  type StoredDocument,
+} from "../../../lib/documentTypes";
 import HeaderPage from "../../../components/ui/PageHeader";
 import { api, type ChatResponse } from "../../../lib/api";
 import { useToast } from "../../../components/ui/Toast";
@@ -22,7 +28,7 @@ import { useLanguage } from "../../../context/LanguageContext";
 import LanguageSelector from "../../../components/ui/LanguageSelector";
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = MAX_DOCUMENT_BYTES;
 
 function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -58,14 +64,30 @@ export type PackWithContent = PackData & { requiredDocuments: string[] };
  * renders, entitlement has already been verified against the database, and the
  * paid content arrives as props rather than from a module in the bundle.
  */
-export default function PackWorkspace({ pack }: { pack: PackWithContent }) {
+export default function PackWorkspace({
+  pack,
+  initialDocuments,
+}: {
+  pack: PackWithContent;
+  /** Pieces already filed, or null when the document service was unreachable. */
+  initialDocuments: StoredDocument[] | null;
+}) {
   const { lang, t } = useLanguage();
   const { toast } = useToast();
 
-  const [filesByDocument, setFilesByDocument] = useState<
-    Record<string, File | null>
-  >({});
-  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
+  // Filed on the server as soon as they are chosen: nothing is kept only in
+  // the browser, where a reload would lose it.
+  const [documents, setDocuments] = useState<StoredDocument[]>(initialDocuments ?? []);
+  /** Slot (document type) being uploaded or removed, for its spinner. */
+  const [busySlot, setBusySlot] = useState<string | null>(null);
+  const bySlot = useMemo(
+    () => Object.fromEntries(documents.map((d) => [d.documentType, d])) as Record<string, StoredDocument>,
+    [documents],
+  );
+  const extraDocuments = useMemo(
+    () => documents.filter((d) => d.documentType.startsWith(EXTRA_DOCUMENT_PREFIX)),
+    [documents],
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -176,12 +198,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     };
   }, [pack, lang]);
 
-  const uploadedCount = useMemo(() => {
-    return (
-      Object.values(filesByDocument).filter(Boolean).length +
-      droppedFiles.length
-    );
-  }, [filesByDocument, droppedFiles]);
+  const uploadedCount = documents.length;
 
   /**
    * Demande à l'IA de vérifier la complétude du dossier.
@@ -194,8 +211,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
   const handleAnalyze = useCallback(async () => {
     if (isAnalyzing) return;
 
-    const provided = pack.requiredDocuments.filter((d) => filesByDocument[d]);
-    const missing = pack.requiredDocuments.filter((d) => !filesByDocument[d]);
+    const provided = pack.requiredDocuments.filter((d) => bySlot[d]);
+    const missing = pack.requiredDocuments.filter((d) => !bySlot[d]);
 
     const summary = [
       `Démarche : ${pack.title}`,
@@ -205,8 +222,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       "",
       `Pièces encore manquantes (${missing.length}) :`,
       ...(missing.length ? missing.map((d) => `- ${d}`) : ["- aucune"]),
-      ...(droppedFiles.length
-        ? ["", `Fichiers supplémentaires : ${droppedFiles.length}`]
+      ...(extraDocuments.length
+        ? ["", `Fichiers supplémentaires : ${extraDocuments.length}`]
         : []),
     ].join("\n");
 
@@ -242,7 +259,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     } finally {
       setIsAnalyzing(false);
     }
-  }, [pack, isAnalyzing, filesByDocument, droppedFiles, lang, toast]);
+  }, [pack, isAnalyzing, bySlot, extraDocuments, lang, toast]);
 
   const handleSendMessage = useCallback(async () => {
     const trimmed = chatInput.trim();
@@ -280,9 +297,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     }
   }, [chatInput, conversationId, isBusy, pack, lang, t]);
 
-  const handleDocumentInput = (documentName: string, file: File | null) => {
-    if (!file) return;
-
+  const uploadDocument = async (documentType: string, file: File) => {
     const validationError = validateFile(file);
     if (validationError) {
       setErrorMessage(validationError);
@@ -290,24 +305,56 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     }
 
     setErrorMessage("");
-    setFilesByDocument((prev) => ({ ...prev, [documentName]: file }));
-  };
-
-  const addDroppedFiles = (fileList: File[]) => {
-    const validFiles: File[] = [];
-
-    fileList.forEach((file) => {
-      const validationError = validateFile(file);
-      if (validationError) {
-        setErrorMessage(validationError);
+    setBusySlot(documentType);
+    try {
+      const form = new FormData();
+      form.set("packSlug", pack.slug);
+      form.set("documentType", documentType);
+      form.set("file", file);
+      const res = await fetch("/api/documents", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorMessage(data.error ?? "Le dépôt a échoué. Réessayez.");
         return;
       }
-      validFiles.push(file);
-    });
+      setDocuments((prev) => [...prev.filter((d) => d.documentType !== documentType), data]);
+      toast("Pièce déposée.");
+    } catch {
+      setErrorMessage("Une erreur réseau est survenue. Réessayez.");
+    } finally {
+      setBusySlot(null);
+    }
+  };
 
-    if (validFiles.length > 0) {
-      setErrorMessage("");
-      setDroppedFiles((prev) => [...prev, ...validFiles]);
+  const removeStoredDocument = async (document: StoredDocument) => {
+    setErrorMessage("");
+    setBusySlot(document.documentType);
+    try {
+      const query = new URLSearchParams({ packSlug: pack.slug, documentType: document.documentType });
+      const res = await fetch(`/api/documents/${document.id}?${query}`, { method: "DELETE" });
+      // 404: already gone — the outcome the user asked for.
+      if (!res.ok && res.status !== 404) {
+        setErrorMessage("La suppression a échoué. Réessayez.");
+        return;
+      }
+      setDocuments((prev) => prev.filter((d) => d.id !== document.id));
+      toast("Pièce retirée.");
+    } catch {
+      setErrorMessage("Une erreur réseau est survenue. Réessayez.");
+    } finally {
+      setBusySlot(null);
+    }
+  };
+
+  const handleDocumentInput = (documentName: string, file: File | null) => {
+    if (file) void uploadDocument(documentName, file);
+  };
+
+  const addDroppedFiles = async (fileList: File[]) => {
+    // One at a time: the spinner, the toasts and the rate limit stay readable.
+    for (const file of fileList) {
+      const name = file.name.slice(0, 200 - EXTRA_DOCUMENT_PREFIX.length) || "fichier";
+      await uploadDocument(`${EXTRA_DOCUMENT_PREFIX}${name}`, file);
     }
   };
 
@@ -316,21 +363,16 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     setIsDragging(false);
     const files = Array.from(event.dataTransfer.files ?? []);
     if (files.length === 0) return;
-    addDroppedFiles(files);
+    void addDroppedFiles(files);
   };
 
   const removeDocument = (documentName: string) => {
-    setFilesByDocument((prev) => ({ ...prev, [documentName]: null }));
-  };
-
-  const removeDroppedFile = (index: number) => {
-    setDroppedFiles((prev) => prev.filter((_, i) => i !== index));
+    const document = bySlot[documentName];
+    if (document) void removeStoredDocument(document);
   };
 
   const totalDocs = pack.requiredDocuments.length;
-  const filledDocs = pack.requiredDocuments.filter(
-    (doc) => filesByDocument[doc],
-  ).length;
+  const filledDocs = pack.requiredDocuments.filter((doc) => bySlot[doc]).length;
   const progressPct = totalDocs ? Math.round((filledDocs / totalDocs) * 100) : 0;
   const allUploaded = filledDocs === totalDocs;
 
@@ -388,7 +430,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
               {/* Cartes documents */}
               <div className="space-y-3">
                 {pack.requiredDocuments.map((document) => {
-                  const file = filesByDocument[document];
+                  const file = bySlot[document];
+                  const isBusy = busySlot === document;
                   return (
                     <label
                       key={document}
@@ -405,7 +448,9 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                             : "bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500"
                         }`}
                       >
-                        {file ? (
+                        {isBusy ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : file ? (
                           <Check className="w-5 h-5" />
                         ) : (
                           <FileText className="w-5 h-5" />
@@ -418,7 +463,14 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                         </p>
                         {file ? (
                           <p className="text-xs text-emerald-600 truncate">
-                            {file.name} · {formatSize(file.size)}
+                            {file.originalFilename} · {formatSize(file.sizeBytes)} ·{" "}
+                            <a
+                              href={`/api/documents/${file.id}`}
+                              onClick={(event) => event.stopPropagation()}
+                              className="underline hover:text-emerald-700"
+                            >
+                              Télécharger
+                            </a>
                           </p>
                         ) : (
                           <p className="text-xs text-gray-400">
@@ -430,6 +482,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       {file ? (
                         <button
                           type="button"
+                          disabled={isBusy}
                           onClick={(event) => {
                             event.preventDefault();
                             removeDocument(document);
@@ -448,13 +501,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       <input
                         type="file"
                         hidden
+                        disabled={isBusy}
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(event) =>
-                          handleDocumentInput(
-                            document,
-                            event.target.files?.[0] ?? null,
-                          )
-                        }
+                        onChange={(event) => {
+                          handleDocumentInput(document, event.target.files?.[0] ?? null);
+                          // Allows choosing the same file again after an error.
+                          event.target.value = "";
+                        }}
                       />
                     </label>
                   );
@@ -490,30 +543,35 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   hidden
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(event) =>
-                    addDroppedFiles(Array.from(event.target.files ?? []))
-                  }
+                  onChange={(event) => {
+                    void addDroppedFiles(Array.from(event.target.files ?? []));
+                    event.target.value = "";
+                  }}
                 />
               </div>
 
               {/* Fichiers supplémentaires ajoutés */}
-              {droppedFiles.length > 0 && (
+              {extraDocuments.length > 0 && (
                 <ul className="mt-4 space-y-2">
-                  {droppedFiles.map((file, index) => (
+                  {extraDocuments.map((file) => (
                     <li
-                      key={`${file.name}-${file.lastModified}`}
+                      key={file.id}
                       className="flex items-center gap-3 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
                     >
                       <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span className="flex-1 truncate text-gray-700">
-                        {file.name}
-                      </span>
+                      <a
+                        href={`/api/documents/${file.id}`}
+                        className="flex-1 truncate text-gray-700 hover:underline"
+                      >
+                        {file.originalFilename}
+                      </a>
                       <span className="text-xs text-gray-400 shrink-0">
-                        {formatSize(file.size)}
+                        {formatSize(file.sizeBytes)}
                       </span>
                       <button
                         type="button"
-                        onClick={() => removeDroppedFile(index)}
+                        disabled={busySlot === file.documentType}
+                        onClick={() => void removeStoredDocument(file)}
                         className="text-gray-400 hover:text-red-500 transition"
                         aria-label="Retirer le fichier"
                       >
@@ -523,6 +581,18 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   ))}
                 </ul>
               )}
+
+              {initialDocuments === null && (
+                <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  Vos pièces déjà déposées n’ont pas pu être chargées. Rechargez
+                  la page dans un instant avant d’en déposer de nouvelles.
+                </p>
+              )}
+
+              <p className="mt-4 text-xs text-gray-400">
+                Vos pièces sont chiffrées et conservées {DOCUMENT_RETENTION_DAYS} jours au
+                plus. Vous pouvez les retirer à tout moment.
+              </p>
 
               {errorMessage && (
                 <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">

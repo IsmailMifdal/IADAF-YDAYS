@@ -3,6 +3,7 @@ package com.iadaf.demarches.service;
 import com.iadaf.demarches.dto.CreateDemarcheRequest;
 import com.iadaf.demarches.dto.DemarcheDTO;
 import com.iadaf.demarches.dto.EnsurePackFolderRequest;
+import com.iadaf.demarches.dto.UpdatePackStepRequest;
 import com.iadaf.demarches.dto.UpdateDemarcheRequest;
 import com.iadaf.demarches.dto.UpdateStatutRequest;
 import com.iadaf.demarches.entity.Demarche;
@@ -113,6 +114,29 @@ public class DemarcheService {
                     log.info("Création du dossier du pack {} pour l'utilisateur {}", packSlug, userId);
                     return demarcheMapper.toDTO(demarcheRepository.save(demarche));
                 });
+    }
+
+    /**
+     * Coche ou décoche l'étape d'un dossier de pack — appelé quand une pièce
+     * est déposée ou retirée. Le premier dépôt fait passer le dossier
+     * « en attente » à « en cours ».
+     */
+    public DemarcheDTO updatePackStep(String packSlug, UpdatePackStepRequest request) {
+        String userId = getUserIdFromToken();
+        Demarche demarche = demarcheRepository.findByUserIdAndPackSlug(userId, packSlug)
+                .orElseThrow(() -> new ResourceNotFoundException("Dossier", "pack", packSlug));
+
+        EtapeDemarche etape = demarche.getEtapes().stream()
+                .filter(e -> e.getTitre().equals(request.getTitre()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Étape", "titre", request.getTitre()));
+
+        etape.setCompletee(request.getCompletee());
+        etape.setDateCompletion(request.getCompletee() ? LocalDate.now() : null);
+        if (request.getCompletee() && demarche.getStatut() == StatutDemarche.EN_ATTENTE) {
+            demarche.setStatut(StatutDemarche.EN_COURS);
+        }
+        return demarcheMapper.toDTO(demarcheRepository.save(demarche));
     }
 
     /**

@@ -60,6 +60,30 @@ export async function eraseDemarchesData(userId: string): Promise<void> {
   if (!res.ok) throw new Error(`demarches-service erase failed with HTTP ${res.status}`);
 }
 
+/**
+ * Tick (or untick) the folder step matching a required document. Best effort:
+ * the document itself is stored either way, and the next upload or removal
+ * fixes a step left out of sync.
+ */
+export async function markPackStep(
+  userId: string,
+  packSlug: string,
+  documentType: string,
+  completee: boolean,
+): Promise<void> {
+  // The all-access pack has no folder of its own: its packs each have theirs.
+  if (!(packSlug in PACK_FOLDERS) || !getRequiredDocuments(packSlug).includes(documentType)) return;
+  try {
+    const res = await call(userId, `/packs/${packSlug}/etapes`, {
+      method: "PUT",
+      body: JSON.stringify({ titre: documentType, completee }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (error) {
+    console.error(`[demarches] could not update step of pack ${packSlug}`, error);
+  }
+}
+
 export async function listFolders(userId: string): Promise<Folder[]> {
   const res = await call(userId, "");
   if (!res.ok) throw new Error(`demarches-service answered HTTP ${res.status}`);

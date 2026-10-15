@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import LegalLayout from "../../components/legal/LegalLayout";
+import { DOCUMENT_RETENTION_DAYS } from "../../lib/documentTypes";
 import { LEGAL_INFO, orPlaceholder } from "../../lib/legalInfo";
 
 export const metadata: Metadata = { title: "Politique de confidentialité" };
@@ -29,6 +30,12 @@ const PROCESSINGS = [
     data: "Messages échangés avec l’assistant, langue choisie",
     basis: "Exécution du contrat (utilisateurs connectés) ; intérêt légitime à renseigner les visiteurs (chat d’accueil)",
     retention: "30 jours après le dernier message, puis effacement automatique ; immédiatement à la suppression du compte",
+  },
+  {
+    purpose: "Conserver les pièces de vos dossiers",
+    data: "Pièces que vous déposez (identité, titre de séjour, justificatifs), chiffrées",
+    basis: "Exécution du contrat",
+    retention: "180 jours au plus après le dépôt ; effacées dès leur retrait ou la suppression du compte",
   },
   {
     purpose: "Suivre vos dossiers",
@@ -91,12 +98,19 @@ export default function PrivacyPage() {
         </table>
       </div>
 
-      <h2>Documents des packs</h2>
+      <h2>Pièces déposées dans vos dossiers</h2>
       <p>
-        À ce jour, les fichiers que vous sélectionnez dans l’espace d’un pack
-        restent dans votre navigateur et ne sont pas envoyés à nos serveurs :
-        seule la liste des pièces fournies ou manquantes est transmise à
-        l’assistant pour l’analyse de votre dossier.
+        Les pièces que vous déposez dans l’espace d’un pack (pièce d’identité,
+        titre de séjour, justificatifs…) sont chiffrées (AES-256) avant d’être
+        enregistrées : ni notre hébergeur ni nos sauvegardes ne peuvent les
+        lire. Vous seul y accédez. Elles sont effacées au plus tard{" "}
+        {DOCUMENT_RETENTION_DAYS} jours après leur dépôt, dès que vous les retirez, et
+        avec votre compte s’il est supprimé.
+      </p>
+      <p>
+        Leur contenu n’est pas transmis à l’assistant IA : pour la
+        vérification de votre dossier, seule la liste des pièces fournies ou
+        manquantes lui est envoyée.
       </p>
 
       <h2>Destinataires et sous-traitants</h2>

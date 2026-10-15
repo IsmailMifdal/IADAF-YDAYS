@@ -5,8 +5,10 @@
  *
  *   INTERNAL_JWT_SECRET=... node scripts/dev-token.mjs            # anonymous
  *   INTERNAL_JWT_SECRET=... node scripts/dev-token.mjs <user-id>  # as a user
+ *   INTERNAL_JWT_SECRET=... node scripts/dev-token.mjs <user-id> 300 account:erase
  *
- * Valid 60 seconds by default; pass a third argument for longer (seconds).
+ * Valid 60 seconds by default; the second argument sets the lifetime (seconds),
+ * the third an extra scope.
  * Never use the production secret on a workstation.
  */
 
@@ -18,9 +20,9 @@ if (Buffer.byteLength(secret, "utf8") < 32) {
   process.exit(1);
 }
 
-const [, , userId, ttl = "60"] = process.argv;
+const [, , userId, ttl = "60", scope] = process.argv;
 
-const jwt = new SignJWT({})
+const jwt = new SignJWT(scope ? { scope } : {})
   .setProtectedHeader({ alg: "HS256" })
   .setIssuer("iadaf-frontend")
   .setAudience("iadaf-backend")

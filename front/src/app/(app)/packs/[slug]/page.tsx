@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "../../../../auth";
+import { listDocuments, type StoredDocument } from "../../../lib/documents";
 import { hasPackAccess } from "../../../lib/entitlements";
 import { getRequiredDocuments } from "../packContent";
 import { getPackBySlug } from "../packsData";
@@ -62,10 +63,20 @@ export default async function PackPage({
     redirect(`/payment/${pack.slug}`);
   }
 
+  // Already-filed pieces. If the service is down the workspace still opens,
+  // and says so instead of showing an empty, misleading checklist.
+  let documents: StoredDocument[] | null = null;
+  try {
+    documents = await listDocuments(session.user.id, pack.slug);
+  } catch (error) {
+    console.error("[packs] could not load documents", error);
+  }
+
   // Paid content leaves the server only here, once access is confirmed.
   return (
     <PackWorkspace
       pack={{ ...pack, requiredDocuments: getRequiredDocuments(pack.slug) }}
+      initialDocuments={documents}
     />
   );
 }

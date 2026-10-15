@@ -201,8 +201,9 @@ services:
       start_period: 300s
 
   # --- Document Service (Spring Boot) ---
-  # N'expose encore aucun endpoint métier : il s'enregistre dans Eureka et
-  # répond sur /actuator/health, mais son domaine reste à implémenter.
+  # Pièces des dossiers, chiffrées (AES-256-GCM) avant d'être écrites en base
+  # (schéma `documents`). La clé ne doit jamais être perdue : sans elle, les
+  # pièces stockées sont illisibles.
   document-service:
     build:
       context: .
@@ -212,6 +213,8 @@ services:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=documents
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - DOCUMENT_ENCRYPTION_KEY=${DOCUMENT_ENCRYPTION_KEY:?DOCUMENT_ENCRYPTION_KEY is required — see .env.example}
+      - DOCUMENT_RETENTION_DAYS=${DOCUMENT_RETENTION_DAYS:-180}
       - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
     networks:

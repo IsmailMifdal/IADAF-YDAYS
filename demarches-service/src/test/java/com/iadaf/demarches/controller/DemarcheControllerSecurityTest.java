@@ -69,6 +69,26 @@ class DemarcheControllerSecurityTest {
     }
 
     @Test
+    void packStepIsUpdated() throws Exception {
+        when(service.updatePackStep(eq("titre-sejour"), any())).thenReturn(new DemarcheDTO());
+
+        mockMvc.perform(put("/demarches/packs/titre-sejour/etapes")
+                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"titre\":\"Passeport\",\"completee\":true}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void packStepNeedsAStepName() throws Exception {
+        mockMvc.perform(put("/demarches/packs/titre-sejour/etapes")
+                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"completee\":true}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void erasureWithoutTheScopeIsForbidden() throws Exception {
         mockMvc.perform(delete("/demarches/me")
                         .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1")))

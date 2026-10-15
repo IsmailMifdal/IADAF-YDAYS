@@ -78,6 +78,7 @@ Puis renseigner dans `.env` :
 |----------|:-----------:|------|
 | `OPENAI_API_KEY` | ✅ | Moteur du chatbot et de l'analyse de documents |
 | `AUTH_SECRET` | ✅ | Signature des sessions Auth.js — `openssl rand -base64 32` |
+| `DOCUMENT_ENCRYPTION_KEY` | ✅ | Chiffrement des pièces déposées — `openssl rand -base64 32`. **À sauvegarder à part** : sans elle, les pièces sont illisibles |
 | `INTERNAL_JWT_SECRET` | ✅ | Clé des jetons internes frontend → backend (32 octets min.) — `openssl rand -hex 32` |
 | `SMTP_URL` / `MAIL_FROM` | ➖ | E-mails de réinitialisation du mot de passe ; en dev, le lien s'affiche dans les logs |
 | `POSTGRES_PASSWORD` | ✅ | À changer impérativement hors développement |
@@ -241,8 +242,16 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 
 ### Document Service
 
-Enregistré dans Eureka, mais n'expose que `/actuator/health` — aucun endpoint
-métier n'est encore implémenté.
+Pièces cloisonnées par utilisateur (sujet du jeton). Le frontend vérifie en
+amont que le pack appartient bien à l'utilisateur.
+
+| Méthode | Chemin | Description |
+|---------|--------|-------------|
+| POST | `/api/documents` | Dépôt (multipart : `packSlug`, `documentType`, `file`) — remplace la pièce du même type |
+| GET | `/api/documents?packSlug=` | Pièces d'un pack (métadonnées seules) |
+| GET | `/api/documents/{id}/content` | Téléchargement, toujours en pièce jointe |
+| DELETE | `/api/documents/{id}` | Retrait d'une pièce |
+| DELETE | `/api/documents/me` | Effacement du compte — scope `account:erase` |
 
 ---
 
@@ -316,7 +325,7 @@ maturité diffère :
 | `user-service` | Fonctionnel | CRUD utilisateurs. Ne porte **pas** l'authentification — celle-ci vit dans le frontend (Auth.js). |
 | `demarches-service` | Fonctionnel, branché | Démarches, étapes, commentaires. Alimente « Mes dossiers » et le tableau de bord : un dossier par pack débloqué, une étape par pièce à réunir. Schéma géré par Flyway. |
 | `analytics-service` | Fonctionnel | Agrège les données des trois autres via RestClient. |
-| `document-service` | Coquille vide | S'enregistre dans Eureka et répond sur `/actuator/health`, mais n'expose **aucun endpoint métier** — le domaine reste à implémenter. |
+| `document-service` | Fonctionnel, branché | Pièces des dossiers, chiffrées (AES-256-GCM) dans PostgreSQL. Type réel vérifié, 10 Mo max, purge à 180 jours. Schéma géré par Flyway. |
 
 Le frontend appelle `/api/ai/*` et `/api/demarches/*`. `user-service` et
 `analytics-service` (statistiques tous utilisateurs confondus, destinées à

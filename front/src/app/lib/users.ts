@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 
 import { eraseAiData } from "./aiService";
 import { eraseDemarchesData } from "./demarches";
+import { eraseDocumentsData } from "./documents";
 import { pool, query } from "./db";
 import { deleteLeadsForEmail } from "./leads";
 
@@ -183,7 +184,7 @@ export async function changePassword(
 
 /**
  * Erase an account and every personal datum tied to it (RGPD, art. 17):
- * AI conversations, démarches, e-mail leads for its address, and the account
+ * AI conversations, démarches, filed documents, e-mail leads for its address, and the account
  * itself — pack entitlements go with it via ON DELETE CASCADE. The sales
  * ledger (billing.sales) holds no identity and is kept for accounting.
  *
@@ -193,7 +194,11 @@ export async function changePassword(
  */
 export async function deleteAccount(userId: string): Promise<void> {
   await ensureAuthSchema();
-  await Promise.all([eraseAiData(userId), eraseDemarchesData(userId)]);
+  await Promise.all([
+    eraseAiData(userId),
+    eraseDemarchesData(userId),
+    eraseDocumentsData(userId),
+  ]);
 
   const client = await pool.connect();
   try {

@@ -3,6 +3,7 @@ package com.iadaf.demarches.controller;
 import com.iadaf.demarches.dto.CreateDemarcheRequest;
 import com.iadaf.demarches.dto.DemarcheDTO;
 import com.iadaf.demarches.dto.EnsurePackFolderRequest;
+import com.iadaf.demarches.dto.UpdatePackStepRequest;
 import com.iadaf.demarches.dto.UpdateDemarcheRequest;
 import com.iadaf.demarches.dto.UpdateStatutRequest;
 import com.iadaf.demarches.enums.StatutDemarche;
@@ -44,6 +45,14 @@ public class DemarcheController {
             @PathVariable @Pattern(regexp = "[a-z0-9-]{1,64}") String packSlug,
             @Valid @RequestBody EnsurePackFolderRequest request) {
         return ResponseEntity.ok(demarcheService.ensurePackFolder(packSlug, request));
+    }
+
+    /** Pièce d'un dossier de pack réunie ou retirée. */
+    @PutMapping("/packs/{packSlug}/etapes")
+    public ResponseEntity<DemarcheDTO> updatePackStep(
+            @PathVariable @Pattern(regexp = "[a-z0-9-]{1,64}") String packSlug,
+            @Valid @RequestBody UpdatePackStepRequest request) {
+        return ResponseEntity.ok(demarcheService.updatePackStep(packSlug, request));
     }
 
     @PostMapping

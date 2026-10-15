@@ -258,6 +258,34 @@ peut pas épuiser à elle seule le quota global anonyme.
 
 ---
 
+## 📎 Pièces déposées
+
+Gérées par `document-service`, stockées dans PostgreSQL (schéma `documents`) :
+
+- **Chiffrées par le service** (AES-256-GCM, IV aléatoire par fichier) avant
+  écriture : la base, ses sauvegardes et l'hébergeur ne voient que du chiffré.
+  L'identifiant du document est lié au chiffré (AAD) : un contenu recopié sous
+  une autre ligne est rejeté au déchiffrement. Empreinte SHA-256 vérifiée à
+  chaque lecture.
+- **Clé `DOCUMENT_ENCRYPTION_KEY`** hors base, à sauvegarder **séparément** de
+  la base : sa perte rend les pièces illisibles, sa fuite avec une sauvegarde
+  les expose. Le service refuse de démarrer sans clé valide.
+- **Type réel** lu dans les premiers octets (PDF, JPEG, PNG) : ni l'extension
+  ni le `Content-Type` du navigateur ne sont crus. 10 Mo maximum.
+- **Cloisonnement** : la pièce d'un autre utilisateur répond 404, comme une
+  pièce inexistante. Le frontend vérifie en plus que le pack est acheté.
+- **Téléchargement** toujours en pièce jointe, avec `nosniff` et `no-store` :
+  un fichier déposé ne s'exécute jamais dans l'origine du site.
+- **Conservation** : 180 jours après le dépôt (`DOCUMENT_RETENTION_DAYS`),
+  purge quotidienne ; effacement immédiat au retrait et à la suppression du
+  compte.
+
+> **Limites.** Pas d'antivirus sur les fichiers déposés (ils ne sont jamais
+> exécutés ni affichés dans le site, mais l'utilisateur les retélécharge) ;
+> pas de journal des accès. Ce traitement requiert l'AIPD avant ouverture.
+
+---
+
 ## 🧾 Données personnelles (RGPD)
 
 ### Liaison frontend → AI Service
@@ -277,9 +305,10 @@ identifiant ne suffit pas à lire ou compléter l'historique d'un autre.
 
 La suppression d'un compte efface, dans cet ordre :
 
-1. en parallèle, ses conversations IA (`DELETE /ai/users/{id}/data`) et ses
-   démarches, étapes et commentaires compris (`DELETE /demarches/me`) — tous
-   deux exigent un jeton de scope `account:erase` pour ce compte ;
+1. en parallèle, ses conversations IA (`DELETE /ai/users/{id}/data`), ses
+   démarches, étapes et commentaires compris (`DELETE /demarches/me`), et ses
+   pièces déposées (`DELETE /documents/me`) — tous exigent un jeton de scope
+   `account:erase` pour ce compte ;
 2. puis, dans une transaction : ses e-mails de prospection et le compte, avec
    ses droits d'accès aux packs (`ON DELETE CASCADE`).
 
