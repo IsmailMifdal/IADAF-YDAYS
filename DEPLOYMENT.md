@@ -216,6 +216,26 @@ dès que les fiches changent) et les modèles téléchargés (`ai_model_cache`).
 | Certificats | Renouvelés par Caddy ; Let's Encrypt écrit à `ACME_EMAIL` en cas de problème |
 | Vulnérabilités | La CI scanne les images ; redéployer après chaque correctif publié sur `main` |
 
+**Test de charge, avant l'ouverture** (et après un changement de serveur) :
+il valide les limites mémoire sur le vrai VPS. Créer un compte de test depuis
+le site, puis, aux heures creuses :
+
+```bash
+docker run --rm -i --network iadaf_iadaf-network grafana/k6:2.3.0 run \
+  -e BASE_URL=http://frontend:3000 -e LOAD_EMAIL=<compte de test> -e LOAD_PASSWORD=<mot de passe> \
+  - < tests/load/load-test.js
+# en parallèle, dans un autre terminal :
+docker stats --no-stream --format '{{.Name}} {{.MemUsage}}'
+```
+
+Réussi si k6 termine sans seuil franchi (moins de 1 % d'erreurs, p95 sous
+1,5 s pour les pages et 0,5 s pour l'API) et si aucun conteneur n'approche
+sa limite mémoire ni ne redémarre (`docker compose ps`). Supprimer ensuite le
+compte de test. Valeurs par défaut : 20 visiteurs et 10 utilisateurs connectés
+simultanés pendant 3 minutes (`LOAD_VISITORS`, `LOAD_MEMBERS`,
+`LOAD_DURATION`). L'assistant n'est pas sollicité : chaque réponse est
+facturée.
+
 ---
 
 ## 8. Mettre à jour, revenir en arrière
