@@ -35,8 +35,7 @@ class AnalyticsControllerSecurityTest {
     private AnalyticsService analyticsService;
 
     @ParameterizedTest
-    @ValueSource(strings = {"/analytics/dashboard", "/analytics/users/activity",
-            "/analytics/documents/stats", "/analytics/performance"})
+    @ValueSource(strings = {"/analytics/dashboard", "/analytics/users/activity"})
     void globalViewsAreForbiddenToAnOrdinaryAccount(String path) throws Exception {
         mockMvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1")))
                 .andExpect(status().isForbidden());

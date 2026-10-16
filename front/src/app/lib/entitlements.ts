@@ -13,7 +13,7 @@
  */
 
 import { ALL_ACCESS_SLUG, packs } from "../(app)/packs/packsData";
-import { query } from "./db";
+import { createSchemaIfMissing, query, runDdlOnce } from "./db";
 
 // Réexporté pour ne pas casser les imports existants ; la définition vit
 // désormais dans le catalogue.
@@ -41,7 +41,7 @@ const DDL = `
     CONSTRAINT uq_user_pack UNIQUE (user_id, pack_slug)
   );
 
-  CREATE SCHEMA IF NOT EXISTS billing;
+  ${createSchemaIfMissing("billing")}
 
   CREATE TABLE IF NOT EXISTS billing.sales (
     -- Links back to Stripe, which holds the customer details; nothing here
@@ -63,12 +63,7 @@ const DDL = `
   DELETE FROM billing.sales WHERE paid_at < now() - interval '${SALES_RETENTION_YEARS} years';
 `;
 
-let schemaReady: Promise<void> | undefined;
-
-export function ensureBillingSchema(): Promise<void> {
-  schemaReady ??= query(DDL).then(() => undefined);
-  return schemaReady;
-}
+export const ensureBillingSchema = runDdlOnce(DDL);
 
 // ── Reads ─────────────────────────────────────────────────────────────────
 

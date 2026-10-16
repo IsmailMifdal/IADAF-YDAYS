@@ -1,167 +1,60 @@
 # Analytics Service
 
-## Description
-Analytics and Reporting Service for IA-DAF (Intelligence Artificielle pour les Démarches Administratives Françaises).
-
-This service provides statistical analysis and metrics aggregation across the platform, consolidating data from User, Demarches, and Document services.
-
-## Features
-
-- **Demarches Statistics**: Count and analysis by status, type, and priority
-- **Document Statistics**: Total counts, sizes, and type distribution
-- **User Activity Tracking**: Activity metrics and engagement scores
-- **Temporal Evolution**: Time-series data for trends analysis
-- **Dashboard Summaries**: Consolidated overview of platform metrics
-- **Performance Metrics**: System health and performance indicators
+Statistiques d'IA-DAF : celles des dossiers de l'appelant, quelques vues
+globales réservées à l'administration, et les comptes anonymes de la
+pré-vérification des pièces (avec les résultats contestés par les
+utilisateurs, qui mesurent la fiabilité de chaque contrôle).
 
 ## Technologies
 
-- Spring Boot 4.0.8 (Spring Framework 7)
-- Spring Cloud Netflix Eureka (Service Discovery)
-- Spring Security OAuth2 Resource Server (JWT)
-- Spring Cache with Caffeine
-- PostgreSQL (analytics schema)
-- RestTemplate for inter-service communication
-- Lombok
+- Spring Boot 4.0.8 (Spring Framework 7), Spring Cloud Netflix Eureka
+- Spring Security OAuth2 Resource Server : jetons internes HS256 signés par le
+  frontend (voir [SECURITY.md](../SECURITY.md#-jetons-internes))
+- PostgreSQL, schéma `analytics`, compte `iadaf_analytics` limité à ce
+  schéma ; migrations Flyway (`src/main/resources/db/migration`)
+- RestTemplate vers les autres services (délais : 3 s à la connexion, 10 s à
+  la lecture), le jeton de l'appelant recopié sur chaque appel
+
+## Routes
+
+| Méthode | Chemin | Accès | Description |
+|---------|--------|-------|-------------|
+| GET | `/analytics/demarches/statut` | jeton valide | Répartition des dossiers de l'appelant par statut |
+| GET | `/analytics/demarches/type` | jeton valide | … par type |
+| GET | `/analytics/demarches/evolution` | jeton valide | … dans le temps (`startDate`, `endDate`, `period`) |
+| GET | `/analytics/dashboard` | scope `admin` | Synthèse globale (fiches utilisateur, dossiers) |
+| GET | `/analytics/users/activity` | scope `admin` | Activité par fiche utilisateur |
+| POST | `/analytics/document-checks` | jeton valide | Comptes anonymes d'une pré-vérification (envoyés par l'AI Service) |
+| POST | `/analytics/document-checks/disputes` | jeton valide | Un résultat signalé comme faux (relayé par le frontend) |
+| GET | `/analytics/document-checks` | scope `analytics:read` | Totaux par contrôle, avec les résultats contestés |
+
+Les comptes de pré-vérification sont validés contre un vocabulaire fermé
+(catégorie, identifiant de contrôle, issue) : aucun texte libre, donc aucune
+donnée personnelle, ne peut y entrer.
+
+Le scope `admin` n'est porté par aucun jeton aujourd'hui (pas de back-office) :
+ces vues sont fermées tant qu'il n'existe pas.
 
 ## Configuration
 
-### Service Port
-- **Port**: 8085
+| Variable | Rôle |
+|----------|------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres:5432/iadaf_db?currentSchema=analytics` |
+| `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | Compte `iadaf_analytics` (docker-compose.yml) |
+| `INTERNAL_JWT_SECRET` | Clé des jetons internes (32 octets minimum, refuse de démarrer sinon) |
+| `USER_SERVICE_URL`, `DEMARCHES_SERVICE_URL`, `DOCUMENT_SERVICE_URL` | Services interrogés |
 
-### Database
-- **Schema**: analytics
-- **URL**: jdbc:postgresql://localhost:5432/iadaf_db?currentSchema=analytics
+Port : 8085. Santé : `GET /actuator/health` (sans jeton, sans détail).
 
-### Service URLs (Inter-service Communication)
-- User Service: http://localhost:8082
-- Demarches Service: http://localhost:8083
-- Document Service: http://localhost:8084
+## Cache
 
-### Cache Configuration
-- **Type**: Caffeine
-- **TTL**: 300 seconds (5 minutes)
-- **Max Size**: 1000 entries per cache
+Désactivé (`@EnableCaching` retiré, voir `AnalyticsServiceApplication`) : les
+clés des `@Cacheable` existants ne contiennent pas l'utilisateur, et un cache
+actif servirait les chiffres du premier appelant à tous les suivants.
 
-## API Endpoints
+## Construire et lancer
 
-### Demarches Analytics
-
-#### GET /analytics/demarches/statut
-Get count of demarches grouped by status.
-- **Access**: SUPPORT, ADMIN roles
-- **Response**: Map<String, Long>
-
-#### GET /analytics/demarches/type
-Get count of demarches grouped by type.
-- **Access**: SUPPORT, ADMIN roles
-- **Response**: Map<String, Long>
-
-#### GET /analytics/demarches/evolution
-Get temporal evolution of demarches.
-- **Access**: SUPPORT, ADMIN roles
-- **Parameters**:
-  - `startDate` (required): ISO date format
-  - `endDate` (required): ISO date format
-  - `period` (optional, default: DAILY): DAILY, WEEKLY, or MONTHLY
-- **Response**: EvolutionDTO
-
-### Documents Analytics
-
-#### GET /analytics/documents/stats
-Get document statistics including counts, sizes, and types.
-- **Access**: SUPPORT, ADMIN roles
-- **Response**: DocumentStatsDTO
-
-### User Analytics
-
-#### GET /analytics/users/activity
-Get user activity metrics for all users.
-- **Access**: SUPPORT, ADMIN roles
-- **Response**: List<UserActivityDTO>
-
-### Dashboard
-
-#### GET /analytics/dashboard
-Get dashboard summary with consolidated metrics.
-- **Access**: USER, SUPPORT, ADMIN roles
-- **Response**: DashboardSummaryDTO
-
-### Performance
-
-#### GET /analytics/performance
-Get system performance metrics.
-- **Access**: ADMIN role only
-- **Response**: PerformanceMetricsDTO
-
-## Security
-
-### Authentication
-All endpoints require JWT authentication via OAuth2/Keycloak.
-
-### Authorization
-- **ADMIN**: Full access to all endpoints
-- **SUPPORT**: Access to analytics and user activity
-- **USER**: Limited access (dashboard only)
-
-### JWT Configuration
-- **Issuer URI**: http://localhost:8180/realms/iadaf
-- **JWK Set URI**: http://localhost:8180/realms/iadaf/protocol/openid-connect/certs
-
-## Building and Running
-
-### Build
 ```bash
-mvn clean package -DskipTests
+mvn -pl analytics-service -am verify     # depuis la racine du dépôt
+docker compose up -d analytics-service   # avec la stack
 ```
-
-### Run
-```bash
-mvn spring-boot:run
-```
-
-Or using the packaged jar:
-```bash
-java -jar target/analytics-service-1.0.0-SNAPSHOT.jar
-```
-
-### Environment Variables
-- `POSTGRES_USER`: Database username (default: iadaf_user)
-- `POSTGRES_PASSWORD`: Database password (default: iadaf_password)
-- `KEYCLOAK_ISSUER_URI`: Keycloak issuer URI
-- `KEYCLOAK_JWK_SET_URI`: Keycloak JWK set URI
-- `USER_SERVICE_URL`: User service URL
-- `DEMARCHES_SERVICE_URL`: Demarches service URL
-- `DOCUMENT_SERVICE_URL`: Document service URL
-
-## Caching
-
-The service implements caching for all analytics endpoints to reduce load on downstream services:
-
-- **demarcheStats**: Cached for 5 minutes
-- **documentStats**: Cached for 5 minutes
-- **userActivity**: Cached for 5 minutes
-- **dashboard**: Cached for 5 minutes
-- **performance**: Cached for 5 minutes
-
-Caches are automatically evicted after 300 seconds (5 minutes) or when the maximum size of 1000 entries is reached.
-
-## Error Handling
-
-The service provides comprehensive error handling:
-
-- **ServiceUnavailableException**: Returns 503 when downstream services are unavailable
-- **AccessDeniedException**: Returns 403 for insufficient permissions
-- **AuthenticationException**: Returns 401 for invalid/expired JWT tokens
-- **General Exceptions**: Returns 500 with error details
-
-## Monitoring
-
-Check service health:
-```bash
-curl http://localhost:8085/actuator/health
-```
-
-## Integration with Eureka
-
-The service registers with Eureka Discovery Service at http://localhost:8761. Ensure Eureka is running before starting the analytics service.

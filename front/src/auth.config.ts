@@ -7,6 +7,7 @@
  */
 
 import type { NextAuthConfig } from "next-auth";
+import { NextResponse } from "next/server";
 
 /** Routes reachable without a session. Everything else requires sign-in. */
 const PUBLIC_ROUTES = [
@@ -49,10 +50,19 @@ export const authConfig = {
   },
 
   callbacks: {
-    /** Consulted by the middleware to gate every request. */
+    /**
+     * Consulted by the middleware to gate every request.
+     *
+     * Returns the redirect itself rather than `false`: the middleware has a
+     * handler of its own (the CSP nonce, src/proxy.ts), and with one Auth.js
+     * no longer redirects on `false` — it would run the handler and serve the
+     * page. A Response, on the other hand, is returned as is, handler skipped.
+     */
     authorized({ auth, request }) {
-      if (isPublicRoute(request.nextUrl.pathname)) return true;
-      return Boolean(auth?.user);
+      if (isPublicRoute(request.nextUrl.pathname) || auth?.user) return true;
+      const signIn = new URL("/login", request.nextUrl);
+      signIn.searchParams.set("callbackUrl", request.nextUrl.href);
+      return NextResponse.redirect(signIn);
     },
 
     /** Persist the database id on the token so the session can expose it. */

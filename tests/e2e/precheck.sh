@@ -35,7 +35,12 @@ check "pièce d'un autre utilisateur" "$(analyze "$JB" "$TITRE" Passeport | tail
 check "sans session" "$(status -X POST "$BASE_URL/api/documents/$TITRE/analyze" -H 'Content-Type: application/json' -d '{"documentType":"Passeport"}')" 401
 
 section "Statistiques anonymes"
-AFTER=$(sql "select coalesce(sum(count), 0) from analytics.document_check_counts")
+# Sent after the response (the user never waits on statistics): give it a moment.
+for _ in $(seq 1 30); do
+  AFTER=$(sql "select coalesce(sum(count), 0) from analytics.document_check_counts")
+  [ $((AFTER - BEFORE)) -ge 4 ] && break
+  sleep 0.5
+done
 check "comptes incrémentés (2 + 2 contrôles)" "$((AFTER - BEFORE))" 4
 check "aucune colonne d'identité" "$(sql "select string_agg(column_name, ',' order by ordinal_position) from information_schema.columns where table_schema = 'analytics' and table_name = 'document_check_counts'")" "day,category,check_id,status,count"
 check "lecture sans scope refusée" "$(status "$GATEWAY_URL/api/analytics/document-checks" -H "Authorization: Bearer $(token ops)")" 403

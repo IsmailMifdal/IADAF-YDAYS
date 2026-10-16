@@ -49,6 +49,15 @@ IMAGE_TAG=
 POSTGRES_DB=iadaf_db
 POSTGRES_USER=iadaf_user
 POSTGRES_PASSWORD=$(hex 24)
+# Un compte par service, limité à son schéma (docker/postgres/provision.sql).
+# Le superutilisateur ci-dessus ne sert plus qu'aux sauvegardes et à
+# l'administration.
+FRONTEND_DB_PASSWORD=$(hex 24)
+PROFILES_DB_PASSWORD=$(hex 24)
+DEMARCHES_DB_PASSWORD=$(hex 24)
+DOCUMENTS_DB_PASSWORD=$(hex 24)
+ANALYTICS_DB_PASSWORD=$(hex 24)
+AI_DB_PASSWORD=$(hex 24)
 
 # --- Secrets applicatifs ---
 AUTH_SECRET=$(b64 32)

@@ -38,6 +38,38 @@ check "compte ordinaire ne supprime pas une fiche" "$(status -X DELETE "$GATEWAY
 check "admin : liste des fiches" "$(status "$GATEWAY_URL/api/users" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
 check "admin : tableau de bord global" "$(status "$GATEWAY_URL/api/analytics/dashboard" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
 
+section "Base de données : un compte par service"
+# as_role <role> <sql> — "lu" or "refusé", through the container's socket.
+as_role() {
+  case "$(docker exec "$PG_CONTAINER" psql -U "$1" -d "$PG_DB" -tAc "$2" 2>&1)" in
+    *"permission denied"*|*"must be superuser"*) echo refusé ;;
+    *ERROR*) echo erreur ;;
+    *) echo lu ;;
+  esac
+}
+for own in "iadaf_frontend users.app_users" "iadaf_frontend billing.sales" "iadaf_profiles profiles.users" \
+           "iadaf_demarches demarches.demarches" "iadaf_documents documents.documents" \
+           "iadaf_analytics analytics.document_check_counts" "iadaf_ai ai.messages"; do
+  set -- $own
+  check "$1 lit $2" "$(as_role "$1" "select count(*) from $2")" lu
+done
+for foreign in "iadaf_frontend documents.document_contents" "iadaf_frontend ai.messages" \
+               "iadaf_demarches users.app_users" "iadaf_documents billing.sales" \
+               "iadaf_ai documents.document_contents" "iadaf_analytics users.app_users" \
+               "iadaf_profiles users.app_users"; do
+  set -- $foreign
+  check "$1 ne lit pas $2" "$(as_role "$1" "select count(*) from $2")" refusé
+done
+check "aucun service ne crée de schéma" "$(as_role iadaf_documents "create schema e2e_intrus")" refusé
+check "aucun service n'exécute de commande" "$(as_role iadaf_frontend "copy (select 1) to program 'id'")" refusé
+check "aucun compte de service n'est superutilisateur" \
+  "$(sql "select count(*) from pg_roles where rolname like 'iadaf\_%' and rolname <> current_user and rolsuper")" 0
+check "le superutilisateur ne sert à aucun service" \
+  "$(sql "select count(*) from pg_stat_activity where usename = current_user and backend_type = 'client backend' and application_name <> 'psql' and pid <> pg_backend_pid()")" 0
+check "les services Java sont connectés avec leur compte" \
+  "$(sql "select string_agg(distinct usename, ' ' order by usename) from pg_stat_activity where usename in ('iadaf_profiles', 'iadaf_demarches', 'iadaf_documents', 'iadaf_analytics')")" \
+  "iadaf_analytics iadaf_demarches iadaf_documents iadaf_profiles"
+
 section "Proxy IA du frontend"
 check "endpoint d'effacement inaccessible" "$(status -X DELETE "$BASE_URL/api/ai/users/x/data")" 404
 

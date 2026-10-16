@@ -4,10 +4,12 @@
 source "$(dirname "$0")/lib.sh"
 reset_rate_limits
 
-E=$(unique_email); P='Motdepasse123'; P2='Nouveau456mdp'
+E=$(unique_email); P='Motdepasse123'; P2='Nouveau456mdp'; P3='Troisieme789mdp'
 
 section "Inscription et connexion"
 check "inscription puis session" "$(signup "$E" "$P")" OK
+# A session opened before the reset below, on "another device".
+cp "$(jar "$E")" "$WORK/before-reset.jar"
 check "mauvais mot de passe refusé" "$(signin "$E" 'Mauvais123mdp')" REFUSED
 check "page protégée sans session redirigée" "$(status "$BASE_URL/dashboard")" 307
 
@@ -28,6 +30,25 @@ check "nouveau mot de passe" "$(reset "$P2")" 200
 check "lien à usage unique" "$(reset 'Autre789mdp')" 400
 check "ancien mot de passe refusé" "$(signin "$E" "$P")" REFUSED
 check "nouveau mot de passe accepté" "$(signin "$E" "$P2")" OK
+check "session d'avant la réinitialisation fermée" "$(status -b "$WORK/before-reset.jar" "$BASE_URL/api/account")" 401
+# The middleware keeps its own 5-second cache of the check (src/app/lib/users.ts).
+sleep 6
+check "… et renvoyée vers la connexion" "$(status -b "$WORK/before-reset.jar" "$BASE_URL/dashboard")" 307
+
+section "Fermeture des sessions"
+reset_rate_limits  # many sign-ins on one address: under the 10-per-15-min limit
+# Two devices: two sign-ins, two different sessions.
+signin "$E" "$P2" >/dev/null; cp "$(jar "$E")" "$WORK/device1.jar"
+signin "$E" "$P2" >/dev/null; cp "$(jar "$E")" "$WORK/device2.jar"
+check "deux appareils connectés" "$(status -b "$WORK/device1.jar" "$BASE_URL/api/account") $(status -b "$WORK/device2.jar" "$BASE_URL/api/account")" "200 200"
+check "changement du mot de passe" "$(status -b "$WORK/device2.jar" -X POST "$BASE_URL/api/account/password" -H 'Content-Type: application/json' -d "{\"currentPassword\":\"$P2\",\"newPassword\":\"$P3\"}")" 200
+check "toutes les sessions fermées, la sienne comprise" "$(status -b "$WORK/device1.jar" "$BASE_URL/api/account") $(status -b "$WORK/device2.jar" "$BASE_URL/api/account")" "401 401"
+check "reconnexion avec le nouveau" "$(signin "$E" "$P3")" OK
+signin "$E" "$P3" >/dev/null; cp "$(jar "$E")" "$WORK/device1.jar"
+signin "$E" "$P3" >/dev/null
+check "« se déconnecter partout »" "$(status -b "$(jar "$E")" -X DELETE "$BASE_URL/api/account/sessions")" 204
+check "l'autre appareil aussi" "$(status -b "$WORK/device1.jar" "$BASE_URL/api/account")" 401
+check "sans session : refusé" "$(status -X DELETE "$BASE_URL/api/account/sessions")" 401
 
 section "E-mails du chat d'accueil"
 LEAD=$(unique_email)
@@ -43,6 +64,7 @@ check "clés de comptage hachées" "$(sql "select count(*) from ratelimit.counte
 reset_rate_limits
 
 section "Suppression du compte"
+signin "$E" "$P3" >/dev/null
 UID_=$(user_id "$E")
 check "suppression" "$(delete_account "$E")" 200
 check "compte effacé" "$(sql "select count(*) from users.app_users where id = '$UID_'")" 0

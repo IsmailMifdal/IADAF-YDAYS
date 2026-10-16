@@ -9,7 +9,7 @@ from typing import Optional
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -44,6 +44,7 @@ class AnalysisOut(BaseModel):
 async def analyze_document(
     document_id: UUID,
     body: AnalyzeRequest,
+    background_tasks: BackgroundTasks,
     authorization: str = Header(...),
     user_id: Optional[str] = Depends(current_user_id),
 ) -> AnalysisOut:
@@ -70,7 +71,9 @@ async def analyze_document(
     result = await analyzer.analyze(response.content, content_type, body.document_type)
 
     # Anonymous counts only — category and check outcomes, no user, no document.
-    await stats.record(result, authorization)
+    # After the response: the user never waits on statistics. (The internal
+    # token lives 60 s, ample for a call made right after.)
+    background_tasks.add_task(stats.record, result, authorization)
 
     return AnalysisOut(
         document_id=document_id,

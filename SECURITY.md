@@ -209,9 +209,24 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
   la confirmation ;
 - comptes Google : aucun e-mail (pas de mot de passe à réinitialiser).
 
-> **Limite.** Les sessions sont des JWT sans état : changer de mot de passe ne
-> déconnecte pas une session déjà ouverte ailleurs (elle expire au plus tard
-> au bout de 7 jours).
+**Fermeture des sessions.** Les sessions sont des JWT signés, valables 7 jours
+par eux-mêmes : pour pouvoir les fermer, le compte porte un instant
+`sessions_revoked_at`, et toute session ouverte avant est refusée — à chaque
+requête (`src/auth.ts`, callback `jwt`) : immédiatement par l'API, en 5 s au
+plus par le middleware, compilé à part avec son propre cache. L'instant
+de connexion est inscrit dans le jeton à la connexion et conservé quand
+Auth.js le renouvelle : un jeton volé ne se « rafraîchit » pas au-delà d'une
+révocation. Ferment toutes les sessions :
+
+- une réinitialisation de mot de passe — celle du voleur avec ;
+- un changement de mot de passe, la session courante comprise (reconnexion
+  avec le nouveau) ;
+- « Se déconnecter de tous les appareils » (Paramètres → Sécurité,
+  `DELETE /api/account/sessions`) ;
+- la suppression du compte.
+
+Base injoignable : la session est conservée (et l'erreur journalisée) plutôt
+que de déconnecter tout le monde pour la durée de la panne.
 
 En développement, `docker-compose.override.yml` branche le frontend sur
 **Mailpit**, qui capture tous les e-mails sans rien envoyer : ils sont lisibles
@@ -344,6 +359,31 @@ Gérées par `document-service`, stockées dans PostgreSQL (schéma `documents`)
 
 ---
 
+## 🛡️ Politique de sécurité du contenu (CSP)
+
+Chaque page porte une politique stricte, avec un nonce tiré au hasard à chaque
+requête ([`front/src/proxy.ts`](front/src/proxy.ts)) : seuls s'exécutent les
+scripts qui portent ce nonce (Next.js l'ajoute aux siens) ou que ceux-ci ont
+chargés (`'strict-dynamic'`). Un script injecté — `<script>`, `onerror="…"`,
+`javascript:` — ne s'exécute pas, même si une faille laissait passer du HTML :
+c'est la seconde ligne de défense contre le cross-site scripting.
+
+Le reste de la politique : tout depuis le site lui-même (`default-src 'self'`),
+aucune page en cadre (`frame-ancestors 'none'`), aucun plugin, aucun `<base>`
+détourné, formulaires vers le site et Stripe seulement. Les styles en ligne
+restent permis (quelques largeurs de barres de progression) : un style injecté
+ne peut pas exécuter de code.
+
+Caddy n'ajoute sa propre politique (minimale) qu'aux réponses qui n'en ont
+pas : il ne doit jamais remplacer celle des pages.
+
+**Vérifiée dans un vrai navigateur** ([`tests/browser/csp-check.mjs`](tests/browser/csp-check.mjs),
+chaque nuit en CI) : chaque page se charge sans violation et son JavaScript
+s'exécute — une politique trop stricte casserait le site sans erreur côté
+serveur — et un attribut `onerror` injecté est bloqué.
+
+---
+
 ## 📱 Application installable (PWA)
 
 Le service worker ([`front/public/sw.js`](front/public/sw.js)) ne met **rien de
@@ -386,6 +426,13 @@ l'utilisateur peut réessayer (les deux effacements sont idempotents) — on ne
 lui annonce jamais une suppression partielle comme complète. Le registre des
 ventes (`billing.sales`), sans identité, est conservé pour la comptabilité.
 
+**Après une restauration.** Une sauvegarde ramène les comptes supprimés après
+elle. Chaque suppression inscrit donc l'identifiant du compte — rien d'autre —
+dans `erasures.journal`, dans la même transaction, pour 30 jours (plus que la
+durée de conservation des sauvegardes). `deploy/replay-erasures.sh` exporte ce
+journal avant la restauration, puis rejoue les suppressions après
+([DEPLOYMENT.md](DEPLOYMENT.md), étape 9) ; rejouer est idempotent.
+
 ### Durées de conservation
 
 | Donnée | Durée | Mécanisme |
@@ -421,6 +468,35 @@ ventes (`billing.sales`), sans identité, est conservé pour la comptabilité.
 
 ---
 
+## 🗄️ Base de données : un compte par service
+
+Chaque service se connecte avec son propre compte PostgreSQL, propriétaire de
+son seul schéma ([`docker/postgres/provision.sql`](docker/postgres/provision.sql)) :
+
+| Compte | Schémas | Service |
+|--------|---------|---------|
+| `iadaf_frontend` | `users`, `billing`, `ratelimit` | frontend (comptes de connexion, droits, ventes, limitation de débit) |
+| `iadaf_profiles` | `profiles` | user-service |
+| `iadaf_demarches` | `demarches` | demarches-service |
+| `iadaf_documents` | `documents` | document-service |
+| `iadaf_analytics` | `analytics` | analytics-service |
+| `iadaf_ai` | `ai` | ai-service |
+
+Une injection SQL dans un service ne lit donc plus que ses propres tables :
+ni les comptes, ni les pièces chiffrées, ni les ventes des autres. Aucun compte
+de service n'est superutilisateur : pas de `COPY … TO PROGRAM` (exécution de
+commandes sur le serveur), pas de nouveau schéma, pas de table dans `public`.
+
+Le superutilisateur (`POSTGRES_USER`) ne sert plus qu'au service ponctuel
+`db-provision`, aux sauvegardes et à l'administration. `db-provision` est
+rejoué à chaque démarrage, avant les services : il crée les comptes manquants,
+remet les mots de passe du `.env` (une rotation = changer la valeur et
+redémarrer) et rend à chaque compte ses tables, y compris sur une base créée
+avant lui. La suite de bout en bout vérifie ce cloisonnement à chaque
+exécution (`security.sh`).
+
+---
+
 ## 🔐 Secrets
 
 | Secret | Où | Remarque |
@@ -428,7 +504,8 @@ ventes (`billing.sales`), sans identité, est conservé pour la comptabilité.
 | `AUTH_SECRET` | `.env` / `.env.local` | **Régénérer par environnement** — `openssl rand -base64 32` |
 | `INTERNAL_JWT_SECRET` | `.env` / `.env.local` / `ai-service/.env` | Même valeur partout, 32 octets minimum — `openssl rand -hex 32` |
 | `SMTP_URL` | `.env` | Fournisseur d'e-mails transactionnels (réinitialisation du mot de passe) |
-| `POSTGRES_PASSWORD` | `.env` | La valeur de dev ne doit jamais atteindre la production |
+| `POSTGRES_PASSWORD` | `.env` | Superutilisateur : provisionnement, sauvegardes et administration seulement. La valeur de dev ne doit jamais atteindre la production |
+| `*_DB_PASSWORD` (6) | `.env` | Un compte par service, limité à son schéma — voir « Base de données ». Exigés par `docker-compose.prod.yml` |
 | `OPENAI_API_KEY` | `.env` | |
 | `STRIPE_SECRET_KEY` | `.env` | Clé `sk_test_` en développement |
 | `STRIPE_WEBHOOK_SECRET` | `.env` | Fourni par `stripe listen` ou le dashboard |
@@ -450,9 +527,6 @@ de démarrer avec une configuration d'authentification incomplète.
 |-------|--------|
 | **Ports en développement** | `docker-compose.override.yml` publie les ports internes, sur `127.0.0.1` uniquement. En production, `docker-compose.prod.yml` (voir [DEPLOYMENT.md](DEPLOYMENT.md)) ne publie que les ports 80 et 443 de Caddy ; le frontend n'est plus publié du tout. |
 | **HTTP en développement** | Les cookies de session ne prennent l'attribut `Secure` que derrière HTTPS. En production, Caddy sert le site en HTTPS (certificat Let's Encrypt, HSTS) et redirige le HTTP. |
-| **CSP partielle** | `deploy/Caddyfile` interdit cadres, plugins et `<base>` détourné, mais pas les scripts en ligne (Next.js en injecte ; une politique stricte demande des *nonces*). |
-| **Un seul rôle PostgreSQL** | Tous les services partagent le compte propriétaire de la base : une injection SQL dans l'un atteindrait les schémas des autres. Des rôles par service, limités à leur schéma, sont la prochaine étape. |
-| **Sessions non révocables** | Voir « Réinitialisation du mot de passe ». |
 | **Dépendances** | `npm audit` : 2 alertes modérées restantes (`@tailwindcss/typography` → `postcss-selector-parser`, CPU à la compilation d'un CSS non fiable). Seul notre propre CSS est compilé ; le correctif proposé est une rétrogradation. Accepté. |
 
 ---

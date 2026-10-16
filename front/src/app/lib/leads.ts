@@ -11,7 +11,7 @@ import { randomBytes } from "node:crypto";
 
 import type { PoolClient } from "pg";
 
-import { query } from "./db";
+import { createSchemaIfMissing, query, runDdlOnce } from "./db";
 
 /**
  * Identifies the consent wording shown to the visitor. Bump it whenever the
@@ -24,7 +24,7 @@ export const LEAD_CONSENT_VERSION = "accueil-chat-v1";
 const LEAD_RETENTION_YEARS = 3;
 
 const DDL = `
-  CREATE SCHEMA IF NOT EXISTS users;
+  ${createSchemaIfMissing("users")}
 
   CREATE TABLE IF NOT EXISTS users.lead_emails (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -37,12 +37,7 @@ const DDL = `
   );
 `;
 
-let schemaReady: Promise<void> | undefined;
-
-function ensureLeadSchema(): Promise<void> {
-  schemaReady ??= query(DDL).then(() => undefined);
-  return schemaReady;
-}
+const ensureLeadSchema = runDdlOnce(DDL);
 
 /**
  * Record an address with its consent. Giving consent again refreshes it, which

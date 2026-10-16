@@ -44,16 +44,16 @@
                     └──────────────────────┘
 ```
 
-| Service | Technologie | Port | Schéma PostgreSQL |
+| Service | Technologie | Port | Schéma PostgreSQL (compte) |
 |---------|------------|------|-------------------|
-| `frontend` | Next.js 16 (App Router) | 3000 | `users` |
+| `frontend` | Next.js 16 (App Router) | 3000 | `users`, `billing`, `ratelimit`, `erasures` (`iadaf_frontend`) |
 | `api-gateway` | Spring Cloud Gateway | 8080 | — |
 | `discovery-service` | Spring Boot / Eureka | 8761 | — |
-| `ai-service` | Python / FastAPI | 8086 | `ai` |
-| `user-service` | Spring Boot / JPA | 8081 | `users` |
-| `demarches-service` | Spring Boot / JPA | 8082 | `demarches` |
-| `document-service` | Spring Boot | 8083 | `documents` |
-| `analytics-service` | Spring Boot | 8085 | `analytics` |
+| `ai-service` | Python / FastAPI | 8086 | `ai` (`iadaf_ai`) |
+| `user-service` | Spring Boot / JPA | 8081 | `profiles` (`iadaf_profiles`) |
+| `demarches-service` | Spring Boot / JPA | 8082 | `demarches` (`iadaf_demarches`) |
+| `document-service` | Spring Boot | 8083 | `documents` (`iadaf_documents`) |
+| `analytics-service` | Spring Boot | 8085 | `analytics` (`iadaf_analytics`) |
 | `postgres` | PostgreSQL 16 | 5432 | — |
 
 ---
@@ -244,9 +244,7 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 | GET | `/api/analytics/demarches/type` | Répartition par type (dossiers de l'appelant) |
 | GET | `/api/analytics/demarches/evolution` | Évolution dans le temps (dossiers de l'appelant) |
 | GET | `/api/analytics/dashboard` | Synthèse générale — scope `admin` |
-| GET | `/api/analytics/documents/stats` | Statistiques documents — scope `admin` |
 | GET | `/api/analytics/users/activity` | Activité des utilisateurs — scope `admin` |
-| GET | `/api/analytics/performance` | Métriques de performance — scope `admin` |
 | POST | `/api/analytics/document-checks` | Comptes anonymes de pré-vérification (envoyés par l'AI Service) |
 | POST | `/api/analytics/document-checks/disputes` | Résultat signalé comme faux (relayé par le frontend) |
 | GET | `/api/analytics/document-checks` | Totaux et résultats contestés par contrôle — scope `analytics:read` |

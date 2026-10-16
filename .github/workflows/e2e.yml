@@ -47,6 +47,10 @@ jobs:
           E2E_SKIP_LLM: ${{ secrets.OPENAI_API_KEY == '' && '1' || '0' }}
         run: bash tests/e2e/run-all.sh
 
+      # Chrome is preinstalled on GitHub's Ubuntu runners.
+      - name: Content Security Policy, in a real browser
+        run: node tests/browser/csp-check.mjs --signup
+
       - name: Service logs
         if: failure()
         run: docker compose logs --tail 200

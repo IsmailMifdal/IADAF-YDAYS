@@ -2,7 +2,8 @@
 
 Only the document category and each check's id and status are sent — no
 user, no document, no extracted value — so the counts are statistics, not
-personal data. Best effort: a failure never affects the user's result.
+personal data. Best effort, sent after the response: a failure never affects
+the user's result, nor delays it.
 """
 
 import httpx
@@ -18,7 +19,8 @@ async def record(result: Analysis, authorization: str) -> None:
         "checks": [{"id": c.id, "status": c.status} for c in result.checks],
     }
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
+        # Off the request path: room for a service that has just started.
+        async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 f"{settings.gateway_url}/api/analytics/document-checks",
                 headers={"Authorization": authorization},

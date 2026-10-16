@@ -20,7 +20,7 @@ import java.util.Map;
 public class AnalyticsController {
 
     /**
-     * Vues globales — tous les utilisateurs, toutes les pièces : réservées au
+     * Vues globales — tous les utilisateurs : réservées au
      * scope {@code admin}, qu'aucun jeton ne porte aujourd'hui. Les
      * statistiques de démarches restent ouvertes : elles ne portent que sur
      * les dossiers de l'appelant, cloisonnés par demarches-service.
@@ -54,13 +54,6 @@ public class AnalyticsController {
         return ResponseEntity.ok(evolution);
     }
 
-    @GetMapping("/documents/stats")
-    @PreAuthorize(ADMIN)
-    public ResponseEntity<DocumentStatsDTO> getDocumentStats() {
-        log.info("REST request to get document statistics");
-        DocumentStatsDTO stats = analyticsService.getDocumentStats();
-        return ResponseEntity.ok(stats);
-    }
 
     @GetMapping("/users/activity")
     @PreAuthorize(ADMIN)
@@ -78,11 +71,4 @@ public class AnalyticsController {
         return ResponseEntity.ok(dashboard);
     }
 
-    @GetMapping("/performance")
-    @PreAuthorize(ADMIN)
-    public ResponseEntity<PerformanceMetricsDTO> getPerformanceMetrics() {
-        log.info("REST request to get performance metrics");
-        PerformanceMetricsDTO metrics = analyticsService.getPerformanceMetrics();
-        return ResponseEntity.ok(metrics);
-    }
 }

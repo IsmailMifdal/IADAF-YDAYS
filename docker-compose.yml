@@ -47,6 +47,36 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- Comptes PostgreSQL par service ---
+  # Un compte par service, propriétaire de son seul schéma : une injection SQL
+  # dans un service ne lit plus les données des autres. Joué à chaque
+  # démarrage, avant les services : crée ce qui manque, remet les mots de passe
+  # du .env, rend à chaque compte ses tables (docker/postgres/provision.sql).
+  db-provision:
+    image: postgres:16-alpine
+    container_name: iadaf-db-provision
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-iadaf_user}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
+      PGDATABASE: ${POSTGRES_DB:-iadaf_db}
+      # Valeurs de développement ; docker-compose.prod.yml les exige.
+      FRONTEND_DB_PASSWORD: ${FRONTEND_DB_PASSWORD:-dev-frontend-db}
+      PROFILES_DB_PASSWORD: ${PROFILES_DB_PASSWORD:-dev-profiles-db}
+      DEMARCHES_DB_PASSWORD: ${DEMARCHES_DB_PASSWORD:-dev-demarches-db}
+      DOCUMENTS_DB_PASSWORD: ${DOCUMENTS_DB_PASSWORD:-dev-documents-db}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:-dev-analytics-db}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD:-dev-ai-db}
+    volumes:
+      - ./docker/postgres/provision.sql:/provision.sql:ro
+    command: ["psql", "--quiet", "--file=/provision.sql"]
+    networks:
+      - iadaf-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # --- Eureka Discovery ---
   discovery-service:
     build:
@@ -131,7 +161,7 @@ services:
       - CHROMA_PERSIST_DIR=/data/vectorstore
       - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
       # Conversations in PostgreSQL (schema `ai`), migrated at startup.
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - DATABASE_URL=postgresql+asyncpg://iadaf_ai:${AI_DB_PASSWORD:-dev-ai-db}@postgres:5432/${POSTGRES_DB:-iadaf_db}
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
       # Pré-vérification des pièces (Phase 4) : désactivée tant que l'AIPD n'est
@@ -156,6 +186,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
@@ -175,10 +207,10 @@ services:
     container_name: iadaf-user
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=users
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=profiles
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
-      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+      - SPRING_DATASOURCE_USERNAME=iadaf_profiles
+      - SPRING_DATASOURCE_PASSWORD=${PROFILES_DB_PASSWORD:-dev-profiles-db}
     networks:
       - iadaf-network
     depends_on:
@@ -186,6 +218,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
@@ -207,8 +241,8 @@ services:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=demarches
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
-      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+      - SPRING_DATASOURCE_USERNAME=iadaf_demarches
+      - SPRING_DATASOURCE_PASSWORD=${DEMARCHES_DB_PASSWORD:-dev-demarches-db}
     networks:
       - iadaf-network
     depends_on:
@@ -216,6 +250,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
@@ -242,8 +278,8 @@ services:
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - DOCUMENT_ENCRYPTION_KEY=${DOCUMENT_ENCRYPTION_KEY:?DOCUMENT_ENCRYPTION_KEY is required — see .env.example}
       - DOCUMENT_RETENTION_DAYS=${DOCUMENT_RETENTION_DAYS:-180}
-      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+      - SPRING_DATASOURCE_USERNAME=iadaf_documents
+      - SPRING_DATASOURCE_PASSWORD=${DOCUMENTS_DB_PASSWORD:-dev-documents-db}
     networks:
       - iadaf-network
     depends_on:
@@ -251,6 +287,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
@@ -273,8 +311,8 @@ services:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=analytics
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
-      - POSTGRES_USER=${POSTGRES_USER:-iadaf_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-iadaf_password}
+      - SPRING_DATASOURCE_USERNAME=iadaf_analytics
+      - SPRING_DATASOURCE_PASSWORD=${ANALYTICS_DB_PASSWORD:-dev-analytics-db}
       - USER_SERVICE_URL=http://user-service:8081
       - DEMARCHES_SERVICE_URL=http://demarches-service:8082
       - DOCUMENT_SERVICE_URL=http://document-service:8083
@@ -285,6 +323,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
@@ -313,7 +353,7 @@ services:
     environment:
       - API_GATEWAY_URL=http://api-gateway:8080
       # Auth.js reads users straight from Postgres (schema `users`).
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - DATABASE_URL=postgresql://iadaf_frontend:${FRONTEND_DB_PASSWORD:-dev-frontend-db}@postgres:5432/${POSTGRES_DB:-iadaf_db}
       - AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET is required — see .env.example}
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - AUTH_URL=${AUTH_URL:-http://localhost:3000}
@@ -333,6 +373,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       # node:24-alpine n'a pas curl, mais busybox fournit wget.

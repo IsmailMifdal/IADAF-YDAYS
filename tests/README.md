@@ -11,6 +11,7 @@
 | Fichiers de déploiement (shellcheck, compose de production, Caddyfile) | `deploy/`, `docker-compose.prod.yml` | job `deploy` de la CI |
 | **Après un déploiement** | `deploy/smoke-test.sh` | `deploy/smoke-test.sh <domaine>` — sans écriture, sûr en production |
 | Restauration d'une sauvegarde | `deploy/restore-test.sh` | voir [DEPLOYMENT.md](../DEPLOYMENT.md), étape 6 |
+| CSP, dans un vrai navigateur | `tests/browser/csp-check.mjs` | `node tests/browser/csp-check.mjs [url] [--signup]` — Chrome ou Edge ; chaque nuit en CI |
 
 La CI (`.github/workflows/ci.yml`) joue les quatre premiers niveaux et les
 contrôles des fichiers de déploiement à chaque PR ; la suite de bout en bout tourne chaque nuit et à la demande

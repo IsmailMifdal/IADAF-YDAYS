@@ -14,7 +14,7 @@ import type { Provider } from "next-auth/providers";
 
 import { authConfig } from "./auth.config";
 import { RATE_LIMITS, clientIp, hitAll } from "./app/lib/rateLimit";
-import { findUserByEmail, upsertOAuthUser, verifyPassword } from "./app/lib/users";
+import { findUserByEmail, sessionIsValid, upsertOAuthUser, verifyPassword } from "./app/lib/users";
 import { credentialsSchema } from "./app/lib/validation";
 
 /** Surfaces to the login form as `result.code`, distinct from a bad password. */
@@ -64,6 +64,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   callbacks: {
     ...authConfig.callbacks,
+
+    /**
+     * The base token (auth.config.ts), plus revocation. The sign-in instant is
+     * recorded once and kept when Auth.js renews the token — renewal must not
+     * launder a stolen session. A session opened before a revocation, or whose
+     * account is gone, ends here: on every request, through the middleware.
+     */
+    async jwt(params) {
+      const token = authConfig.callbacks.jwt(params);
+      if (params.user) token.signedInAt = Date.now();
+      if (typeof token.id !== "string") return token;
+
+      // Tokens issued before this check existed: `iat` (seconds) stands in.
+      const signedInAt =
+        typeof token.signedInAt === "number" ? token.signedInAt : (token.iat ?? 0) * 1000;
+      try {
+        return (await sessionIsValid(token.id, signedInAt)) ? token : null;
+      } catch (error) {
+        // Database unreachable: nothing works meanwhile anyway, and signing
+        // everyone out would outlast the outage.
+        console.error("[auth] session check failed", error);
+        return token;
+      }
+    },
 
     /**
      * Mirror OAuth identities into `users.app_users` so every session — however

@@ -70,6 +70,22 @@ services:
           memory: 1g
     <<: *logging
 
+  # Source des mots de passe des comptes par service : sans eux, il échoue, et
+  # aucun service ne démarre (tous attendent qu'il ait réussi).
+  db-provision:
+    environment:
+      FRONTEND_DB_PASSWORD: ${FRONTEND_DB_PASSWORD:?FRONTEND_DB_PASSWORD is required — run deploy/generate-secrets.sh}
+      PROFILES_DB_PASSWORD: ${PROFILES_DB_PASSWORD:?PROFILES_DB_PASSWORD is required}
+      DEMARCHES_DB_PASSWORD: ${DEMARCHES_DB_PASSWORD:?DEMARCHES_DB_PASSWORD is required}
+      DOCUMENTS_DB_PASSWORD: ${DOCUMENTS_DB_PASSWORD:?DOCUMENTS_DB_PASSWORD is required}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:?ANALYTICS_DB_PASSWORD is required}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    <<: *logging
+
   discovery-service:
     <<: *java
     image: ghcr.io/${GHCR_OWNER:?GHCR_OWNER is required}/iadaf-discovery-service:${IMAGE_TAG:-latest}

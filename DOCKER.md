@@ -162,44 +162,27 @@ Utilisé par le **analytics-service** (port 8085)
 
 ## Initialisation de la base de données
 
-Au premier démarrage, PostgreSQL exécute automatiquement le script `docker/postgres/init/01-init.sql` qui crée les 4 schémas nécessaires.
-
-Si vous voulez ajouter d'autres scripts d'initialisation :
-1. Créez un fichier `.sql` dans `docker/postgres/init/`
-2. Nommez-le avec un préfixe numérique (ex: `02-seed-data.sql`)
-3. Les scripts sont exécutés dans l'ordre alphabétique
+Au premier démarrage, PostgreSQL exécute `docker/postgres/init/01-init.sql`,
+qui crée un schéma par service. À chaque démarrage ensuite, le service ponctuel
+`db-provision` joue `docker/postgres/provision.sql` : un compte PostgreSQL par
+service, propriétaire de son seul schéma (voir SECURITY.md, « Base de données :
+un compte par service »).
 
 ## Configuration des services Spring Boot
 
-Chaque service Spring Boot est configuré pour :
-- Se connecter à `iadaf_db`
-- Utiliser son propre schéma (users, demarches, documents, ou analytics)
-- Lire les credentials depuis les variables d'environnement
+Chaque service Spring Boot se connecte à `iadaf_db` avec son propre compte,
+limité à son schéma : `docker-compose.yml` fixe `SPRING_DATASOURCE_URL`
+(`?currentSchema=<schéma>`), `SPRING_DATASOURCE_USERNAME` et
+`SPRING_DATASOURCE_PASSWORD` pour chacun, par-dessus `application.yml`.
 
-Exemple de configuration dans `application.yml` :
+| Service | Schéma | Compte |
+|---------|--------|--------|
+| user-service | `profiles` | `iadaf_profiles` |
+| demarches-service | `demarches` | `iadaf_demarches` |
+| document-service | `documents` | `iadaf_documents` |
+| analytics-service | `analytics` | `iadaf_analytics` |
 
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/iadaf_db?currentSchema=users
-    username: ${POSTGRES_USER:iadaf_user}
-    password: ${POSTGRES_PASSWORD:iadaf_password}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        default_schema: users
-```
-
-⚠️ **Note** : Le logging SQL (`show-sql: true` et `format_sql: true`) est activé pour faciliter le développement et le debugging. Pour un environnement de production, il est recommandé de :
-- Désactiver ces options ou les contrôler via des profils Spring (`spring.profiles.active`)
-- Utiliser un profil de développement séparé avec logging activé
-- Configurer un logging approprié via un système de logs externe
+Le journal SQL (`show-sql`) est désactivé par défaut (`SPRING_JPA_SHOW_SQL`).
 
 ## Dépannage
 

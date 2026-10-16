@@ -9,9 +9,11 @@ import { AlertCircle, Loader2, LogIn, Sparkles } from "lucide-react";
 type Props = {
   googleEnabled: boolean;
   callbackUrl: string;
+  /** Why the visitor lands here signed out (password changed, signed out everywhere). */
+  notice?: string;
 };
 
-export default function LoginForm({ googleEnabled, callbackUrl }: Props) {
+export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,6 +64,15 @@ export default function LoginForm({ googleEnabled, callbackUrl }: Props) {
         <p className="text-gray-600 mt-1 text-sm">
           Accédez à votre espace et suivez vos démarches.
         </p>
+
+        {notice && !error && (
+          <div
+            role="status"
+            className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+          >
+            {notice}
+          </div>
+        )}
 
         {error && (
           <div

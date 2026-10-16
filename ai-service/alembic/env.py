@@ -32,9 +32,21 @@ def _configure(connection) -> None:
     )
 
 
+def create_schema_if_missing(name: str) -> str:
+    """DDL creating schema ``name`` only if it is missing.
+
+    Not ``CREATE SCHEMA IF NOT EXISTS``: PostgreSQL checks the right to create
+    schemas before looking, and the service's own account has none
+    (docker/postgres/provision.sql creates its schema for it). The CREATE is
+    reached only on a bare database, by an account allowed to run it — the
+    test database, for instance.
+    """
+    return f"DO $$ BEGIN IF to_regnamespace('{name}') IS NULL THEN CREATE SCHEMA {name}; END IF; END $$"
+
+
 def _run(connection) -> None:
     # The version table lives in the schema, so it must exist first.
-    connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}"))
+    connection.execute(text(create_schema_if_missing(SCHEMA)))
     _configure(connection)
     with context.begin_transaction():
         context.run_migrations()

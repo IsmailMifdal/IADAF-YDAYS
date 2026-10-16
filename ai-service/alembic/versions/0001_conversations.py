@@ -21,7 +21,7 @@ SCHEMA = "ai"
 
 
 def upgrade() -> None:
-    op.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}")
+    # env.py has created the schema already (the version table lives there).
 
     op.create_table(
         "conversations",

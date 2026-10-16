@@ -13,9 +13,9 @@ import { createHash, randomBytes } from "node:crypto";
 
 import bcrypt from "bcryptjs";
 
-import { pool, query } from "./db";
+import { pool, query, runDdlOnce } from "./db";
 import { sendMail } from "./mailer";
-import { ensureAuthSchema, findUserByEmail } from "./users";
+import { ensureAuthSchema, findUserByEmail, forgetSessionCheck } from "./users";
 
 const RESET_TTL_MINUTES = 30;
 const BCRYPT_ROUNDS = 12;
@@ -29,12 +29,11 @@ const DDL = `
   );
 `;
 
-let schemaReady: Promise<void> | undefined;
+const ensureResetSchema = runDdlOnce(DDL);
 
 async function ensureSchema(): Promise<void> {
   await ensureAuthSchema();
-  schemaReady ??= query(DDL).then(() => undefined);
-  return schemaReady;
+  await ensureResetSchema();
 }
 
 function hashToken(token: string): string {
@@ -124,15 +123,18 @@ export async function resetPassword(token: string, newPassword: string): Promise
       return false;
     }
 
+    // A reset is what follows a stolen password: every session open until
+    // now, the thief's included, ends with it.
     await client.query(
       `UPDATE users.app_users
-          SET password_hash = $2, updated_at = now()
+          SET password_hash = $2, updated_at = now(), sessions_revoked_at = now()
         WHERE id = $1`,
       [userId, passwordHash],
     );
     await client.query(`DELETE FROM users.password_reset_tokens WHERE user_id = $1`, [userId]);
 
     await client.query("COMMIT");
+    forgetSessionCheck(userId);
     return true;
   } catch (error) {
     await client.query("ROLLBACK");

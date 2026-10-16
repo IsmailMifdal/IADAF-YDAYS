@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { Eye, EyeOff, LogOut } from "lucide-react";
 
 import { passwordStrength } from "../../../lib/validation";
-import { useToast } from "../../../components/ui/Toast";
 import {
   Alert,
   Field,
@@ -24,7 +24,6 @@ const STRENGTH_COLORS = [
 ];
 
 export default function SecuritySection({ account }: { account: Account }) {
-  const { toast } = useToast();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
@@ -36,15 +35,18 @@ export default function SecuritySection({ account }: { account: Account }) {
   // n'aurait aucun sens.
   if (!account.hasPassword) {
     return (
-      <SectionCard
-        title="Sécurité"
-        description="Comment votre compte est protégé."
-      >
-        <Alert tone="success">
-          Vous vous connectez via {account.provider}. Votre mot de passe est géré
-          par ce fournisseur — il n’y a rien à modifier ici.
-        </Alert>
-      </SectionCard>
+      <>
+        <SectionCard
+          title="Sécurité"
+          description="Comment votre compte est protégé."
+        >
+          <Alert tone="success">
+            Vous vous connectez via {account.provider}. Votre mot de passe est géré
+            par ce fournisseur — il n’y a rien à modifier ici.
+          </Alert>
+        </SectionCard>
+        <SessionsCard />
+      </>
     );
   }
 
@@ -72,7 +74,8 @@ export default function SecuritySection({ account }: { account: Account }) {
       setChanged(true);
       setCurrentPassword("");
       setNewPassword("");
-      toast("Mot de passe modifié.");
+      // Every session has just been closed, this one included (server side).
+      await signOut({ redirectTo: "/login?raison=mot-de-passe-modifie" });
     } catch {
       setError("Une erreur réseau est survenue. Réessayez.");
     } finally {
@@ -81,93 +84,138 @@ export default function SecuritySection({ account }: { account: Account }) {
   }
 
   return (
-    <SectionCard
-      title="Mot de passe"
-      description="Choisissez un mot de passe que vous n’utilisez nulle part ailleurs."
-    >
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {error && <Alert tone="error">{error}</Alert>}
-        {changed && (
-          <Alert tone="success">
-            Mot de passe modifié. Il sera demandé à votre prochaine connexion.
-          </Alert>
-        )}
-
-        <Field label="Mot de passe actuel" htmlFor="current-password">
-          <input
-            id="current-password"
-            type={showPasswords ? "text" : "password"}
-            autoComplete="current-password"
-            required
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
-
-        <Field
-          label="Nouveau mot de passe"
-          htmlFor="new-password"
-          hint="8 caractères minimum, avec au moins une lettre et un chiffre."
-        >
-          <div className="relative">
+    <>
+      <SectionCard
+        title="Mot de passe"
+        description="Choisissez un mot de passe que vous n’utilisez nulle part ailleurs."
+      >
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && <Alert tone="error">{error}</Alert>}
+          {changed && (
+            <Alert tone="success">
+              Mot de passe modifié. Vos sessions sont fermées sur tous vos appareils :
+              reconnexion…
+            </Alert>
+          )}
+  
+          <Field label="Mot de passe actuel" htmlFor="current-password">
             <input
-              id="new-password"
+              id="current-password"
               type={showPasswords ? "text" : "password"}
-              autoComplete="new-password"
+              autoComplete="current-password"
               required
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className={`${inputClass} pr-11`}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className={inputClass}
             />
-            <button
-              type="button"
-              onClick={() => setShowPasswords((v) => !v)}
-              aria-label={
-                showPasswords
-                  ? "Masquer les mots de passe"
-                  : "Afficher les mots de passe"
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-            >
-              {showPasswords ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </Field>
-
-        {newPassword.length > 0 && (
-          <div>
-            <div className="flex gap-1.5" aria-hidden="true">
-              {[1, 2, 3, 4].map((level) => (
-                <span
-                  key={level}
-                  className={`h-1.5 flex-1 rounded-full transition-colors ${
-                    level <= strength ? STRENGTH_COLORS[strength] : "bg-gray-200"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="mt-1.5 text-xs text-gray-500">
-              Robustesse : {STRENGTH_LABELS[strength]}
-            </p>
-          </div>
-        )}
-
-        <div className="pt-1">
-          <SubmitButton
-            isLoading={isSaving}
-            loadingLabel="Modification…"
-            disabled={!currentPassword || !newPassword}
+          </Field>
+  
+          <Field
+            label="Nouveau mot de passe"
+            htmlFor="new-password"
+            hint="8 caractères minimum, avec au moins une lettre et un chiffre."
           >
-            Modifier le mot de passe
-          </SubmitButton>
-        </div>
-      </form>
+            <div className="relative">
+              <input
+                id="new-password"
+                type={showPasswords ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className={`${inputClass} pr-11`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasswords((v) => !v)}
+                aria-label={
+                  showPasswords
+                    ? "Masquer les mots de passe"
+                    : "Afficher les mots de passe"
+                }
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+              >
+                {showPasswords ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </Field>
+  
+          {newPassword.length > 0 && (
+            <div>
+              <div className="flex gap-1.5" aria-hidden="true">
+                {[1, 2, 3, 4].map((level) => (
+                  <span
+                    key={level}
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
+                      level <= strength ? STRENGTH_COLORS[strength] : "bg-gray-200"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-gray-500">
+                Robustesse : {STRENGTH_LABELS[strength]}
+              </p>
+            </div>
+          )}
+  
+          <div className="pt-1">
+            <SubmitButton
+              isLoading={isSaving}
+              loadingLabel="Modification…"
+              disabled={!currentPassword || !newPassword}
+            >
+              Modifier le mot de passe
+            </SubmitButton>
+          </div>
+        </form>
+      </SectionCard>
+      <SessionsCard />
+    </>
+  );
+}
+
+/** "Sign out everywhere": a lost phone, a shared computer. */
+function SessionsCard() {
+  const [isClosing, setIsClosing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function closeEverywhere() {
+    setError(null);
+    setIsClosing(true);
+    try {
+      const res = await fetch("/api/account/sessions", { method: "DELETE" });
+      if (!res.ok) {
+        setError("Impossible de fermer les sessions. Réessayez.");
+        return;
+      }
+      await signOut({ redirectTo: "/login?raison=deconnexion-partout" });
+    } catch {
+      setError("Une erreur réseau est survenue. Réessayez.");
+    } finally {
+      setIsClosing(false);
+    }
+  }
+
+  return (
+    <SectionCard
+      title="Sessions"
+      description="Un téléphone perdu, un ordinateur partagé : fermez toutes les sessions ouvertes."
+    >
+      {error && <Alert tone="error">{error}</Alert>}
+      <button
+        type="button"
+        onClick={closeEverywhere}
+        disabled={isClosing}
+        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+      >
+        <LogOut className="h-4 w-4" />
+        {isClosing ? "Déconnexion…" : "Se déconnecter de tous les appareils"}
+      </button>
     </SectionCard>
   );
 }

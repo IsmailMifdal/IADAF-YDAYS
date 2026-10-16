@@ -12,7 +12,7 @@ import { createHmac } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { query } from "./db";
+import { createSchemaIfMissing, query, runDdlOnce } from "./db";
 
 export type RateLimitRule = {
   /** Namespaces the counter, so rules never share a bucket. */
@@ -57,7 +57,7 @@ export const RATE_LIMITS = {
 const RETENTION_HOURS = 48;
 
 const DDL = `
-  CREATE SCHEMA IF NOT EXISTS ratelimit;
+  ${createSchemaIfMissing("ratelimit")}
 
   CREATE TABLE IF NOT EXISTS ratelimit.counters (
     bucket       CHAR(64)    NOT NULL,
@@ -67,12 +67,7 @@ const DDL = `
   );
 `;
 
-let schemaReady: Promise<void> | undefined;
-
-function ensureSchema(): Promise<void> {
-  schemaReady ??= query(DDL).then(() => undefined);
-  return schemaReady;
-}
+const ensureSchema = runDdlOnce(DDL);
 
 function bucketFor(rule: RateLimitRule, key: string): string {
   return createHmac("sha256", process.env.AUTH_SECRET ?? "")

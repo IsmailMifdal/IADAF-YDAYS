@@ -29,12 +29,19 @@ function resolveCallbackUrl(raw: string | undefined, origin: string): string {
   return "/";
 }
 
+/** Fixed messages only: the query string chooses one, it never supplies text. */
+const NOTICES: Record<string, string> = {
+  "mot-de-passe-modifie":
+    "Mot de passe modifié. Vos sessions ont été fermées sur tous vos appareils : reconnectez-vous avec le nouveau.",
+  "deconnexion-partout": "Vous avez été déconnecté de tous vos appareils.",
+};
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; raison?: string }>;
 }) {
-  const [{ callbackUrl }, headerList] = await Promise.all([
+  const [{ callbackUrl, raison }, headerList] = await Promise.all([
     searchParams,
     headers(),
   ]);
@@ -49,6 +56,7 @@ export default async function LoginPage({
         process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
       )}
       callbackUrl={resolveCallbackUrl(callbackUrl, origin)}
+      notice={raison ? NOTICES[raison] : undefined}
     />
   );
 }

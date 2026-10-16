@@ -19,6 +19,8 @@ Fichiers concernés :
 | `deploy/backup.sh` | Sauvegarde chiffrée de la base, rotation, copie hors serveur |
 | `deploy/restore-test.sh` | Restaure une sauvegarde dans une base jetable et la contrôle |
 | `deploy/smoke-test.sh` | Contrôle le site de l'extérieur : HTTPS, en-têtes, santé, limites, webhook |
+| `deploy/replay-erasures.sh` | Après une restauration, supprime de nouveau les comptes supprimés depuis la sauvegarde |
+| `docker/postgres/provision.sql` | Un compte PostgreSQL par service, limité à son schéma (rejoué à chaque démarrage) |
 
 ---
 
@@ -244,6 +246,16 @@ Sur le serveur d'origine ou un nouveau, avec **le même `.env`** (même
 ```bash
 cd /opt/iadaf
 docker compose up -d postgres --wait
+
+# Comptes supprimés depuis la sauvegarde : la restauration va les ramener.
+# Base encore en service → son journal, le plus récent :
+deploy/replay-erasures.sh export > /var/backups/iadaf/erasures.csv
+# Base perdue → celui de la sauvegarde la plus récente :
+#   deploy/replay-erasures.sh export-from <dernière>.dump.gpg > /var/backups/iadaf/erasures.csv
+
+# Les comptes par service doivent exister avant la restauration, qui leur
+# rend la propriété de leurs tables (sur un serveur neuf, ils n'existent pas).
+docker compose run --rm db-provision
 docker compose stop $(docker compose config --services | grep -v '^postgres$')
 
 # Déchiffrer d'abord dans un fichier : gpg vérifie l'intégrité et échoue si
@@ -256,10 +268,14 @@ docker exec -i iadaf-postgres pg_restore -U iadaf_user -d iadaf_db --exit-on-err
 shred -u /tmp/restore.dump
 
 docker compose up -d --wait
+
+# Supprimer de nouveau les comptes revenus avec la sauvegarde (sans effet sur
+# ceux qui n'existent plus ; rejouer est sans risque).
+deploy/replay-erasures.sh replay /var/backups/iadaf/erasures.csv
 ```
 
-Les comptes supprimés entre la date de la sauvegarde et le sinistre
-réapparaissent : supprimer à nouveau ceux dont l'effacement avait été demandé.
+Seules les suppressions postérieures à la dernière sauvegarde sont perdues si
+le serveur entier l'est : elles sont alors à refaire à la main.
 
 ---
 
@@ -279,13 +295,9 @@ réapparaissent : supprimer à nouveau ceux dont l'effacement avait été demand
 
 ## Limites connues
 
-- **CSP partielle** : `deploy/Caddyfile` interdit les cadres, plugins et `<base>`
-  détourné, mais pas les scripts en ligne (Next.js en injecte ; une politique
-  stricte demande des *nonces* générés par le middleware).
-- **Un seul compte PostgreSQL** pour tous les services, propriétaire de la base :
-  une injection SQL dans un service atteindrait les schémas des autres. Des
-  rôles par service, limités à leur schéma, sont la prochaine étape.
-- **Pas de journal des effacements hors base** : après une restauration, il
-  faut retrouver par d'autres moyens les comptes supprimés depuis la sauvegarde.
+- **Comptes supprimés après la dernière sauvegarde, serveur perdu** : le
+  journal des suppressions vit dans la base ; si le serveur entier est perdu,
+  les suppressions faites depuis la dernière sauvegarde (24 h au plus) ne
+  peuvent pas être rejouées et sont à refaire à la main.
 - **Un seul serveur** : pas de haute disponibilité. Le temps de reprise est
   celui de l'étape 9 (environ 15 minutes plus le démarrage de la stack).
