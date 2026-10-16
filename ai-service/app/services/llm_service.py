@@ -1,13 +1,18 @@
-"""LLM service — Ollama (Mistral) with OpenAI fallback.
+"""LLM service — any OpenAI-compatible API: OpenAI, an EU provider such as
+Mistral (OPENAI_BASE_URL), or a local Ollama, which speaks the same protocol.
 
 Provides a unified asynchronous interface — ``agenerate(prompt)`` for a
 whole answer, ``astream(prompt)`` for one streamed piece by piece —
-regardless of the underlying provider.
+regardless of the provider. Built on the official ``openai`` SDK alone: the
+LangChain wrappers it replaces brought a large dependency tree, and its
+vulnerabilities, for three function calls.
 """
 
-from typing import Any, AsyncIterator
+from typing import AsyncIterator, Optional
 
+import httpx
 from loguru import logger
+from openai import AsyncOpenAI
 
 from app.core.config import settings
 
@@ -24,18 +29,14 @@ GENERATION_ERROR_MESSAGE = (
 )
 
 
-def _text(result: Any) -> str:
-    """Text of an LLM result: ChatOpenAI returns message objects, Ollama str."""
-    return str(result.content) if hasattr(result, "content") else str(result)
-
-
 class LLMService:
-    """Abstraction layer over Ollama / OpenAI language models."""
+    """One OpenAI-compatible chat model, chosen at startup."""
 
     def __init__(self) -> None:
-        self._ollama_available: bool = False
-        self._openai_available: bool = False
-        self._llm = None  # lazy-initialised
+        self._client: Optional[AsyncOpenAI] = None
+        self._model = ""
+        self._temperature = settings.openai_temperature
+        self._max_tokens = settings.openai_max_tokens
 
     # ------------------------------------------------------------------
     # Initialisation
@@ -49,36 +50,26 @@ class LLMService:
             self._setup_ollama()
 
     def _setup_ollama(self) -> None:
-        """Try to connect to the local Ollama instance."""
+        """Use the local Ollama instance if it answers, OpenAI otherwise."""
+        base_url = settings.ollama_base_url.rstrip("/")
         try:
-            import requests  # type: ignore
-            from langchain_community.llms import Ollama  # type: ignore
-
-            # Use the Ollama REST API health endpoint to confirm availability
-            response = requests.get(
-                f"{settings.ollama_base_url}/api/tags", timeout=5
-            )
-            response.raise_for_status()
-
-            llm = Ollama(
-                base_url=settings.ollama_base_url,
-                model=settings.ollama_model,
-                temperature=0.1,
-            )
-            self._llm = llm
-            self._ollama_available = True
-            logger.info(
-                f"Ollama backend ready — model: {settings.ollama_model} "
-                f"@ {settings.ollama_base_url}"
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                f"Ollama not available ({exc}). Trying OpenAI fallback…"
-            )
+            httpx.get(f"{base_url}/api/tags", timeout=5).raise_for_status()
+        except httpx.HTTPError as exc:
+            logger.warning(f"Ollama not available ({type(exc).__name__}). Trying OpenAI fallback…")
             self._setup_openai()
+            return
+
+        # Ollama serves the OpenAI protocol under /v1; it ignores the key.
+        self._client = AsyncOpenAI(
+            base_url=f"{base_url}/v1",
+            api_key="ollama",
+            timeout=settings.openai_timeout_seconds,
+        )
+        self._model = settings.ollama_model
+        logger.info(f"Ollama backend ready — model: {self._model} @ {base_url}")
 
     def _setup_openai(self) -> None:
-        """Set up OpenAI (model from ``OPENAI_MODEL``)."""
+        """Set up OpenAI or a compatible provider (model from ``OPENAI_MODEL``)."""
         if not settings.openai_api_key:
             logger.warning(
                 "Neither Ollama nor OpenAI is available. "
@@ -86,28 +77,18 @@ class LLMService:
             )
             return
 
-        try:
-            from langchain_openai import ChatOpenAI  # type: ignore
-
-            self._llm = ChatOpenAI(
-                model=settings.openai_model,
-                openai_api_key=settings.openai_api_key,
-                temperature=settings.openai_temperature,
-                max_tokens=settings.openai_max_tokens,
-                timeout=settings.openai_timeout_seconds,
-                # Always explicit: the OpenAI SDK also reads OPENAI_BASE_URL
-                # from the environment, and docker-compose passes it as an
-                # empty string when unset — which the SDK takes for a URL and
-                # fails every request with "Connection error".
-                base_url=settings.openai_base_url or DEFAULT_OPENAI_BASE_URL,
-            )
-            self._openai_available = True
-            logger.info(
-                f"OpenAI-compatible backend ready — model: {settings.openai_model} "
-                f"@ {settings.openai_base_url or DEFAULT_OPENAI_BASE_URL}"
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.error(f"Failed to initialise OpenAI: {exc}")
+        base_url = settings.openai_base_url or DEFAULT_OPENAI_BASE_URL
+        self._client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            # Always explicit: the SDK also reads OPENAI_BASE_URL from the
+            # environment, and docker-compose passes it as an empty string
+            # when unset — which the SDK takes for a URL and fails every
+            # request with "Connection error".
+            base_url=base_url,
+            timeout=settings.openai_timeout_seconds,
+        )
+        self._model = settings.openai_model
+        logger.info(f"OpenAI-compatible backend ready — model: {self._model} @ {base_url}")
 
     # ------------------------------------------------------------------
     # Public API
@@ -117,17 +98,27 @@ class LLMService:
     # blocking LLM call (up to OPENAI_TIMEOUT_SECONDS) froze every other
     # request meanwhile, health checks included.
 
+    def _request(self, prompt: str, stream: bool) -> dict:
+        return {
+            "model": self._model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": self._temperature,
+            "max_tokens": self._max_tokens,
+            "stream": stream,
+        }
+
     async def agenerate(self, prompt: str) -> str:
         """Generate a text response for *prompt*.
 
         Returns a user-friendly error message when no backend is available
         instead of raising an exception (degraded-mode behaviour).
         """
-        if self._llm is None:
+        if self._client is None:
             return UNAVAILABLE_MESSAGE
 
         try:
-            return _text(await self._llm.ainvoke(prompt))
+            completion = await self._client.chat.completions.create(**self._request(prompt, False))
+            return completion.choices[0].message.content or ""
         except Exception as exc:  # noqa: BLE001
             logger.error(f"LLM generation error: {exc}")
             return GENERATION_ERROR_MESSAGE
@@ -137,21 +128,26 @@ class LLMService:
 
         Without a backend, yields the degraded-mode message. A backend error
         mid-answer is raised, not swallowed: the caller must tell the user
-        the answer is incomplete.
+        the answer is incomplete. A reader that stops early (the visitor left)
+        closes the upstream request, and the generation billed with it.
         """
-        if self._llm is None:
+        if self._client is None:
             yield UNAVAILABLE_MESSAGE
             return
 
-        async for chunk in self._llm.astream(prompt):
-            piece = _text(chunk)
-            if piece:
-                yield piece
+        stream = await self._client.chat.completions.create(**self._request(prompt, True))
+        try:
+            async for chunk in stream:
+                piece = chunk.choices[0].delta.content if chunk.choices else None
+                if piece:
+                    yield piece
+        finally:
+            await stream.close()
 
     @property
     def is_available(self) -> bool:
-        """Return True when at least one LLM backend is ready."""
-        return self._llm is not None
+        """Return True when an LLM backend is ready."""
+        return self._client is not None
 
 
 # Module-level singleton

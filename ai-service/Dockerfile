@@ -11,7 +11,7 @@ RUN apt-get update && apt-get upgrade -y \
 # CPU-only PyTorch first (avoids downloading ~6GB of CUDA libs), and before
 # copying requirements.txt: editing the requirements must not re-download it.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install torch --index-url https://download.pytorch.org/whl/cpu
+    pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \

@@ -2,10 +2,10 @@ fastapi==0.142.2
 # Pinned: FastAPI accepts any Starlette >= 0.46 — upgrades are chosen, not inherited.
 starlette==1.7.0
 uvicorn[standard]==0.54.0
-langchain==0.3.27
-langchain-community==0.3.27
-langchain-openai==0.2.14
 chromadb==0.5.0
+# Vendors jaraco.context and wheel: the version shipped with the base image
+# carries known vulnerabilities.
+setuptools==84.0.0
 sentence-transformers==5.7.0
 numpy<2.0
 py-eureka-client==0.11.8
@@ -15,10 +15,9 @@ httpx==0.28.1
 Pillow==12.3.0
 pypdf==6.19.0
 PyJWT==2.15.1
-python-multipart==0.0.22
 sqlalchemy==2.0.30
 asyncpg==0.30.0
 alembic==1.20.0
-openai>=1.58.1
-requests==2.32.3
+# The SDK alone (app/services/llm_service.py), for any OpenAI-compatible API.
+openai==1.109.1
 loguru==0.7.2

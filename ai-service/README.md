@@ -1,14 +1,14 @@
 # AI Service — Python / FastAPI
 
-Service d'intelligence artificielle pour IA-DAF, réécrit en Python avec FastAPI, LangChain et ChromaDB.
+Service d'intelligence artificielle pour IA-DAF, réécrit en Python avec FastAPI, ChromaDB et le SDK openai.
 
 ## Stack technique
 
 | Composant | Technologie |
 |-----------|------------|
 | API | FastAPI + Uvicorn |
-| LLM | Ollama (Mistral 7B) avec fallback OpenAI |
-| RAG | LangChain + ChromaDB |
+| LLM | Toute API compatible OpenAI (OpenAI, Mistral, Ollama local) — SDK `openai` seul |
+| RAG | ChromaDB, sans LangChain (retiré : un gros arbre de dépendances et ses failles pour trois appels) |
 | Embeddings | sentence-transformers multilingue |
 | DB | PostgreSQL, schéma `ai` (asyncpg, migrations Alembic) |
 | Discovery | py-eureka-client |
@@ -104,7 +104,7 @@ app/
 │   └── health.py        # GET /ai/health
 ├── services/
 │   ├── llm_service.py   # Interface LLM (Ollama / OpenAI)
-│   ├── rag_service.py   # Pipeline RAG (LangChain + ChromaDB)
+│   ├── rag_service.py   # Pipeline RAG (sentence-transformers + ChromaDB)
 │   ├── chat_service.py  # Gestion conversations
 │   └── translation_service.py
 ├── models/

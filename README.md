@@ -267,7 +267,7 @@ amont que le pack appartient bien à l'utilisateur.
 ## 🎯 Fonctionnalités
 
 - **Chatbot RAG** — répond sur les démarches françaises via une base de
-  connaissances vectorisée (ChromaDB + LangChain), dont 32 fiches officielles
+  connaissances vectorisée (sentence-transformers + ChromaDB), dont 32 fiches officielles
   de service-public.gouv.fr actualisées chaque semaine ; réponses affichées au
   fil de la génération
 - **Application installable** — ajout à l'écran d'accueil du téléphone, page

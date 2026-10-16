@@ -550,8 +550,15 @@ de démarrer avec une configuration d'authentification incomplète.
   plus maintenue : 12 failles critiques relevées par Trivy, dont Tomcat ; la
   3.5 ne reçoit plus de correctifs gratuits de Spring Framework 6.2), Spring
   Cloud 2025.1.3, Node 24 LTS (Node 20 est en fin de vie depuis avril 2026).
-  Tomcat, BouncyCastle et FreeMarker sont épinglés au-dessus des versions du
-  BOM, encore vulnérables (voir `pom.xml`).
+  Tomcat, BouncyCastle, FreeMarker, Jackson (2 et 3) et HttpComponents sont
+  épinglés au-dessus des versions du BOM, encore vulnérables (voir `pom.xml`).
+  AI Service : FastAPI 0.142 / Starlette 1.7 ; `torch`, `setuptools` et le
+  SDK `openai` épinglés (rien ne « flotte » d'une construction à l'autre).
+- **Moins de dépendances** : LangChain retiré de l'AI Service — il enveloppait
+  trois appels (embeddings, ChromaDB, OpenAI), faits désormais directement,
+  et apportait un large arbre de paquets aux failles récurrentes ;
+  `python-multipart` et `requests`, inutilisés, retirés aussi. La télémétrie
+  de ChromaDB, active par défaut, est coupée : rien ne part vers un tiers.
 - **Surface réduite** : `/actuator/gateway` (lister et créer des routes) et la
   découverte automatique de routes Eureka sont désactivés ; la santé ne publie
   plus son détail.
