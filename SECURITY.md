@@ -326,9 +326,15 @@ Gérées par `document-service`, stockées dans PostgreSQL (schéma `documents`)
   toutes les autres requêtes du service, health checks compris.
 - **Réponses en streaming** (`POST /ai/chat/stream`, Server-Sent Events) :
   `Cache-Control: no-transform` empêche tout proxy (Next.js, Caddy) de
-  compresser, donc de retenir, le flux. Un visiteur qui part en cours de
-  réponse annule l'appel en amont, et la génération facturée avec lui. La
-  réponse n'est enregistrée qu'une fois complète.
+  compresser, donc de retenir, le flux (vérifié à travers le Caddyfile de
+  production : aucun `Content-Encoding`, 567 fragments étalés sur 60 s). Un
+  visiteur qui part en cours de réponse annule l'appel en amont, et la
+  génération facturée avec lui. La réponse n'est enregistrée qu'une fois
+  complète. Les trois chats du site l'utilisent.
+- **Délais** : une réponse non diffusée (analyse de dossier, traduction)
+  n'envoie rien avant d'être complète ; la route IA de la gateway lui accorde
+  90 s et le client LLM 60 s (`OPENAI_TIMEOUT_SECONDS`), les autres routes
+  gardant 30 s.
 - **Base de connaissances officielle** : les fiches de service-public.gouv.fr
   (DILA, Licence Ouverte 2.0) sont relues chaque semaine par
   `.github/workflows/kb-sync.yml`, qui ouvre une pull request : aucun texte

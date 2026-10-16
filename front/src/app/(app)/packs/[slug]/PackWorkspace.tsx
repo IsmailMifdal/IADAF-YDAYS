@@ -25,7 +25,7 @@ import {
   type StoredDocument,
 } from "../../../lib/documentTypes";
 import HeaderPage from "../../../components/ui/PageHeader";
-import { api, type ChatResponse } from "../../../lib/api";
+import { api, ChatStreamError } from "../../../lib/api";
 import { useToast } from "../../../components/ui/Toast";
 import { useLanguage } from "../../../context/LanguageContext";
 import LanguageSelector from "../../../components/ui/LanguageSelector";
@@ -371,29 +371,27 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     setChatInput("");
     setIsLoading(true);
 
+    // Streamed: a long answer takes longer to generate than the gateway
+    // waits for a silent response (30 s), and would end in an error.
+    setMessages((prev) => [...prev, { role: "ai", content: "" }]);
+    const showAnswer = (content: string) =>
+      setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
+
     try {
       const packContext = pack
         ? `[CONTEXTE : L'utilisateur travaille sur la démarche "${pack.title}" (${pack.shortDescription}). Réponds UNIQUEMENT en rapport avec cette démarche. Ne parle pas d'autres démarches.]\n\nQuestion de l'utilisateur : `
         : "";
-      const res: ChatResponse = await api.chat({
-        message: packContext + trimmed,
-        conversation_id: conversationId,
-        language: lang,
-      });
-
+      const res = await api.chatStream(
+        { message: packContext + trimmed, conversation_id: conversationId, language: lang },
+        showAnswer,
+      );
       setConversationId(res.conversation_id);
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: res.response },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content: t("pack.chat.error"),
-        },
-      ]);
+    } catch (error) {
+      showAnswer(
+        error instanceof ChatStreamError && error.partial
+          ? `${error.partial}\n\n_${t("chat.interrupted")}_`
+          : t("pack.chat.error"),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -765,7 +763,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-                  {messages.map((message, index) => (
+                  {messages.map((message, index) => message.content === "" ? null : (
                     <div
                       key={`${message.role}-${index}`}
                       className={`flex items-start gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
@@ -810,7 +808,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                     </div>
                   ))}
 
-                  {isBusy && (
+                  {/* Until the first words of the answer arrive. */}
+                  {(isWelcoming || (isLoading && messages[messages.length - 1]?.content === "")) && (
                     <div className="flex items-start gap-3">
                       <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
                         <Bot className="w-4 h-4" />

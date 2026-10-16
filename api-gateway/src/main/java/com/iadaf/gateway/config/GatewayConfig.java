@@ -2,6 +2,7 @@ package com.iadaf.gateway.config;
 
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.cloud.gateway.support.RouteMetadataUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,15 +15,24 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class GatewayConfig {
 
+    /** Au-delà du délai du client LLM de l'AI Service (OPENAI_TIMEOUT_SECONDS). */
+    static final long AI_RESPONSE_TIMEOUT_MS = 90_000;
+
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 // /api/ai/**         → lb://AI-SERVICE/ai/**
+                // Délai propre : une réponse non diffusée (analyse de dossier,
+                // traduction) n'envoie rien avant d'être complète, et une
+                // génération longue dépasse les 30 s accordés aux autres
+                // routes. Les réponses diffusées (/ai/chat/stream) ne sont pas
+                // concernées : le délai court entre deux lectures.
                 .route("ai-service-gateway", r -> r
                         .path("/api/ai/**")
                         .filters(f -> f
                                 .stripPrefix(1)
                                 .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .metadata(RouteMetadataUtils.RESPONSE_TIMEOUT_ATTR, AI_RESPONSE_TIMEOUT_MS)
                         .uri("lb://AI-SERVICE"))
 
                 // /api/users/**      → lb://USER-SERVICE/users/**

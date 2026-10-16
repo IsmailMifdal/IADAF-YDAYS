@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # Low by default: administrative answers must be factual, not creative.
     openai_temperature: float = 0.1
     openai_max_tokens: int = 1000
-    openai_timeout_seconds: float = 30
+    openai_timeout_seconds: float = 60
 
     # ChromaDB vector store
     chroma_persist_dir: str = "./app/data/vectorstore"
