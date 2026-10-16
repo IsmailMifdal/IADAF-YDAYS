@@ -4,6 +4,14 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+# Every text below ends up in an LLM prompt, paid per token: without a bound,
+# one request within the rate limits could still cost as much as thousands.
+# The chat limit leaves room for the context the welcome chat prepends.
+MAX_CHAT_MESSAGE = 4_000
+MAX_TRANSLATION_TEXT = 5_000
+MAX_DOCUMENT_CONTENT = 20_000
+LANGUAGE_PATTERN = r"^(?i:fr|en|ar|es)$"
+
 
 # ---------------------------------------------------------------------------
 # Chat
@@ -13,11 +21,13 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     """Request body for the chat endpoint."""
 
-    message: str = Field(..., description="User message")
+    message: str = Field(..., min_length=1, max_length=MAX_CHAT_MESSAGE, description="User message")
     conversation_id: Optional[str] = Field(
-        None, description="Existing conversation ID (optional)"
+        None, max_length=64, description="Existing conversation ID (optional)"
     )
-    language: str = Field("FR", description="Response language code (FR, EN, AR, ES)")
+    language: str = Field(
+        "FR", pattern=LANGUAGE_PATTERN, description="Response language code (FR, EN, AR, ES)"
+    )
 
 
 class ChatResponse(BaseModel):
@@ -36,7 +46,7 @@ class ChatResponse(BaseModel):
 class TranslationRequest(BaseModel):
     """Request body for the translation endpoint."""
 
-    text: str = Field(..., description="Text to translate")
+    text: str = Field(..., min_length=1, max_length=MAX_TRANSLATION_TEXT, description="Text to translate")
     target_language: str = Field(..., description="Target language code (FR, EN, AR, ES)")
     source_language: str = Field("FR", description="Source language code")
 
@@ -57,9 +67,13 @@ class TranslationResponse(BaseModel):
 class DocumentAnalysisRequest(BaseModel):
     """Request body for the document analysis endpoint."""
 
-    document_content: str = Field(..., description="Raw text content of the document")
-    document_type: str = Field(..., description="Type of document (e.g. 'titre_sejour')")
-    language: str = Field("FR", description="Language of the response")
+    document_content: str = Field(
+        ..., min_length=1, max_length=MAX_DOCUMENT_CONTENT, description="Raw text content of the document"
+    )
+    document_type: str = Field(
+        ..., min_length=1, max_length=100, description="Type of document (e.g. 'titre_sejour')"
+    )
+    language: str = Field("FR", pattern=LANGUAGE_PATTERN, description="Language of the response")
 
 
 class DocumentAnalysisResponse(BaseModel):

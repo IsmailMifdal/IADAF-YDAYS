@@ -5,11 +5,12 @@ with multilingual sentence-transformers, stores vectors in ChromaDB, and
 provides a ``query`` method that combines retrieval + LLM generation.
 """
 
+import asyncio
 import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from loguru import logger
 
@@ -28,6 +29,11 @@ _EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 # image: without this, a release that edits the knowledge base would keep
 # answering from the previous version.
 _FINGERPRINT_FILE = "knowledge-base.sha256"
+
+RETRIEVAL_ERROR_MESSAGE = (
+    "⚠️  Impossible de traiter votre demande pour le moment. "
+    "Consultez service-public.fr pour obtenir de l'aide."
+)
 
 
 def knowledge_base_fingerprint(data_dir: Path, model_name: str) -> str:
@@ -297,7 +303,24 @@ class RAGService:
     # Public query interface
     # ------------------------------------------------------------------
 
-    def query(self, question: str, language: str = "FR") -> Dict[str, Any]:
+    async def prepare(self, question: str, language: str = "FR") -> Tuple[str, List[str]]:
+        """Prompt for *question*, with the retrieved context, and its sources.
+
+        Without a vector store, the bare question (no context, no sources).
+        """
+        if self._retriever is None:
+            return question, []
+
+        # Embedding the question is CPU-bound: off the event loop.
+        docs = await asyncio.to_thread(self._retriever.invoke, question)
+        context = "\n\n---\n\n".join(doc.page_content for doc in docs)
+        sources = list(
+            {doc.metadata.get("source", "") for doc in docs if doc.metadata.get("source")}
+        )
+        template = _SYSTEM_PROMPT_TEMPLATE.get(language.upper(), _SYSTEM_PROMPT_TEMPLATE["FR"])
+        return template.format(context=context, question=question), sources
+
+    async def aquery(self, question: str, language: str = "FR") -> Dict[str, Any]:
         """Answer *question* using the RAG pipeline.
 
         Args:
@@ -307,36 +330,13 @@ class RAGService:
         Returns:
             dict with keys ``answer`` (str) and ``sources`` (list of str).
         """
-        if self._retriever is None or not llm_service.is_available:
-            answer = llm_service.generate(question)
-            return {"answer": answer, "sources": []}
-
         try:
-            # Retrieve relevant context
-            docs = self._retriever.invoke(question)
-            context = "\n\n---\n\n".join(doc.page_content for doc in docs)
-            sources = list(
-                {doc.metadata.get("source", "") for doc in docs if doc.metadata.get("source")}
-            )
-
-            # Build prompt
-            template = _SYSTEM_PROMPT_TEMPLATE.get(
-                language.upper(), _SYSTEM_PROMPT_TEMPLATE["FR"]
-            )
-            prompt = template.format(context=context, question=question)
-
-            answer = llm_service.generate(prompt)
-            return {"answer": answer, "sources": sources}
-
+            prompt, sources = await self.prepare(question, language)
         except Exception as exc:  # noqa: BLE001
-            logger.error(f"RAG query error: {exc}")
-            return {
-                "answer": (
-                    "⚠️  Impossible de traiter votre demande pour le moment. "
-                    "Consultez service-public.fr pour obtenir de l'aide."
-                ),
-                "sources": [],
-            }
+            logger.error(f"RAG retrieval error: {exc}")
+            return {"answer": RETRIEVAL_ERROR_MESSAGE, "sources": []}
+
+        return {"answer": await llm_service.agenerate(prompt), "sources": sources}
 
     @property
     def is_ready(self) -> bool:

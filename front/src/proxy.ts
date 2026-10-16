@@ -17,7 +17,8 @@ export default auth;
 export const config = {
   matcher: [
     // Everything except Next internals, the auth endpoints themselves, and
-    // static assets.
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // static assets — the installable-app files included: a visitor who is
+    // not signed in must get them, not a redirect to /login.
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|icon/|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

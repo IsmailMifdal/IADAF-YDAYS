@@ -4,7 +4,7 @@
 # Exit code: number of failed scripts (0 = all green).
 cd "$(dirname "$0")"
 failed=0
-for script in security.sh accounts.sh documents.sh precheck.sh; do
+for script in security.sh accounts.sh documents.sh precheck.sh chat.sh; do
   echo
   echo "################ $script"
   bash "$script" || failed=$((failed + 1))

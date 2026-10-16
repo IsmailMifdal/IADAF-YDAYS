@@ -41,6 +41,17 @@ check "aucune colonne d'identité" "$(sql "select string_agg(column_name, ',' or
 check "lecture sans scope refusée" "$(status "$GATEWAY_URL/api/analytics/document-checks" -H "Authorization: Bearer $(token ops)")" 403
 check "lecture avec analytics:read" "$(status "$GATEWAY_URL/api/analytics/document-checks" -H "Authorization: Bearer $(token ops 60 analytics:read)")" 200
 
+section "Résultat contesté"
+dispute() { status -b "$1" -X POST "$BASE_URL/api/precheck/disputes" -H 'Content-Type: application/json' -d "$2"; }
+DISPUTED=$(sql "select coalesce(sum(count), 0) from analytics.document_check_disputes")
+check "signalement enregistré" "$(dispute "$JA" '{"category":"identity","checkId":"expiry","status":"error"}')" 204
+check "compté, anonymement" "$(( $(sql "select coalesce(sum(count), 0) from analytics.document_check_disputes") - DISPUTED ))" 1
+check "aucune colonne d'identité" "$(sql "select string_agg(column_name, ',' order by ordinal_position) from information_schema.columns where table_schema = 'analytics' and table_name = 'document_check_disputes'")" "day,category,check_id,status,count"
+check "texte libre refusé" "$(dispute "$JA" '{"category":"identity","checkId":"Mon titre expire en 2031","status":"error"}')" 400
+check "sans session refusé" "$(dispute /dev/null '{"category":"identity","checkId":"expiry","status":"error"}')" 401
+check "taux d'erreur lisible" "$(curl -s "$GATEWAY_URL/api/analytics/document-checks" -H "Authorization: Bearer $(token ops 60 analytics:read)" \
+  | json "next(r['disputed'] for r in d if (r['category'], r['checkId'], r['status']) == ('identity', 'expiry', 'error')) >= 1")" True
+
 section "Nettoyage"
 check "suppression A" "$(delete_account "$A")" 200
 check "suppression B" "$(delete_account "$B")" 200

@@ -27,10 +27,21 @@ public final class TestTokens {
         return "Bearer " + sign(SECRET, "iadaf-frontend", "iadaf-backend", subject, 60);
     }
 
+    /** Jeton portant un droit supplémentaire, comme {@code admin}. */
+    public static String bearer(String subject, String scope) {
+        return "Bearer " + sign(SECRET, "iadaf-frontend", "iadaf-backend", subject, 60, scope);
+    }
+
     public static String sign(String secret, String issuer, String audience,
                               String subject, long ttlSeconds) {
+        return sign(secret, issuer, audience, subject, ttlSeconds, null);
+    }
+
+    public static String sign(String secret, String issuer, String audience,
+                              String subject, long ttlSeconds, String scope) {
         Instant now = Instant.now();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .claim("scope", scope)
                 .issuer(issuer)
                 .audience(audience)
                 .subject(subject)

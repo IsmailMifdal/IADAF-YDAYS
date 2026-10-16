@@ -34,8 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class UserControllerTest {
 
-    /** Requêtes authentifiées comme si elles venaient du frontend. */
-    private static final String TOKEN = TestTokens.bearer("user-1");
+    /** Requêtes d'administration : ces routes exigent le scope {@code admin}. */
+    private static final String TOKEN = TestTokens.bearer("admin-1", "admin");
 
     @Autowired
     private MockMvc mockMvc;
@@ -233,5 +233,19 @@ class UserControllerTest {
                 .andExpect(jsonPath("$[0].paysOrigine").value("France"));
 
         verify(userService, times(1)).getUsersByPays("France");
+    }
+
+    @Test
+    void anAccountWithoutTheAdminScopeCannotReadOrChangeOtherUsers() throws Exception {
+        String user = TestTokens.bearer("user-1");
+
+        mockMvc.perform(get("/users").header(HttpHeaders.AUTHORIZATION, user))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/users/email/jean.dupont@example.com").header(HttpHeaders.AUTHORIZATION, user))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/users/1").header(HttpHeaders.AUTHORIZATION, user))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(userService);
     }
 }

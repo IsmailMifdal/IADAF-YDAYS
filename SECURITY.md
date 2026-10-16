@@ -161,7 +161,7 @@ appel, le frontend signe un JWT ([`lib/aiService.ts`](front/src/app/lib/aiServic
 | `iss` / `aud` | `iadaf-frontend` / `iadaf-backend` |
 | `exp` | 60 secondes |
 | `sub` | Identifiant du compte connecté — **absent** pour un visiteur |
-| `scope` | `account:erase` pour l'effacement d'un compte, jamais sur un appel relayé depuis le navigateur |
+| `scope` | `account:erase` pour l'effacement d'un compte, jamais sur un appel relayé depuis le navigateur ; `analytics:read` pour les statistiques d'exploitation ; `admin` pour les routes d'administration (fiches `users.users`, vues globales d'analytics) — **aucun jeton ne le porte aujourd'hui**, faute de back-office |
 
 **Vérifié deux fois** : par la gateway, qui rejette en 401 tout appel sans
 jeton valide, puis par chaque service (Spring Security OAuth2 Resource Server
@@ -306,6 +306,46 @@ Gérées par `document-service`, stockées dans PostgreSQL (schéma `documents`)
   automatisé de pièces d'identité, à n'activer qu'après l'AIPD.
 - **OCR** (`OCR_PROVIDER`) désactivé : il enverrait l'image des pièces à un
   tiers. Sans lui, les photos sont seulement contrôlées en qualité.
+- **Résultats contestables** : sous chaque verdict, « résultat faux ? » ajoute
+  un au compte anonyme du contrôle concerné
+  (`analytics.document_check_disputes` : jour, catégorie, contrôle, résultat
+  affiché — vocabulaire fermé, validé deux fois, 30 signalements par heure et
+  par compte). Rapporté aux comptes de contrôles, il donne le taux d'erreur de
+  chaque règle, sans conserver aucune pièce.
+
+---
+
+## 🧠 Assistant IA
+
+- **Taille bornée** : chaque texte qui finit dans un prompt est limité
+  (message 4 000 caractères, traduction 5 000, analyse 20 000), langue limitée
+  à FR/EN/AR/ES. Sans borne, une seule requête admise par la limitation de
+  débit pouvait coûter autant que des milliers.
+- **Non bloquant** : les appels au LLM sont asynchrones et la recherche RAG
+  tourne dans un thread. Un appel bloquant (jusqu'à 30 s) gelait auparavant
+  toutes les autres requêtes du service, health checks compris.
+- **Réponses en streaming** (`POST /ai/chat/stream`, Server-Sent Events) :
+  `Cache-Control: no-transform` empêche tout proxy (Next.js, Caddy) de
+  compresser, donc de retenir, le flux. Un visiteur qui part en cours de
+  réponse annule l'appel en amont, et la génération facturée avec lui. La
+  réponse n'est enregistrée qu'une fois complète.
+- **Base de connaissances officielle** : les fiches de service-public.gouv.fr
+  (DILA, Licence Ouverte 2.0) sont relues chaque semaine par
+  `.github/workflows/kb-sync.yml`, qui ouvre une pull request : aucun texte
+  n'atteint les utilisateurs sans relecture. Le flux est traité comme une
+  entrée non fiable (DTD refusées, tailles plafonnées, bibliothèque standard
+  seule).
+
+---
+
+## 📱 Application installable (PWA)
+
+Le service worker ([`front/public/sw.js`](front/public/sw.js)) ne met **rien de
+personnel** en cache : ni page HTML, ni réponse d'API, seulement la page hors
+ligne. Un dossier ou une pièce en cache survivrait sinon à la déconnexion sur
+un téléphone partagé. Il n'est enregistré qu'en production, et le manifeste,
+les icônes et le worker échappent à la redirection vers la connexion
+(`src/proxy.ts`).
 
 ---
 

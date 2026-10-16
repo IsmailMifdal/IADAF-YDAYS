@@ -28,10 +28,11 @@ bash tests/e2e/run-all.sh          # code de sortie = nombre de scripts en éche
 
 | Script | Ce qu'il vérifie |
 |--------|------------------|
-| `security.sh` | Rien ne répond sans jeton interne : gateway, chaque service en direct, `X-User-Id` forgé, jeton signé avec une autre clé, effacement sans scope |
+| `security.sh` | Rien ne répond sans jeton interne : gateway, chaque service en direct, `X-User-Id` forgé, jeton signé avec une autre clé, effacement sans scope ; routes d'administration réservées au scope `admin` |
 | `accounts.sh` | Inscription, connexion, mot de passe oublié via Mailpit (un seul e-mail, lien à usage unique, jeton haché), consentement aux e-mails, limitation de débit, suppression |
 | `documents.sh` | Dossier créé par pack, dépôt et retrait de pièces, étape cochée, faux PDF refusé, cloisonnement, chiffrement en base, effacement RGPD sur tous les services |
-| `precheck.sh` | Pré-vérification : titre expiré, justificatif récent, cloisonnement, statistiques anonymes et leur lecture réservée |
+| `precheck.sh` | Pré-vérification : titre expiré, justificatif récent, cloisonnement, statistiques anonymes et leur lecture réservée, résultat contesté |
+| `chat.sh` | Assistant en streaming : format SSE de bout en bout, texte reçu au fil de la génération, réponse enregistrée, limites de taille, effacement avec le compte |
 
 Configuration par variables d'environnement (voir `tests/e2e/lib.sh`) :
 `BASE_URL`, `GATEWAY_URL`, `MAILPIT_URL`, `ENV_FILE`, `PG_CONTAINER`, et

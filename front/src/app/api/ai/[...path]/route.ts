@@ -18,22 +18,22 @@ const FORWARDED_HEADERS = ["content-type", "accept", "accept-language"];
  * erasure endpoint in particular must never be reachable through here, since
  * this proxy signs a token for any signed-in user.
  */
-const PUBLIC_PATHS = new Set(["chat", "translate", "analyze-document", "health"]);
+const PUBLIC_PATHS = new Set(["chat", "chat/stream", "translate", "analyze-document", "health"]);
 
 async function proxy(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const { path } = await params;
-  if (path.length !== 1 || !PUBLIC_PATHS.has(path[0])) {
+  const subpath = (await params).path.join("/");
+  if (!PUBLIC_PATHS.has(subpath)) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
-  const target = `${GATEWAY_URL}/api/ai/${path.join("/")}`;
+  const target = `${GATEWAY_URL}/api/ai/${subpath}`;
   const session = await auth();
   const userId = session?.user?.id;
 
   // Every call but the health check costs an LLM request.
-  if (path[0] !== "health") {
+  if (subpath !== "health") {
     const limit = await hitAll(
       userId
         ? [[RATE_LIMITS.aiUser, userId]]
@@ -56,7 +56,9 @@ async function proxy(
   // deleting it can erase them.
   Object.assign(headers, await backendAuthHeaders(userId));
 
-  const init: RequestInit = { method: req.method, headers };
+  // A visitor who leaves mid-answer cancels the upstream call, and with it
+  // the generation still being paid for.
+  const init: RequestInit = { method: req.method, headers, signal: req.signal };
   if (req.method !== "GET" && req.method !== "HEAD") {
     init.body = await req.text();
   }

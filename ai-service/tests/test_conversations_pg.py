@@ -4,6 +4,7 @@ Needs a disposable database: TEST_DATABASE_URL=postgresql+asyncpg://…
 Skipped otherwise. The RAG pipeline is stubbed — no model is loaded.
 """
 
+import json
 import os
 import time
 
@@ -34,7 +35,19 @@ def env():
     from app.models import database
     from app.services import chat_service
 
-    chat_service.rag_service.query = lambda question, language: {"answer": "ok", "sources": []}
+    async def fake_aquery(question, language):
+        return {"answer": "ok", "sources": []}
+
+    async def fake_prepare(question, language):
+        return question, ["faq.json"]
+
+    async def fake_astream(prompt):
+        for piece in ("Bon", "jour"):
+            yield piece
+
+    chat_service.rag_service.aquery = fake_aquery
+    chat_service.rag_service.prepare = fake_prepare
+    chat_service.llm_service.astream = fake_astream
     app = FastAPI()
     protected = [Depends(frontend_claims)]
     app.include_router(chat.router, prefix="/ai", dependencies=protected)
@@ -75,6 +88,26 @@ def test_conversation_belongs_to_its_user(env):
     assert chat(client, token("pg-u2"), mine).json()["conversation_id"] != mine
     anonymous = chat(client, token()).json()["conversation_id"]
     assert sql(env, "select user_id from ai.conversations where id = :id", id=anonymous) == [(None,)]
+
+
+def test_streamed_answer_is_stored_whole(env):
+    client, _ = env
+    response = client.post("/ai/chat/stream", json={"message": "q"}, headers=token("pg-stream"))
+    blocks = [block for block in response.text.split("\n\n") if block]
+    assert [block.split("\n")[0] for block in blocks] == [
+        "event: meta", "event: token", "event: token", "event: done",
+    ]
+    conversation = json.loads(blocks[0].split("data: ", 1)[1])["conversation_id"]
+
+    rows = sql(env, "select role, content from ai.messages where conversation_id = :id order by created_at", id=conversation)
+    assert rows == [("user", "q"), ("assistant", "Bonjour")]
+    assert sql(env, "select user_id from ai.conversations where id = :id", id=conversation) == [("pg-stream",)]
+
+    # Resuming someone else's conversation starts a new one, as with /chat.
+    other = client.post(
+        "/ai/chat/stream", json={"message": "q", "conversation_id": conversation}, headers=token("pg-other")
+    ).text
+    assert json.loads(other.split("data: ", 1)[1].split("\n", 1)[0])["conversation_id"] != conversation
 
 
 def test_erasure_cascades_to_messages(env):

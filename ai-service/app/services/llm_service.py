@@ -1,14 +1,32 @@
 """LLM service — Ollama (Mistral) with OpenAI fallback.
 
-Provides a unified ``generate(prompt)`` interface regardless of the
-underlying provider.
+Provides a unified asynchronous interface — ``agenerate(prompt)`` for a
+whole answer, ``astream(prompt)`` for one streamed piece by piece —
+regardless of the underlying provider.
 """
+
+from typing import Any, AsyncIterator
 
 from loguru import logger
 
 from app.core.config import settings
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+
+UNAVAILABLE_MESSAGE = (
+    "⚠️  Le service IA n'est pas encore disponible. "
+    "Veuillez réessayer dans quelques instants. "
+    "Si le problème persiste, consultez service-public.fr."
+)
+GENERATION_ERROR_MESSAGE = (
+    "⚠️  Une erreur est survenue lors de la génération de la réponse. "
+    "Veuillez réessayer ou consulter service-public.fr."
+)
+
+
+def _text(result: Any) -> str:
+    """Text of an LLM result: ChatOpenAI returns message objects, Ollama str."""
+    return str(result.content) if hasattr(result, "content") else str(result)
 
 
 class LLMService:
@@ -94,32 +112,41 @@ class LLMService:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+    #
+    # Asynchronous on purpose: the service runs on a single event loop, and a
+    # blocking LLM call (up to OPENAI_TIMEOUT_SECONDS) froze every other
+    # request meanwhile, health checks included.
 
-    def generate(self, prompt: str) -> str:
+    async def agenerate(self, prompt: str) -> str:
         """Generate a text response for *prompt*.
 
         Returns a user-friendly error message when no backend is available
         instead of raising an exception (degraded-mode behaviour).
         """
         if self._llm is None:
-            return (
-                "⚠️  Le service IA n'est pas encore disponible. "
-                "Veuillez réessayer dans quelques instants. "
-                "Si le problème persiste, consultez service-public.fr."
-            )
+            return UNAVAILABLE_MESSAGE
 
         try:
-            result = self._llm.invoke(prompt)
-            # ChatOpenAI returns an AIMessage object; Ollama returns a str.
-            if hasattr(result, "content"):
-                return str(result.content)
-            return str(result)
+            return _text(await self._llm.ainvoke(prompt))
         except Exception as exc:  # noqa: BLE001
             logger.error(f"LLM generation error: {exc}")
-            return (
-                "⚠️  Une erreur est survenue lors de la génération de la réponse. "
-                "Veuillez réessayer ou consulter service-public.fr."
-            )
+            return GENERATION_ERROR_MESSAGE
+
+    async def astream(self, prompt: str) -> AsyncIterator[str]:
+        """Yield the response to *prompt* piece by piece, as it is generated.
+
+        Without a backend, yields the degraded-mode message. A backend error
+        mid-answer is raised, not swallowed: the caller must tell the user
+        the answer is incomplete.
+        """
+        if self._llm is None:
+            yield UNAVAILABLE_MESSAGE
+            return
+
+        async for chunk in self._llm.astream(prompt):
+            piece = _text(chunk)
+            if piece:
+                yield piece
 
     @property
     def is_available(self) -> bool:

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -17,6 +18,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class AnalyticsController {
+
+    /**
+     * Vues globales — tous les utilisateurs, toutes les pièces : réservées au
+     * scope {@code admin}, qu'aucun jeton ne porte aujourd'hui. Les
+     * statistiques de démarches restent ouvertes : elles ne portent que sur
+     * les dossiers de l'appelant, cloisonnés par demarches-service.
+     */
+    private static final String ADMIN = "hasAuthority('SCOPE_admin')";
 
     private final AnalyticsService analyticsService;
 
@@ -46,6 +55,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/documents/stats")
+    @PreAuthorize(ADMIN)
     public ResponseEntity<DocumentStatsDTO> getDocumentStats() {
         log.info("REST request to get document statistics");
         DocumentStatsDTO stats = analyticsService.getDocumentStats();
@@ -53,6 +63,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/users/activity")
+    @PreAuthorize(ADMIN)
     public ResponseEntity<List<UserActivityDTO>> getUsersActivity() {
         log.info("REST request to get users activity");
         List<UserActivityDTO> activities = analyticsService.getUsersActivity();
@@ -60,6 +71,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/dashboard")
+    @PreAuthorize(ADMIN)
     public ResponseEntity<DashboardSummaryDTO> getDashboardSummary() {
         log.info("REST request to get dashboard summary");
         DashboardSummaryDTO dashboard = analyticsService.getDashboardSummary();
@@ -67,6 +79,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/performance")
+    @PreAuthorize(ADMIN)
     public ResponseEntity<PerformanceMetricsDTO> getPerformanceMetrics() {
         log.info("REST request to get performance metrics");
         PerformanceMetricsDTO metrics = analyticsService.getPerformanceMetrics();

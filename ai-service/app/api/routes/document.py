@@ -36,7 +36,7 @@ async def analyze_document(request: DocumentAnalysisRequest) -> DocumentAnalysis
         f"'recommendations' (liste)."
     )
 
-    raw = llm_service.generate(prompt)
+    raw = await llm_service.agenerate(prompt)
 
     # Try to parse JSON from LLM; fall back to plain-text analysis
     try:

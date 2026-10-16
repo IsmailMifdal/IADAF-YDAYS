@@ -5,7 +5,7 @@ import { Send, Loader2, Bot, MessageSquare, X, Mail } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { api, ApiError, type ChatResponse } from "../../lib/api";
+import { api, ApiError, ChatStreamError } from "../../lib/api";
 import { useLanguage, type LangCode } from "../../context/LanguageContext";
 import LanguageSelector from "../ui/LanguageSelector";
 import { packs } from "../../(app)/packs/packsData";
@@ -111,46 +111,44 @@ export default function AccueilChat() {
   // Unticked by default: consent must be an explicit act (RGPD, art. 7).
   const [emailConsent, setEmailConsent] = useState(false);
   const [chatEnded, setChatEnded] = useState(false);
-  const [welcomeSent, setWelcomeSent] = useState(false);
+  const [emailAsked, setEmailAsked] = useState(false);
+  const [chatLang, setChatLang] = useState(lang);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Reset chat when language changes so welcome is re-sent in new language
-  useEffect(() => {
+  // Language changed: start over, the welcome in the new language. Adjusted
+  // during render rather than in an effect, which would first paint the old
+  // conversation.
+  if (chatLang !== lang) {
+    setChatLang(lang);
     setMessages([]);
     setConversationId(undefined);
     setUserMessageCount(0);
     setWaitingForEmail(false);
     setEmailConsent(false);
     setChatEnded(false);
-    setWelcomeSent(false);
-  }, [lang]);
+    setEmailAsked(false);
+  }
+
+  // The welcome, then — a moment after opening — the e-mail offer, before the
+  // conversation itself.
+  const shownMessages: ChatMessage[] = [
+    { role: "ai", content: FIRST_WELCOME_MESSAGES[lang] },
+    ...(emailAsked ? [{ role: "ai" as const, content: t("chat.emailAsk") }] : []),
+    ...messages,
+  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, emailAsked]);
 
-  // Welcome message when chat opens
   useEffect(() => {
-    if (!isOpen || welcomeSent) return;
-    setWelcomeSent(true);
-    setMessages([
-      {
-        role: "ai",
-        content: FIRST_WELCOME_MESSAGES[lang],
-      },
-    ]);
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content: t("chat.emailAsk"),
-        },
-      ]);
+    if (!isOpen || emailAsked) return;
+    const timer = setTimeout(() => {
+      setEmailAsked(true);
       setWaitingForEmail(true);
     }, 1500);
-  }, [isOpen, welcomeSent, t, lang]);
+    return () => clearTimeout(timer);
+  }, [isOpen, emailAsked]);
 
   const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -177,6 +175,29 @@ export default function AccueilChat() {
     setInputValue("");
     setMessages((prev) => [...prev, { role: "ai", content: t("chat.emailSkipped") }]);
   };
+
+  /** Sends `message`, the answer filling a new bubble as it arrives; `errorKey` if none came. */
+  const streamAnswer = useCallback(
+    async (message: string, errorKey: string) => {
+      setMessages((prev) => [...prev, { role: "ai", content: "" }]);
+      const showAnswer = (content: string) =>
+        setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
+      try {
+        const res = await api.chatStream(
+          { message, conversation_id: conversationId, language: lang },
+          showAnswer,
+        );
+        setConversationId(res.conversation_id);
+      } catch (error) {
+        if (error instanceof ChatStreamError && error.partial) {
+          showAnswer(`${error.partial}\n\n_${t("chat.interrupted")}_`);
+        } else {
+          showAnswer(t(isRateLimited(error) ? "chat.rateLimited" : errorKey));
+        }
+      }
+    },
+    [conversationId, lang, t],
+  );
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -219,23 +240,11 @@ export default function AccueilChat() {
       if (newCount >= MAX_USER_MESSAGES) {
         setChatEnded(true);
         setIsLoading(true);
-
         try {
-          const res: ChatResponse = await api.chat({
-            message: `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}\n\nC'est son dernier message. Réponds BRIÈVEMENT à sa question en 1 phrase, puis enchaîne naturellement en l'invitant à découvrir nos packs pour aller plus loin. 1 emoji max, 2-3 lignes max.`,
-            conversation_id: conversationId,
-            language: lang,
-          });
-          setConversationId(res.conversation_id);
-          setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-        } catch (error) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "ai",
-              content: t(isRateLimited(error) ? "chat.rateLimited" : "chat.fallbackEnd"),
-            },
-          ]);
+          await streamAnswer(
+            `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}\n\nC'est son dernier message. Réponds BRIÈVEMENT à sa question en 1 phrase, puis enchaîne naturellement en l'invitant à découvrir nos packs pour aller plus loin. 1 emoji max, 2-3 lignes max.`,
+            "chat.fallbackEnd",
+          );
         } finally {
           setIsLoading(false);
         }
@@ -245,26 +254,12 @@ export default function AccueilChat() {
       // Normal message — send to AI
       setIsLoading(true);
       try {
-        const res: ChatResponse = await api.chat({
-          message: `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`,
-          conversation_id: conversationId,
-          language: lang,
-        });
-        setConversationId(res.conversation_id);
-        setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-      } catch (error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "ai",
-            content: t(isRateLimited(error) ? "chat.rateLimited" : "chat.error"),
-          },
-        ]);
+        await streamAnswer(`${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`, "chat.error");
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, chatEnded, waitingForEmail, emailConsent, userMessageCount, conversationId, lang, t],
+    [isLoading, chatEnded, waitingForEmail, emailConsent, userMessageCount, streamAnswer, lang, t],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -317,7 +312,7 @@ export default function AccueilChat() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((msg, idx) => (
+            {shownMessages.map((msg, idx) => msg.content === "" ? null : (
               <div
                 key={idx}
                 className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
@@ -343,7 +338,8 @@ export default function AccueilChat() {
               </div>
             ))}
 
-            {isLoading && (
+            {/* Until the first words of the answer arrive. */}
+            {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
                   <Bot className="w-4 h-4" />

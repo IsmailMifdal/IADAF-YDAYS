@@ -6,13 +6,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeader from "../../components/ui/PageHeader";
 import LanguageSelector from "../../components/ui/LanguageSelector";
-import { api, type ChatResponse } from "../../lib/api";
+import { api, ApiError, ChatStreamError } from "../../lib/api";
 
 type Message = {
   role: "assistant" | "user";
   content: string;
   timestamp: string;
 };
+
+const INTERRUPTED = "Réponse interrompue — renvoyez votre question pour la suite.";
 
 function timeNow(): string {
   return new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -56,27 +58,27 @@ export default function ChatIa() {
       setInputValue("");
       setIsLoading(true);
 
-      try {
-        const res: ChatResponse = await api.chat({
-          message: text.trim(),
-          conversation_id: conversationId,
-          language: "fr",
-        });
+      // The answer's bubble, filled in as the text arrives.
+      setMessages((prev) => [...prev, { role: "assistant", content: "", timestamp: timeNow() }]);
+      const showAnswer = (content: string) =>
+        setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
 
+      try {
+        const res = await api.chatStream(
+          { message: text.trim(), conversation_id: conversationId, language: "fr" },
+          showAnswer,
+        );
         setConversationId(res.conversation_id);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: res.response, timestamp: timeNow() },
-        ]);
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "D\u00e9sol\u00e9, une erreur est survenue. Veuillez r\u00e9essayer.",
-            timestamp: timeNow(),
-          },
-        ]);
+      } catch (error) {
+        if (error instanceof ChatStreamError && error.partial) {
+          showAnswer(`${error.partial}\n\n_${INTERRUPTED}_`);
+        } else {
+          showAnswer(
+            error instanceof ApiError && error.status === 429
+              ? "Vous avez envoyé beaucoup de messages. Réessayez dans quelques minutes."
+              : "Désolé, une erreur est survenue. Veuillez réessayer.",
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -102,7 +104,7 @@ export default function ChatIa() {
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
         <div className="flex-1 min-h-0 p-2 md:p-4 flex flex-col">
           <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-1">
-            {messages.map((msg, idx) => (
+            {messages.map((msg, idx) => msg.content === "" ? null : (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
                   <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -147,7 +149,8 @@ export default function ChatIa() {
               </div>
             ))}
 
-            {isLoading && (
+            {/* Until the first words of the answer arrive. */}
+            {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-4">
                 <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
@@ -187,6 +190,7 @@ export default function ChatIa() {
               onChange={(event) => setInputValue(event.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Posez votre question sur une démarche administrative…"
+              maxLength={2000}
               disabled={isLoading}
               className="flex-1 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 shadow-sm"
             />

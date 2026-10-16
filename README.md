@@ -191,7 +191,8 @@ préfixe `/api` et route vers le service enregistré dans Eureka.
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
 | GET | `/api/ai/health` | Santé du service |
-| POST | `/api/ai/chat` | Chatbot administratif (FR/EN/AR/ES) |
+| POST | `/api/ai/chat` | Chatbot administratif (FR/EN/AR/ES) — message de 4 000 caractères au plus |
+| POST | `/api/ai/chat/stream` | Même réponse, envoyée au fil de la génération (Server-Sent Events : `meta`, `token`, `done` ou `error`) — utilisée par les deux chats du site |
 | POST | `/api/ai/translate` | Traduction multilingue |
 | POST | `/api/ai/analyze-document` | Conseils de complétude d'un dossier (LLM, sur la liste des pièces) |
 | POST | `/api/ai/documents/{id}/analyze` | Pré-vérification automatique d'une pièce déposée — désactivée par défaut (`DOCUMENT_ANALYSIS_ENABLED`) |
@@ -201,6 +202,12 @@ La collecte d'e-mails du chat d'accueil est portée par le frontend
 (`POST /api/leads`), pas par l'AI Service — voir [SECURITY.md](SECURITY.md#-données-personnelles-rgpd).
 
 ### User Service
+
+Administration des fiches `users.users` (les comptes de connexion sont dans
+`users.app_users`, gérés par le frontend). **Toutes ces routes exigent le
+scope `admin`**, qu'aucun jeton ne porte aujourd'hui : sans propriétaire par
+fiche, elles laissaient n'importe quel compte lire ou supprimer celles des
+autres.
 
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
@@ -233,13 +240,16 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
-| GET | `/api/analytics/dashboard` | Synthèse générale |
-| GET | `/api/analytics/demarches/statut` | Répartition par statut |
-| GET | `/api/analytics/demarches/type` | Répartition par type |
-| GET | `/api/analytics/demarches/evolution` | Évolution dans le temps |
-| GET | `/api/analytics/documents/stats` | Statistiques documents |
-| GET | `/api/analytics/users/activity` | Activité des utilisateurs |
-| GET | `/api/analytics/performance` | Métriques de performance |
+| GET | `/api/analytics/demarches/statut` | Répartition par statut (dossiers de l'appelant) |
+| GET | `/api/analytics/demarches/type` | Répartition par type (dossiers de l'appelant) |
+| GET | `/api/analytics/demarches/evolution` | Évolution dans le temps (dossiers de l'appelant) |
+| GET | `/api/analytics/dashboard` | Synthèse générale — scope `admin` |
+| GET | `/api/analytics/documents/stats` | Statistiques documents — scope `admin` |
+| GET | `/api/analytics/users/activity` | Activité des utilisateurs — scope `admin` |
+| GET | `/api/analytics/performance` | Métriques de performance — scope `admin` |
+| POST | `/api/analytics/document-checks` | Comptes anonymes de pré-vérification (envoyés par l'AI Service) |
+| POST | `/api/analytics/document-checks/disputes` | Résultat signalé comme faux (relayé par le frontend) |
+| GET | `/api/analytics/document-checks` | Totaux et résultats contestés par contrôle — scope `analytics:read` |
 
 ### Document Service
 
@@ -259,7 +269,11 @@ amont que le pack appartient bien à l'utilisateur.
 ## 🎯 Fonctionnalités
 
 - **Chatbot RAG** — répond sur les démarches françaises via une base de
-  connaissances vectorisée (ChromaDB + LangChain)
+  connaissances vectorisée (ChromaDB + LangChain), dont 32 fiches officielles
+  de service-public.gouv.fr actualisées chaque semaine ; réponses affichées au
+  fil de la génération
+- **Application installable** — ajout à l'écran d'accueil du téléphone, page
+  hors ligne (rien de personnel n'est gardé sur l'appareil)
 - **Multilingue** — français, anglais, arabe, espagnol
 - **Analyse de documents** — vérifie la conformité d'un dossier
 - **Packs payants** — 5 packs de démarches, débloqués par paiement Stripe

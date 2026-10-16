@@ -49,6 +49,8 @@ export const RATE_LIMITS = {
   documentUpload: { name: "document-upload", limit: 60, windowSeconds: HOUR },
   /** Automated pre-checks, per account (OCR, when enabled, is billed per page). */
   documentAnalysis: { name: "document-analysis", limit: 60, windowSeconds: HOUR },
+  /** "This result is wrong", per account: one account cannot skew the error rates. */
+  precheckDispute: { name: "precheck-dispute", limit: 30, windowSeconds: HOUR },
 } satisfies Record<string, RateLimitRule>;
 
 /** Counters older than this are swept: longer than the longest window. */

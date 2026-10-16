@@ -66,14 +66,43 @@ const CHECK_MARK: Record<CheckStatus, string> = {
   unknown: "?",
 };
 
-/** Result of the automated pre-check, under a filed piece. */
+/**
+ * Result of the automated pre-check, under a filed piece. Each verdict can be
+ * reported as wrong: an anonymous count that measures how reliable each check
+ * is (see /api/precheck/disputes).
+ */
 function PrecheckResult({ analysis }: { analysis: DocumentAnalysis }) {
+  const [reported, setReported] = useState<Record<string, "sending" | "sent" | "failed">>({});
+
+  const report = async (check: DocumentAnalysis["checks"][number]) => {
+    setReported((prev) => ({ ...prev, [check.id]: "sending" }));
+    const res = await fetch("/api/precheck/disputes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: analysis.category, checkId: check.id, status: check.status }),
+    }).catch(() => null);
+    setReported((prev) => ({ ...prev, [check.id]: res?.ok ? "sent" : "failed" }));
+  };
+
   return (
     <ul className="mt-1.5 mb-1 ml-14 space-y-0.5 text-xs" aria-label="Pré-vérification automatique">
       {analysis.checks.map((check) => (
-        <li key={check.id} className={`flex gap-1.5 ${CHECK_STYLE[check.status]}`}>
+        <li key={check.id} className={`flex flex-wrap gap-x-1.5 ${CHECK_STYLE[check.status]}`}>
           <span aria-hidden className="font-semibold">{CHECK_MARK[check.status]}</span>
           <span>{check.message}</span>
+          {check.status !== "unknown" &&
+            (reported[check.id] === "sent" ? (
+              <span className="text-gray-500">— merci, c’est signalé</span>
+            ) : (
+              <button
+                type="button"
+                disabled={reported[check.id] === "sending"}
+                onClick={() => report(check)}
+                className="text-gray-500 underline decoration-dotted hover:text-gray-700 disabled:opacity-50"
+              >
+                {reported[check.id] === "failed" ? "réessayer le signalement" : "résultat faux ?"}
+              </button>
+            ))}
         </li>
       ))}
     </ul>

@@ -58,6 +58,21 @@ export default function LegalNoticePage() {
         n’est pas un service de l’État.
       </p>
 
+      <h2>Sources</h2>
+      <p>
+        L’assistant s’appuie notamment sur les fiches pratiques de{" "}
+        <a href="https://www.service-public.gouv.fr" rel="noopener noreferrer" target="_blank">
+          Service-Public.gouv.fr
+        </a>{" "}
+        (Direction de l’information légale et administrative), réutilisées sous{" "}
+        <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" rel="noopener noreferrer" target="_blank">
+          Licence Ouverte 2.0
+        </a>
+        . Elles sont actualisées chaque semaine à partir des données publiées
+        par la DILA ; chaque passage conserve le lien de la fiche d’origine et
+        la date de sa dernière mise à jour.
+      </p>
+
       <h2>Propriété intellectuelle</h2>
       <p>
         Les contenus du site (textes, interface, logos) sont protégés. Toute

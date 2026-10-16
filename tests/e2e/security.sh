@@ -26,7 +26,17 @@ done
 
 section "Jeton valide"
 check "démarches via la gateway" "$(status "$GATEWAY_URL/api/demarches" -H "Authorization: Bearer $(token e2e-user)")" 200
-check "analytics (propagation du jeton)" "$(status "$GATEWAY_URL/api/analytics/dashboard" -H "Authorization: Bearer $(token e2e-user)")" 200
+check "analytics (propagation du jeton)" "$(status "$GATEWAY_URL/api/analytics/demarches/statut" -H "Authorization: Bearer $(token e2e-user)")" 200
+
+section "Vues d'administration : scope admin exigé"
+USER_TOKEN=$(token e2e-user)
+ADMIN_TOKEN=$(token e2e-admin 60 admin)
+for path in /api/users /api/users/email/someone@test.fr /api/analytics/dashboard /api/analytics/users/activity; do
+  check "compte ordinaire refusé : $path" "$(status "$GATEWAY_URL$path" -H "Authorization: Bearer $USER_TOKEN")" 403
+done
+check "compte ordinaire ne supprime pas une fiche" "$(status -X DELETE "$GATEWAY_URL/api/users/1" -H "Authorization: Bearer $USER_TOKEN")" 403
+check "admin : liste des fiches" "$(status "$GATEWAY_URL/api/users" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
+check "admin : tableau de bord global" "$(status "$GATEWAY_URL/api/analytics/dashboard" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
 
 section "Proxy IA du frontend"
 check "endpoint d'effacement inaccessible" "$(status -X DELETE "$BASE_URL/api/ai/users/x/data")" 404

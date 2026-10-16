@@ -38,8 +38,15 @@ class SecurityConfigTest {
         when(userService.getAllUsers()).thenReturn(List.of());
 
         mockMvc.perform(get("/users")
-                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1")))
+                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("admin-1", "admin")))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void validTokenWithoutTheRequiredScopeIsForbidden() throws Exception {
+        mockMvc.perform(get("/users")
+                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1")))
+                .andExpect(status().isForbidden());
     }
 
     @Test

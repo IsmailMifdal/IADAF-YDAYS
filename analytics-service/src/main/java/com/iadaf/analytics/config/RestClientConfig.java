@@ -1,8 +1,11 @@
 package com.iadaf.analytics.config;
 
+import java.time.Duration;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -10,6 +13,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class RestClientConfig {
+
+    static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(3);
+    /** Sous les 30 s de la gateway, pour que l'erreur vienne d'ici. */
+    static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * RestTemplate utilisé pour interroger les autres services.
@@ -24,7 +31,13 @@ public class RestClientConfig {
      */
     @Bean
     public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
+        // Sans délai, un service en aval qui ne répond pas retenait la
+        // requête indéfiniment : la gateway finissait par renvoyer 504, sans
+        // qu'aucune trace ne dise lequel. Avec : une erreur nommée, à temps.
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
 
         restTemplate.getInterceptors().add((request, body, execution) -> {
             String authorization = currentRequestHeader(HttpHeaders.AUTHORIZATION);

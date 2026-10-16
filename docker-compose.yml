@@ -89,6 +89,11 @@ services:
       # services étaient déjà « healthy ».
       - EUREKA_CLIENT_REGISTRYFETCHINTERVALSECONDS=5
       - SPRING_CLOUD_LOADBALANCER_CACHE_TTL=5s
+      # Le load balancer prépare chaque service à la première requête qui le
+      # vise : 3 s sur une machine au repos, plus de 10 s quand toute la stack
+      # démarre — assez pour faire échouer une suppression de compte. Préparés
+      # au démarrage de la gateway, avant qu'elle ne se déclare « healthy ».
+      - SPRING_CLOUD_LOADBALANCER_EAGERLOAD_CLIENTS=AI-SERVICE,USER-SERVICE,DEMARCHES-SERVICE,DOCUMENT-SERVICE,ANALYTICS-SERVICE
     networks:
       - iadaf-network
     depends_on:

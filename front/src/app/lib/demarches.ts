@@ -9,7 +9,7 @@ import "server-only";
 
 import { getRequiredDocuments } from "../(app)/packs/packContent";
 import { getPackBySlug } from "../(app)/packs/packsData";
-import { GATEWAY_URL, backendAuthHeaders } from "./aiService";
+import { ERASURE_TIMEOUT_MS, GATEWAY_URL, backendAuthHeaders } from "./aiService";
 
 export type FolderStatus = "EN_ATTENTE" | "EN_COURS" | "TERMINEE" | "ANNULEE";
 
@@ -55,7 +55,7 @@ export async function eraseDemarchesData(userId: string): Promise<void> {
   const res = await fetch(`${GATEWAY_URL}/api/demarches/me`, {
     method: "DELETE",
     headers: await backendAuthHeaders(userId, "account:erase"),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(ERASURE_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`demarches-service erase failed with HTTP ${res.status}`);
 }

@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ToastProvider } from "./components/ui/Toast";
+import ServiceWorker from "./components/ServiceWorker";
 import { isLangCode, LANG_COOKIE } from "./context/languages";
 
 export const metadata: Metadata = {
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
   },
   description:
     "Assistant IA multilingue qui simplifie vos démarches administratives françaises : titre de séjour, CAF, CPAM, impôts et plus encore.",
+  // Installed on an iPhone home screen: full screen, under this name.
+  appleWebApp: { capable: true, title: "IA-DAF", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export default async function RootLayout({
@@ -31,6 +38,7 @@ export default async function RootLayout({
             <ToastProvider>{children}</ToastProvider>
           </LanguageProvider>
         </SessionProvider>
+        <ServiceWorker />
       </body>
     </html>
   );

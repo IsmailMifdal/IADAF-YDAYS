@@ -6,7 +6,7 @@
 import "server-only";
 
 import { getRequiredDocuments } from "../(app)/packs/packContent";
-import { GATEWAY_URL, backendAuthHeaders } from "./aiService";
+import { ERASURE_TIMEOUT_MS, GATEWAY_URL, backendAuthHeaders } from "./aiService";
 import { EXTRA_DOCUMENT_PREFIX, type StoredDocument } from "./documentTypes";
 
 export { MAX_DOCUMENT_BYTES, type StoredDocument } from "./documentTypes";
@@ -77,7 +77,7 @@ export async function eraseDocumentsData(userId: string): Promise<void> {
   const res = await fetch(`${BASE}/me`, {
     method: "DELETE",
     headers: await backendAuthHeaders(userId, "account:erase"),
-    signal: AbortSignal.timeout(TIMEOUT),
+    signal: AbortSignal.timeout(ERASURE_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`document-service erase failed with HTTP ${res.status}`);
 }

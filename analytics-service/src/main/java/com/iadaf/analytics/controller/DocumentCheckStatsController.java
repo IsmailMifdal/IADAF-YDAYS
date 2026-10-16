@@ -47,6 +47,13 @@ public class DocumentCheckStatsController {
             @NotNull @Size(max = 20) List<@Valid @NotNull CheckOutcome> checks) {
     }
 
+    /** Un résultat affiché que l'utilisateur a signalé comme faux. */
+    public record Dispute(
+            @NotNull @Pattern(regexp = "identity|address|bank|other") String category,
+            @NotNull @Pattern(regexp = "[a-z_]{1,30}") String id,
+            @NotNull @Pattern(regexp = "ok|warning|error") String status) {
+    }
+
     /** Ajoute une pré-vérification aux comptes du jour. */
     @PostMapping
     @Transactional
@@ -65,21 +72,47 @@ public class DocumentCheckStatsController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Ajoute un résultat contesté aux comptes du jour. */
+    @PostMapping("/disputes")
+    public ResponseEntity<Void> dispute(@Valid @RequestBody Dispute body) {
+        jdbc.update("""
+                INSERT INTO analytics.document_check_disputes (day, category, check_id, status, count)
+                VALUES (CURRENT_DATE, :category, :checkId, :status, 1)
+                ON CONFLICT (day, category, check_id, status)
+                DO UPDATE SET count = analytics.document_check_disputes.count + 1
+                """, new MapSqlParameterSource()
+                .addValue("category", body.category())
+                .addValue("checkId", body.id())
+                .addValue("status", body.status()));
+        return ResponseEntity.noContent().build();
+    }
+
     /**
-     * Totaux sur les {@code days} derniers jours. Réservé au scope
-     * {@code analytics:read} : ce sont des statistiques d'exploitation, pas une
-     * donnée d'utilisateur.
+     * Totaux sur les {@code days} derniers jours, avec le nombre de résultats
+     * contestés ({@code disputed}). Réservé au scope {@code analytics:read} :
+     * ce sont des statistiques d'exploitation, pas une donnée d'utilisateur.
      */
     @GetMapping
     @PreAuthorize("hasAuthority('SCOPE_analytics:read')")
     public List<Map<String, Object>> totals(@RequestParam(defaultValue = "30") int days) {
         int window = Math.max(1, Math.min(days, 366));
         return jdbc.queryForList("""
-                SELECT category, check_id AS "checkId", status, SUM(count)::int AS count
-                  FROM analytics.document_check_counts
-                 WHERE day > :since
-                 GROUP BY category, check_id, status
-                 ORDER BY category, check_id, status
+                WITH checked AS (
+                    SELECT category, check_id, status, SUM(count) AS count
+                      FROM analytics.document_check_counts
+                     WHERE day > :since
+                     GROUP BY category, check_id, status
+                ), disputed AS (
+                    SELECT category, check_id, status, SUM(count) AS count
+                      FROM analytics.document_check_disputes
+                     WHERE day > :since
+                     GROUP BY category, check_id, status
+                )
+                SELECT c.category, c.check_id AS "checkId", c.status, c.count::int AS count,
+                       COALESCE(d.count, 0)::int AS disputed
+                  FROM checked c
+                  LEFT JOIN disputed d USING (category, check_id, status)
+                 ORDER BY c.category, c.check_id, c.status
                 """, Map.of("since", LocalDate.now().minusDays(window)));
     }
 }

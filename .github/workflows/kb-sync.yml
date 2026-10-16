@@ -1,0 +1,60 @@
+# Weekly refresh of the official fiches the assistant answers from
+# (service-public.gouv.fr, DILA, Licence Ouverte 2.0). Opens — or updates —
+# a single pull request when their text changed: nothing reaches users before
+# someone has read the diff. Once merged and deployed, the AI service
+# reindexes by itself (knowledge-base fingerprint).
+#
+# Repository setting required: Settings → Actions → General → "Allow GitHub
+# Actions to create and approve pull requests".
+name: Knowledge base sync
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"  # Mondays, 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: kb-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: service-public.gouv.fr fiches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Fetch the fiches (standard library only)
+        run: python ai-service/scripts/sync_service_public.py
+      - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file=ai-service/app/data/knowledge_base/service_public.json
+          if git diff --quiet -- "$file"; then
+            echo "Fiches inchangées."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c kb-sync
+          git add "$file"
+          git commit -m "Base de connaissances : fiches service-public.gouv.fr du $(date -u +%d/%m/%Y)"
+          git push --force origin kb-sync
+          if [ -n "$(gh pr list --head kb-sync --state open --json number --jq '.[].number')" ]; then
+            echo "Pull request existante mise à jour."
+            exit 0
+          fi
+          gh pr create --head kb-sync --base "$GITHUB_REF_NAME" \
+            --title "Base de connaissances : mise à jour des fiches service-public.gouv.fr" \
+            --body "Mise à jour automatique des fiches officielles suivies (ai-service/app/data/service_public_fiches.json), source DILA, Licence Ouverte 2.0.
+
+          À relire avant fusion : montants, conditions, pièces demandées, délais.
+
+          Une pull request ouverte par GitHub Actions ne déclenche pas la CI : la fermer puis la rouvrir pour la lancer."

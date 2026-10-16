@@ -20,7 +20,7 @@ class TranslationService:
 
     SUPPORTED_LANGUAGES = set(_LANGUAGE_NAMES.keys())
 
-    def translate(
+    async def translate(
         self,
         text: str,
         target_language: str,
@@ -50,7 +50,7 @@ class TranslationService:
         )
 
         logger.debug(f"Translation request: {src} → {tgt}")
-        return llm_service.generate(prompt)
+        return await llm_service.agenerate(prompt)
 
 
 # Module-level singleton

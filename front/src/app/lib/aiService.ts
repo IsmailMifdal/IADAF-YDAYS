@@ -15,6 +15,14 @@ export const GATEWAY_URL =
   process.env.NEXT_PUBLIC_API_GATEWAY_URL ??
   "http://localhost:8080";
 
+/**
+ * Budget of each erasure call when an account is deleted. Generous on
+ * purpose: deletion is rare, the user waits on a spinner, and a first call to
+ * a service that has just started can take seconds — failing it would leave
+ * the account in place.
+ */
+export const ERASURE_TIMEOUT_MS = 30_000;
+
 /** Must match the gateway's and the services' expectations. */
 const ISSUER = "iadaf-frontend";
 const AUDIENCE = "iadaf-backend";
@@ -68,7 +76,7 @@ export async function eraseAiData(userId: string): Promise<void> {
     {
       method: "DELETE",
       headers: await backendAuthHeaders(userId, "account:erase"),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(ERASURE_TIMEOUT_MS),
     },
   );
   if (!res.ok) {

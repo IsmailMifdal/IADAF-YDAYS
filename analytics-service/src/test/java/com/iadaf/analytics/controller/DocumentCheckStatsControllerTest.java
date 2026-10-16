@@ -61,6 +61,32 @@ class DocumentCheckStatsControllerTest {
         verify(jdbc, never()).update(anyString(), any(SqlParameterSource.class));
     }
 
+    private void postDispute(String body, int expected) throws Exception {
+        mockMvc.perform(post("/analytics/document-checks/disputes")
+                        .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1"))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().is(expected));
+    }
+
+    @Test
+    void aContestedResultIsCountedAnonymously() throws Exception {
+        postDispute("""
+                {"category":"identity","id":"expiry","status":"error"}""", 204);
+        verify(jdbc, times(1)).update(anyString(), any(SqlParameterSource.class));
+    }
+
+    @Test
+    void aDisputeCarriesNoFreeText() throws Exception {
+        postDispute("""
+                {"category":"identity","id":"Mon titre expire en 2031","status":"error"}""", 400);
+        postDispute("""
+                {"category":"identity","id":"expiry","status":"2031-01-01"}""", 400);
+        // "unknown" is shown without a verdict: nothing to contest.
+        postDispute("""
+                {"category":"identity","id":"expiry","status":"unknown"}""", 400);
+        verify(jdbc, never()).update(anyString(), any(SqlParameterSource.class));
+    }
+
     @Test
     void readingTotalsNeedsTheAnalyticsScope() throws Exception {
         mockMvc.perform(get("/analytics/document-checks")

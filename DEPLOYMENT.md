@@ -272,6 +272,7 @@ réapparaissent : supprimer à nouveau ceux dont l'effacement avait été demand
 - [ ] Première sauvegarde faite **et** `deploy/restore-test.sh` passé
 - [ ] `DOCUMENT_ENCRYPTION_KEY`, `BACKUP_PASSPHRASE` et `.env` copiés dans le coffre
 - [ ] Sondes de disponibilité et de sauvegarde actives
+- [ ] GitHub → Settings → Actions → General : « Allow GitHub Actions to create and approve pull requests », pour la mise à jour hebdomadaire des fiches officielles (`kb-sync.yml`) ; relire et fusionner ces pull requests, puis redéployer
 - [ ] Ancienne table `public.lead_emails` supprimée si elle existe (données migrées vers `users.lead_emails`)
 
 ---

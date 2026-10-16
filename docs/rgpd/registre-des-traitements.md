@@ -115,7 +115,7 @@
 | Traitement | Règles déterministes (ai-service, `app/documents`), sans modèle de langage ; rien n'est stocké |
 | Décision automatisée (art. 22) | Non : résultat indicatif, aucune conséquence automatique ; l'utilisateur garde la main |
 | Sous-traitant | Aucun par défaut. OCR des photos et scans (`OCR_PROVIDER`) : **désactivé** — l'activer suppose un DPA, un hébergement UE et une mise à jour de ce registre |
-| Statistiques | Comptes anonymes par jour, catégorie et issue de contrôle (`analytics.document_check_counts`), sans utilisateur ni document |
+| Statistiques | Comptes anonymes par jour, catégorie et issue de contrôle (`analytics.document_check_counts`), et résultats que l'utilisateur signale comme faux (`analytics.document_check_disputes`, mêmes colonnes) — sans utilisateur, ni document, ni texte libre |
 | Activation | `DOCUMENT_ANALYSIS_ENABLED=false` en production tant que l'**AIPD** n'est pas menée |
 | Hors périmètre | Aucune collecte pour l'entraînement d'un modèle à ce stade |
 
