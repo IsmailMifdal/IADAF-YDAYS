@@ -29,7 +29,10 @@ PG_CONTAINER="${PG_CONTAINER:-iadaf-postgres}"
 
 # Les noms portent un horodatage UTC : l'ordre alphabétique est chronologique.
 FILE="${1:-$(find "$BACKUP_DIR" -maxdepth 1 -name 'iadaf-*.dump.gpg' 2>/dev/null | sort | tail -1)}"
-[ -n "$FILE" ] && [ -f "$FILE" ] || { echo "Aucune sauvegarde trouvée dans $BACKUP_DIR." >&2; exit 1; }
+if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+  echo "Aucune sauvegarde trouvée dans $BACKUP_DIR." >&2
+  exit 1
+fi
 echo "Sauvegarde testée : $FILE"
 
 if [ -f "$FILE.sha256" ]; then
