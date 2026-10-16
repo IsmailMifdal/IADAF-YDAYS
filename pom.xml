@@ -53,6 +53,16 @@
         <tomcat.version>11.0.26</tomcat.version>
         <bouncycastle.version>1.86</bouncycastle.version>
         <freemarker.version>2.3.35</freemarker.version>
+        <!--
+          Idem, failles élevées (Trivy) dans les versions du BOM Spring Boot
+          4.0.8 : Jackson 3.1.5 et 2.21.5 (< 3.1.7 et 2.21.7), HttpCore 5.3.6
+          (corrigé en 5.4.3 seulement) et HttpClient 5.5.2 (< 5.6.1, bâtie
+          sur HttpCore 5.4).
+        -->
+        <jackson3.version>3.1.7</jackson3.version>
+        <jackson2.version>2.21.7</jackson2.version>
+        <httpclient5.version>5.6.1</httpclient5.version>
+        <httpcore5.version>5.4.3</httpcore5.version>
     </properties>
 
     <dependencyManagement>
@@ -92,6 +102,37 @@
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-websocket</artifactId>
                 <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5</artifactId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5-h2</artifactId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+
+            <!-- Jackson : importés AVANT Spring Boot, le premier BOM importé l'emporte. -->
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson3.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Spring Boot -->
