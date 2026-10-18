@@ -1,40 +1,123 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import {
-  Folder,
-  MessageSquare,
-  Upload,
-  FileText,
   ArrowRight,
+  FileText,
+  FolderOpen,
+  MessageSquare,
+  Package,
+  Receipt,
+  Upload,
 } from "lucide-react";
-import HeaderPage from "../../components/ui/PageHeader";
+import Link from "next/link";
 
-const activeFolders: Array<{ id: number; title: string }> = [];
+import { auth } from "../../../auth";
+import { listFolders, type Folder } from "../../lib/demarches";
+import { listPurchases, listUnlockedPacks } from "../../lib/entitlements";
+import { formatPrice, getPackBySlug, packs } from "../packs/packsData";
+import PageHeader from "../../components/ui/PageHeader";
+import {
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageContainer,
+  SectionTitle,
+  StatCard,
+} from "../../components/ui/primitives";
 
-export default function Dashboard() {
+export const metadata: Metadata = { title: "Tableau de bord" };
+
+export default async function DashboardPage() {
+  const session = await auth();
+
+  // La page est protégée par le proxy ; ce garde-fou évite juste de requêter
+  // la base avec un identifiant absent.
+  const [unlocked, purchases] = session?.user?.id
+    ? await Promise.all([
+        listUnlockedPacks(session.user.id),
+        listPurchases(session.user.id),
+      ])
+    : [[], []];
+
+  // Best effort: the rest of the dashboard still renders if the service is down.
+  let folders: Folder[] | null = null;
+  if (session?.user?.id) {
+    folders = await listFolders(session.user.id).catch((error) => {
+      console.error("[dashboard] could not load folders", error);
+      return null;
+    });
+  }
+  const openFolders = folders?.filter(
+    (f) => f.statut !== "TERMINEE" && f.statut !== "ANNULEE",
+  );
+  const averageProgress = openFolders?.length
+    ? Math.round(openFolders.reduce((sum, f) => sum + (f.progression ?? 0), 0) / openFolders.length)
+    : 0;
+
+  const totalSpent = purchases.reduce((sum, p) => sum + p.amount_cents, 0);
+  const firstName = session?.user?.name?.split(" ")[0];
+
   return (
     <div>
-      <HeaderPage
-        title="Tableau de bord"
-        subtitle="Vue d’ensemble de vos démarches, dossiers et documents."
+      <PageHeader
+        title={firstName ? `Bonjour ${firstName}` : "Tableau de bord"}
+        subtitle="Vue d’ensemble de vos packs, démarches et documents."
       />
-      <div className="bg-gray-50 min-h-screen px-4 md:px-8 py-10">
-        <div className="max-w-6xl mx-auto w-full space-y-10">
+
+      <PageContainer>
+        <div className="space-y-10">
           <section>
-            <h2 className="text-xl font-semibold mb-6">Actions rapides</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <QuickActionCard
+            <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <StatCard
+                label="Packs accessibles"
+                value={unlocked.length}
+                hint={`sur ${packs.length} disponibles`}
+                icon={<Package className="w-5 h-5" />}
+                tone="info"
+              />
+              <StatCard
+                label="Achats"
+                value={purchases.length}
+                hint={
+                  totalSpent > 0 ? `${formatPrice(totalSpent)} au total` : "Aucun achat"
+                }
+                icon={<Receipt className="w-5 h-5" />}
+                tone="success"
+              />
+              <StatCard
+                label="Dossiers en cours"
+                value={openFolders ? openFolders.length : "—"}
+                hint={
+                  !openFolders
+                    ? "Suivi momentanément indisponible"
+                    : openFolders.length > 0
+                      ? `${averageProgress} % des pièces réunies en moyenne`
+                      : "Aucun dossier ouvert"
+                }
+                icon={<FolderOpen className="w-5 h-5" />}
+                tone="neutral"
+              />
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle
+              title="Actions rapides"
+              description="Les points d’entrée les plus utilisés."
+            />
+            <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-5">
+              <QuickAction
                 href="/chatIa"
-                title="Discuter avec l'IA"
-                description="Posez vos questions administratives à l'assistant."
+                title="Discuter avec l’IA"
+                description="Posez vos questions administratives à l’assistant."
                 icon={<MessageSquare className="w-5 h-5" />}
               />
-              <QuickActionCard
+              <QuickAction
                 href="/documents"
-                title="Uploader des documents"
-                description="Ajoutez et organisez vos fichiers administratifs."
+                title="Mes documents"
+                description="Retrouvez les pièces déposées dans vos packs."
                 icon={<Upload className="w-5 h-5" />}
               />
-              <QuickActionCard
+              <QuickAction
                 href="/procedures"
                 title="Explorer les démarches"
                 description="Trouvez la démarche adaptée à votre situation."
@@ -43,74 +126,83 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <section className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold">Dossiers en cours</h2>
-              <Link
-                href="/myFolders"
-                className="border border-gray-200 px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition"
-              >
-                Voir tous les dossiers →
-              </Link>
-            </div>
+          <section>
+            <SectionTitle
+              title="Mes packs"
+              description="Les accompagnements auxquels vous avez accès."
+              action={
+                <ButtonLink href="/nosPacks" variant="secondary" size="sm">
+                  Voir le catalogue
+                </ButtonLink>
+              }
+            />
 
-            {activeFolders.length === 0 ? (
-              <EmptyState />
+            {unlocked.length === 0 ? (
+              <EmptyState
+                icon={<Package className="w-6 h-6" />}
+                title="Aucun pack pour le moment"
+                description="Choisissez un pack pour être accompagné pas à pas dans votre démarche."
+                action={
+                  <ButtonLink href="/nosPacks">Découvrir les packs</ButtonLink>
+                }
+              />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6" />
+              <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-5">
+                {unlocked.map((slug) => {
+                  const pack = getPackBySlug(slug);
+                  if (!pack) return null;
+
+                  return (
+                    <Link key={slug} href={`/packs/${slug}`} className="group">
+                      <Card interactive className="p-5 h-full">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {pack.title}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {pack.shortDescription}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }
 
-type QuickActionCardProps = {
-  href: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-};
-
-function QuickActionCard({
+function QuickAction({
   href,
   title,
   description,
   icon,
-}: QuickActionCardProps) {
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
   return (
-    <Link
-      href={href}
-      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition flex flex-col gap-3"
-    >
-      <div className="bg-red-500 text-white w-10 h-10 rounded-lg flex items-center justify-center">
-        {icon}
-      </div>
-      <h3 className="font-semibold text-gray-900">{title}</h3>
-      <p className="text-sm text-gray-500">{description}</p>
-      <span className="text-blue-600 text-sm font-medium hover:underline inline-flex items-center gap-1">
-        Accéder
-        <ArrowRight className="w-4 h-4" />
-      </span>
+    <Link href={href} className="group">
+      <Card interactive className="flex h-full flex-col gap-3 p-5">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          {icon}
+        </span>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <p className="flex-1 text-sm text-gray-500">{description}</p>
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-600">
+          Accéder
+          <ArrowRight className="w-4 h-4 transition group-hover:translate-x-0.5" />
+        </span>
+      </Card>
     </Link>
-  );
-}
-
-function EmptyState() {
-  return (
-    <section className="bg-white border border-gray-200 rounded-xl p-12 flex flex-col items-center gap-4 text-center">
-      <Folder className="w-10 h-10 text-gray-400" />
-      <h3 className="text-xl font-semibold text-gray-900">
-        Aucun dossier actif
-      </h3>
-      <p className="text-gray-600">Commencez par créer votre premier dossier</p>
-      <Link
-        href="/procedures"
-        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg transition"
-      >
-        Explorer les démarches
-      </Link>
-    </section>
   );
 }

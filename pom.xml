@@ -16,22 +16,125 @@
     <modules>
         <module>discovery-service</module>
         <module>api-gateway</module>
-        <!-- Other Java services disabled: user-service, demarches-service,
-             document-service, analytics-service are superseded by the
-             Python ai-service. See each service's README. -->
+        <module>user-service</module>
+        <module>demarches-service</module>
+        <module>document-service</module>
+        <module>analytics-service</module>
     </modules>
 
     <properties>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <!--
+          Conserve les noms des paramètres dans le bytecode.
+          spring-boot-starter-parent l'active par défaut, mais ce POM importe
+          seulement spring-boot-dependencies : sans ce flag, Spring ne peut pas
+          résoudre @PathVariable / @RequestParam sans nom explicite et échoue
+          en 500 à l'exécution.
+        -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <!--
+          Spring Boot 4 / Spring Framework 7. La 3.2.0 n'était plus maintenue
+          (12 failles critiques relevées par Trivy, dont Tomcat) ; la 3.5,
+          dernière 3.x, ne reçoit plus de correctifs gratuits de Spring
+          Framework 6.2, et Trivy y relevait encore des failles critiques
+          corrigées seulement en 7.0.x.
+        -->
+        <spring-boot.version>4.0.8</spring-boot.version>
+        <spring-cloud.version>2025.1.3</spring-cloud.version>
+        <!--
+          Versions plus récentes que celles du BOM Spring Boot, qui restent
+          vulnérables à des failles critiques (Trivy) : Tomcat 11.0.24 (< 11.0.25),
+          BouncyCastle 1.80 (< 1.85, tiré par Spring Cloud), FreeMarker 2.3.34
+          (< 2.3.35, tableau de bord Eureka).
+        -->
+        <tomcat.version>11.0.26</tomcat.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
+        <freemarker.version>2.3.35</freemarker.version>
+        <!--
+          Idem, failles élevées (Trivy) dans les versions du BOM Spring Boot
+          4.0.8 : Jackson 3.1.5 et 2.21.5 (< 3.1.7 et 2.21.7), HttpCore 5.3.6
+          (corrigé en 5.4.3 seulement) et HttpClient 5.5.2 (< 5.6.1, bâtie
+          sur HttpCore 5.4).
+        -->
+        <jackson3.version>3.1.7</jackson3.version>
+        <jackson2.version>2.21.7</jackson2.version>
+        <httpclient5.version>5.6.1</httpclient5.version>
+        <httpcore5.version>5.4.3</httpcore5.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Versions épinglées : une déclaration directe l'emporte sur les BOM importés. -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>${freemarker.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-el</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-websocket</artifactId>
+                <version>${tomcat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5</artifactId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5-h2</artifactId>
+                <version>${httpcore5.version}</version>
+            </dependency>
+
+            <!-- Jackson : importés AVANT Spring Boot, le premier BOM importé l'emporte. -->
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson3.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Spring Boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -49,21 +152,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
-            <!-- PostgreSQL Driver -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>42.7.2</version>
-            </dependency>
-
-            <!-- Lombok -->
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
-                <scope>provided</scope>
-            </dependency>
+            <!-- Driver PostgreSQL et Lombok : versions gérées par Spring Boot. -->
         </dependencies>
     </dependencyManagement>
 

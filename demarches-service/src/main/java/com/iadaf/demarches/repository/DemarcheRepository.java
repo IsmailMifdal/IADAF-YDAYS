@@ -29,4 +29,11 @@ public interface DemarcheRepository extends JpaRepository<Demarche, Long> {
     List<Demarche> findOverdueDemarches(@Param("userId") String userId, @Param("today") LocalDate today);
     
     boolean existsByIdAndUserId(Long id, String userId);
+
+    Optional<Demarche> findByUserIdAndPackSlug(String userId, String packSlug);
+
+    /** Effacement définitif — étapes et commentaires suivent (ON DELETE CASCADE, V2). */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Demarche d WHERE d.userId = :userId")
+    int deleteAllByUserId(@Param("userId") String userId);
 }

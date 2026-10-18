@@ -2,25 +2,19 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/iadaf_db?currentSchema=users
+    url: jdbc:postgresql://localhost:5432/iadaf_db?currentSchema=profiles
     username: ${POSTGRES_USER:iadaf_user}
     password: ${POSTGRES_PASSWORD:iadaf_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
-        default_schema: users
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
+        default_schema: profiles
 
 server:
   port: 8081
@@ -36,4 +30,10 @@ eureka:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+
+# Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
+# Le service refuse de démarrer sans elle.
+iadaf:
+  security:
+    internal-jwt-secret: ${INTERNAL_JWT_SECRET:}

@@ -1,228 +1,200 @@
-# 🚀 IA-DAF Startup Guide
+# 🚀 IA-DAF — Guide de démarrage
+
+Deux façons de lancer le projet : **tout en Docker** (recommandé) ou **en mode
+développement** avec rechargement à chaud sur le frontend.
+
+---
 
 ## Prérequis
 
-- ☕ **Java 17+** installé
-- 📦 **Maven 3.8+** installé
-- 🐳 **Docker & Docker Compose** installés
-- 💾 **PostgreSQL Client** (optionnel, pour tests)
+| Outil | Requis pour |
+|-------|-------------|
+| 🐳 Docker + Docker Compose | Toute la stack |
+| 📦 Node.js 24 LTS | Développement frontend (Node 20 est en fin de vie) |
+| 🐍 Python 3.12+ | Développement de l'AI Service |
+| ☕ Java 17 + Maven 3.8+ | Développement des services Spring |
 
-## 📋 Ordre de Démarrage (CRITIQUE)
+---
 
-### Étape 1 : Infrastructure Docker (5 minutes)
+## Option A — Tout en Docker
+
+### 1. Configurer l'environnement
 
 ```bash
-# 1. Créer le fichier .env
 cp .env.example .env
-
-# 2. Démarrer PostgreSQL, Keycloak, pgAdmin
-docker compose up -d
-
-# 3. Vérifier que tout est UP
-docker ps
-
-# 4. Attendre l'initialisation complète de Keycloak (2 minutes)
-sleep 120
-
-# 5. Vérifier Keycloak
-curl http://localhost:8180/health/ready
 ```
 
-### Étape 2 : Vérifications (2 minutes)
+Renseigner au minimum dans `.env` :
 
 ```bash
-# Test PostgreSQL
-psql -h localhost -U iadaf_user -d iadaf_db -c "\dn"
-# Doit afficher : users, demarches, documents, analytics, ai
-
-# Test Keycloak
-curl http://localhost:8180/realms/iadaf/.well-known/openid-configuration
-# Doit retourner JSON de configuration
-
-# Test pgAdmin
-# Ouvrir http://localhost:5050
-# Login: admin@iadaf.com / admin
+OPENAI_API_KEY=sk-...                  # sans elle, le chatbot tourne en mode dégradé
+AUTH_SECRET=$(openssl rand -base64 32) # obligatoire, la stack refuse de démarrer sans
+POSTGRES_PASSWORD=...                  # à changer hors développement
 ```
 
-### Étape 3 : Démarrer les Microservices (ordre strict)
-
-**Terminal 1 - Discovery Service (Eureka)**
-```bash
-cd discovery-service
-mvn clean spring-boot:run
-```
-✅ Attendre : `Started DiscoveryServiceApplication`  
-🌐 Vérifier : http://localhost:8761
-
-**Terminal 2 - API Gateway**
-```bash
-cd api-gateway
-mvn spring-boot:run
-```
-✅ Attendre : `Started ApiGatewayApplication`  
-🌐 Vérifier : http://localhost:8080/actuator/health
-
-**Terminal 3 - User Service**
-```bash
-cd user-service
-mvn spring-boot:run
-```
-✅ Attendre : `Started UserServiceApplication`
-
-**Terminal 4 - Demarches Service**
-```bash
-cd demarches-service
-mvn spring-boot:run
-```
-✅ Attendre : `Started DemarchesServiceApplication`
-
-**Terminal 5 - Document Service**
-```bash
-cd document-service
-mvn spring-boot:run
-```
-✅ Attendre : `Started DocumentServiceApplication`
-
-**Terminal 6 - Analytics Service**
-```bash
-cd analytics-service
-mvn spring-boot:run
-```
-✅ Attendre : `Started AnalyticsServiceApplication`
-
-**Terminal 7 - AI Service**
-```bash
-cd ai-service
-mvn spring-boot:run
-```
-✅ Attendre : `Started AiServiceApplication`
-
-### Étape 4 : Validation Finale (2 minutes)
+Optionnel — sans ces variables, le bouton de paiement affiche « non configuré » :
 
 ```bash
-# 1. Vérifier Eureka - tous les services doivent apparaître
-curl http://localhost:8761/eureka/apps | grep -i "application"
-
-# 2. Obtenir un token JWT
-export TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
-  -d 'client_id=iadaf-frontend' \
-  -d 'grant_type=password' \
-  -d 'username=admin@iadaf.com' \
-  -d 'password=admin123' \
-  | jq -r '.access_token')
-
-# 3. Tester chaque service via API Gateway
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/users
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/demarches
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/documents
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/analytics
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/ai/conversations
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-## 🐛 Troubleshooting
-
-### Problème : Port déjà utilisé
+### 2. Démarrer
 
 ```bash
-# Trouver et tuer le processus
-lsof -ti:8081 | xargs kill -9
+docker compose up -d --build
 ```
 
-### Problème : PostgreSQL connection refused
+Le premier build est long : l'AI Service installe PyTorch et ses dépendances.
+
+### 3. Vérifier
 
 ```bash
-# Redémarrer Docker
-docker compose restart postgres
-sleep 10
+docker compose ps                      # les 5 services doivent être "healthy"
+bash tests/health-checks/check-all-services.sh
 ```
 
-### Problème : Keycloak non accessible
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API Gateway | http://localhost:8080/actuator/health |
+| AI Service (Swagger) | http://localhost:8086/docs |
+| Eureka | http://localhost:8761 |
+
+---
+
+## Option B — Mode développement
+
+Infrastructure en Docker, frontend en local.
+
+### 1. Base de données
 
 ```bash
-# Vérifier les logs
-docker logs iadaf-keycloak --tail=100
-
-# Redémarrer si nécessaire
-docker compose restart keycloak
+docker compose up -d postgres
 ```
 
-### Problème : Eureka registry vide
-
-- Vérifier que Discovery Service est bien démarré en premier
-- Attendre 30 secondes pour l'enregistrement des services
-- Vérifier les logs de chaque service
-
-### Problème : 401 Unauthorized sur les APIs
+### 2. Backend
 
 ```bash
-# Vérifier que Keycloak est accessible
-curl http://localhost:8180/realms/iadaf/.well-known/openid-configuration
-
-# Obtenir un nouveau token
-export TOKEN=$(curl -s -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
-  -d 'client_id=iadaf-frontend' \
-  -d 'grant_type=password' \
-  -d 'username=admin@iadaf.com' \
-  -d 'password=admin123' \
-  | jq -r '.access_token')
-
-echo $TOKEN  # Doit afficher un long token JWT
+docker compose up -d discovery-service api-gateway ai-service
 ```
 
-## 📊 Ports Utilisés
+Ou en local, dans cet ordre (le gateway a besoin d'Eureka) :
+
+```bash
+cd discovery-service && mvn spring-boot:run   # terminal 1
+cd api-gateway       && mvn spring-boot:run   # terminal 2
+
+cd ai-service                                  # terminal 3
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8086
+```
+
+### 3. Frontend
+
+```bash
+cd front
+cp .env.example .env.local    # renseigner AUTH_SECRET et DATABASE_URL
+npm install
+npm run dev                   # http://localhost:3000
+```
+
+### 4. Webhook Stripe (si vous testez le paiement)
+
+Stripe doit pouvoir joindre votre machine :
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+Reporter le secret `whsec_...` affiché dans `STRIPE_WEBHOOK_SECRET`, puis
+redémarrer le frontend.
+
+Carte de test : `4242 4242 4242 4242`, date future, CVC quelconque.
+
+---
+
+## 📊 Ports utilisés
 
 | Service | Port | URL |
 |---------|------|-----|
-| Discovery (Eureka) | 8761 | http://localhost:8761 |
+| Frontend (Next.js) | 3000 | http://localhost:3000 |
 | API Gateway | 8080 | http://localhost:8080 |
-| User Service | 8081 | http://localhost:8081 |
-| Demarches Service | 8082 | http://localhost:8082 |
-| Document Service | 8083 | http://localhost:8083 |
-| Analytics Service | 8085 | http://localhost:8085 |
 | AI Service | 8086 | http://localhost:8086 |
-| Keycloak | 8180 | http://localhost:8180 |
+| Discovery (Eureka) | 8761 | http://localhost:8761 |
 | PostgreSQL | 5432 | localhost:5432 |
-| pgAdmin | 5050 | http://localhost:5050 |
 
-## 🎯 Script de Démarrage Rapide
+---
+
+## 🐛 Problèmes courants
+
+### `AUTH_SECRET is required`
+
+`docker compose` refuse de démarrer le frontend sans ce secret. Générez-le :
 
 ```bash
-# Utiliser le script fourni
-chmod +x start-services.sh
-./start-services.sh
+echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
 ```
 
-## ✅ Checklist de Validation
+### Port déjà utilisé
 
-- [ ] Docker containers démarrés (postgres, keycloak, pgadmin)
-- [ ] PostgreSQL accessible avec psql
-- [ ] Keycloak accessible sur port 8180
-- [ ] Fichier .env créé et configuré
-- [ ] Discovery Service UP sur port 8761
-- [ ] API Gateway UP sur port 8080
-- [ ] Tous les 5 microservices enregistrés dans Eureka
-- [ ] Token JWT obtenu depuis Keycloak
-- [ ] Requêtes authentifiées fonctionnent
+```bash
+# Linux / macOS
+lsof -ti:3000 | xargs kill -9
 
-## 🔐 Credentials par Défaut (DEV ONLY)
+# Windows (PowerShell)
+Get-NetTCPConnection -LocalPort 3000 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+```
 
-**PostgreSQL:**
-- User: `iadaf_user`
-- Password: `iadaf_password`
-- Database: `iadaf_db`
+### PostgreSQL inaccessible
 
-**Keycloak Admin:**
-- User: `admin`
-- Password: `admin`
+```bash
+docker compose restart postgres
+docker exec iadaf-postgres pg_isready -U iadaf_user
+```
 
-**pgAdmin:**
-- Email: `admin@iadaf.com`
-- Password: `admin`
+### Les tables `app_users` / `pack_entitlements` n'existent pas
 
-**Test Users (Keycloak):**
-- Admin: `admin@iadaf.com` / `admin123`
-- User: `user@iadaf.com` / `user123`
-- Agent: `agent@iadaf.com` / `agent123`
-- Support: `support@iadaf.com` / `support123`
+Les scripts de `docker/postgres/init/` ne s'exécutent **que sur un volume
+vierge**. Sur une base existante, le frontend crée les tables tout seul au
+premier accès — ouvrez http://localhost:3000 une fois.
 
-⚠️ **IMPORTANT** : Changer ces credentials en production !
+### Registre Eureka vide
+
+Le Discovery Service doit démarrer en premier ; comptez ~30 s pour que les
+autres s'enregistrent. `docker compose up` respecte l'ordre via les
+`healthcheck`.
+
+### Le chatbot répond en mode dégradé
+
+`OPENAI_API_KEY` est absente ou invalide :
+
+```bash
+docker compose logs ai-service | grep -i openai
+```
+
+---
+
+## ✅ Checklist de validation
+
+- [ ] `.env` créé, `AUTH_SECRET` et `OPENAI_API_KEY` renseignés
+- [ ] `docker compose ps` — les 5 services sont `healthy`
+- [ ] http://localhost:3000 répond
+- [ ] Création de compte puis connexion fonctionnelles
+- [ ] Une route privée (`/myFolders`) redirige vers `/login` en navigation privée
+- [ ] http://localhost:8086/ai/health renvoie `200`
+- [ ] Eureka liste `API-GATEWAY` et `AI-SERVICE`
+
+---
+
+## 🔐 Identifiants par défaut (DÉVELOPPEMENT UNIQUEMENT)
+
+**PostgreSQL** — `iadaf_user` / `iadaf_password` / base `iadaf_db`
+
+Il n'y a **pas de compte applicatif par défaut** : les utilisateurs se créent
+via `/register`.
+
+⚠️ Régénérer `AUTH_SECRET` et `POSTGRES_PASSWORD` avant toute mise en ligne —
+voir [SECURITY.md](SECURITY.md).

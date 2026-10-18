@@ -5,7 +5,8 @@ import { Sparkles, Send, Loader2, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PageHeader from "../../components/ui/PageHeader";
-import { api, type ChatResponse } from "../../lib/api";
+import LanguageSelector from "../../components/ui/LanguageSelector";
+import { api, ApiError, ChatStreamError } from "../../lib/api";
 
 type Message = {
   role: "assistant" | "user";
@@ -13,28 +14,27 @@ type Message = {
   timestamp: string;
 };
 
+const INTERRUPTED = "Réponse interrompue — renvoyez votre question pour la suite.";
+
 function timeNow(): string {
   return new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function ChatIa() {
   const [inputValue, setInputValue] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  // No timestamp on the welcome: one computed during render would differ
+  // between the server and the client, causing a hydration mismatch.
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Bonjour ! Je suis votre assistant IA. Je peux vous aider pour vos d\u00e9marches administratives. Que souhaitez-vous faire aujourd\u2019hui ?",
+      timestamp: "",
+    },
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Set initial message on client only to avoid hydration mismatch (timeNow differs server/client)
-  useEffect(() => {
-    setMessages([
-      {
-        role: "assistant",
-        content:
-          "Bonjour ! Je suis votre assistant IA. Je peux vous aider pour vos d\u00e9marches administratives. Que souhaitez-vous faire aujourd\u2019hui ?",
-        timestamp: timeNow(),
-      },
-    ]);
-  }, []);
 
   const isSendDisabled = inputValue.trim().length === 0 || isLoading;
 
@@ -58,27 +58,27 @@ export default function ChatIa() {
       setInputValue("");
       setIsLoading(true);
 
-      try {
-        const res: ChatResponse = await api.chat({
-          message: text.trim(),
-          conversation_id: conversationId,
-          language: "fr",
-        });
+      // The answer's bubble, filled in as the text arrives.
+      setMessages((prev) => [...prev, { role: "assistant", content: "", timestamp: timeNow() }]);
+      const showAnswer = (content: string) =>
+        setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
 
+      try {
+        const res = await api.chatStream(
+          { message: text.trim(), conversation_id: conversationId, language: "fr" },
+          showAnswer,
+        );
         setConversationId(res.conversation_id);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: res.response, timestamp: timeNow() },
-        ]);
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "D\u00e9sol\u00e9, une erreur est survenue. Veuillez r\u00e9essayer.",
-            timestamp: timeNow(),
-          },
-        ]);
+      } catch (error) {
+        if (error instanceof ChatStreamError && error.partial) {
+          showAnswer(`${error.partial}\n\n_${INTERRUPTED}_`);
+        } else {
+          showAnswer(
+            error instanceof ApiError && error.status === 429
+              ? "Vous avez envoyé beaucoup de messages. Réessayez dans quelques minutes."
+              : "Désolé, une erreur est survenue. Veuillez réessayer.",
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -98,29 +98,20 @@ export default function ChatIa() {
       <PageHeader
         title="Assistant IA"
         subtitle="Posez vos questions sur les d\u00e9marches administratives"
-        className="px-6 md:px-10"
-        rightContent={
-          <button
-            type="button"
-            className="bg-blue-700 px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-          >
-            <span>{"\ud83c\udf10"}</span>
-            Fran\u00e7ais
-          </button>
-        }
+        rightContent={<LanguageSelector variant="compact" />}
       />
 
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
         <div className="flex-1 min-h-0 p-2 md:p-4 flex flex-col">
           <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-1">
-            {messages.map((msg, idx) => (
+            {messages.map((msg, idx) => msg.content === "" ? null : (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
-                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
+                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                     <Bot className="w-5 h-5" />
                   </div>
                 ) : (
-                  <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-200">
+                  <div className="w-11 h-11 bg-gray-200 rounded-2xl flex items-center justify-center text-gray-600 shrink-0">
                     <span className="text-sm font-bold">U</span>
                   </div>
                 )}
@@ -145,7 +136,9 @@ export default function ChatIa() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-1.5">
-                    <p className="text-xs text-gray-400">{msg.timestamp}</p>
+                    {msg.timestamp && (
+                      <p className="text-xs text-gray-400">{msg.timestamp}</p>
+                    )}
                     {msg.role === "assistant" && idx > 0 && (
                       <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5 flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5" /> OpenAI
@@ -156,9 +149,10 @@ export default function ChatIa() {
               </div>
             ))}
 
-            {isLoading && (
+            {/* Until the first words of the answer arrive. */}
+            {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-sm text-gray-500 flex items-center gap-3">
@@ -173,7 +167,7 @@ export default function ChatIa() {
 
           {messages.length === 1 && (
             <div className="border-t border-gray-100 pt-4 pb-4 mt-4">
-              <p className="text-sm text-gray-500 mb-3 font-medium">💡 Suggestions :</p>
+              <p className="text-sm text-gray-500 mb-3 font-medium">Suggestions</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {suggestions.map((suggestion) => (
                   <button
@@ -196,6 +190,7 @@ export default function ChatIa() {
               onChange={(event) => setInputValue(event.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Posez votre question sur une démarche administrative…"
+              maxLength={2000}
               disabled={isLoading}
               className="flex-1 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 shadow-sm"
             />

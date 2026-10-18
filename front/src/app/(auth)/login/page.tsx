@@ -1,78 +1,62 @@
-"use client";
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import LoginForm from "./LoginForm";
 
-export default function Login() {
-  return (
-    <div className="space-y-10 w-full max-w-5xl">
-      {/* HERO */}
-      <section className="bg-blue-800 text-white p-10 rounded-2xl">
-        <h1 className="text-4xl font-bold mb-4">Connexion / Inscription</h1>
+export const metadata: Metadata = {
+  title: "Connexion",
+};
 
-        <p className="text-lg max-w-2xl text-blue-100">
-          Connectez-vous ou créez un compte pour être accompagné dans vos
-          démarches administratives en France.
-        </p>
-      </section>
+/**
+ * Reduce `callbackUrl` to a same-origin path.
+ *
+ * The proxy hands over an absolute URL, but the parameter is also freely
+ * editable in the address bar — anything pointing elsewhere is dropped so the
+ * page cannot be turned into an open redirect.
+ */
+function resolveCallbackUrl(raw: string | undefined, origin: string): string {
+  if (!raw) return "/";
 
-      {/* ACTIONS */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <AuthCard
-          title="🔐 Se connecter"
-          description="Accédez à votre espace personnel et suivez vos démarches."
-          buttonLabel="Se connecter"
-          variant="primary"
-        />
+  // Protocol-relative URLs ("//evil.com") are absolute despite the leading slash.
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
 
-        <AuthCard
-          title="📝 Créer un compte"
-          description="Créez un compte gratuitement pour commencer."
-          buttonLabel="Créer un compte"
-          variant="secondary"
-        />
-      </section>
+  try {
+    const url = new URL(raw);
+    if (url.origin === origin) return `${url.pathname}${url.search}`;
+  } catch {
+    // Not parseable as a URL — fall through to the safe default.
+  }
 
-      {/* MESSAGE RASSURANT */}
-      <section className="bg-white dark:bg-blue-500 p-6 shadow rounded-xl">
-        <p className="text-zinc-700 dark:text-zinc-100 text-lg">
-          💡 Vous pouvez créer un compte même si vous ne parlez pas bien
-          français. IA DAF vous accompagne étape par étape.
-        </p>
-      </section>
-    </div>
-  );
+  return "/";
 }
 
-/* --- Composant interne --- */
-function AuthCard({
-  title,
-  description,
-  buttonLabel,
-  variant,
+/** Fixed messages only: the query string chooses one, it never supplies text. */
+const NOTICES: Record<string, string> = {
+  "mot-de-passe-modifie":
+    "Mot de passe modifié. Vos sessions ont été fermées sur tous vos appareils : reconnectez-vous avec le nouveau.",
+  "deconnexion-partout": "Vous avez été déconnecté de tous vos appareils.",
+};
+
+export default async function LoginPage({
+  searchParams,
 }: {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  variant: "primary" | "secondary";
+  searchParams: Promise<{ callbackUrl?: string; raison?: string }>;
 }) {
-  const buttonStyle =
-    variant === "primary"
-      ? "bg-blue-600 hover:bg-blue-700 text-white"
-      : "bg-white hover:bg-zinc-100 text-blue-700";
+  const [{ callbackUrl, raison }, headerList] = await Promise.all([
+    searchParams,
+    headers(),
+  ]);
+
+  const host = headerList.get("host") ?? "";
+  const protocol = headerList.get("x-forwarded-proto") ?? "http";
+  const origin = `${protocol}://${host}`;
 
   return (
-    <div className="rounded-xl bg-white dark:bg-blue-500 p-6 shadow hover:shadow-md transition flex flex-col justify-between">
-      <div>
-        <h2 className="text-xl font-semibold text-blue-800 dark:text-white mb-2">
-          {title}
-        </h2>
-
-        <p className="text-zinc-600 dark:text-blue-100 mb-6">{description}</p>
-      </div>
-
-      <button
-        className={`w-full rounded-xl px-4 py-3 font-semibold transition ${buttonStyle}`}
-      >
-        {buttonLabel}
-      </button>
-    </div>
+    <LoginForm
+      googleEnabled={Boolean(
+        process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
+      )}
+      callbackUrl={resolveCallbackUrl(callbackUrl, origin)}
+      notice={raison ? NOTICES[raison] : undefined}
+    />
   );
 }

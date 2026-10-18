@@ -1,6 +1,18 @@
-# 🔧 Guide de Dépannage IA-DAF
+# 🔧 Guide de dépannage IA-DAF
 
-## Erreur : "authentification par mot de passe échouée"
+## Le frontend refuse de démarrer : `AUTH_SECRET is required`
+
+`docker-compose.yml` bloque volontairement le démarrage plutôt que de lancer
+l'application avec une configuration d'authentification incomplète.
+
+```bash
+echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+docker compose up -d frontend
+```
+
+---
+
+## Erreur : « authentification par mot de passe échouée »
 
 ### Symptôme
 ```
@@ -11,126 +23,127 @@ FATAL: authentification par mot de passe a échoué pour l'utilisateur « iadaf_
 
 1. **Vérifier que le fichier `.env` existe** :
    ```bash
-   ls -la .env
-   ```
-   
-   Si absent, créer depuis le template :
-   ```bash
-   cp .env.example .env
+   ls -la .env          # sinon : cp .env.example .env
    ```
 
-2. **Recréer les conteneurs Docker** :
+2. **Vérifier la cohérence du mot de passe.** Le volume PostgreSQL conserve le
+   mot de passe défini à sa **première** initialisation. Changer
+   `POSTGRES_PASSWORD` après coup ne met pas la base à jour.
+
    ```bash
+   # Repartir d'une base vierge (⚠️ efface les données)
    docker compose down -v
-   docker compose up -d
+   docker compose up -d postgres
    ```
 
-3. **Exporter les variables d'environnement** :
-   ```bash
-   set -a
-   source .env
-   set +a
-   ```
-
-4. **Tester la connexion PostgreSQL** :
+3. **Tester la connexion** :
    ```bash
    docker exec -it iadaf-postgres psql -U iadaf_user -d iadaf_db -c "SELECT 1;"
    ```
 
-5. **Démarrer le service avec les variables** :
-   ```bash
-   cd user-service
-   mvn spring-boot:run
-   ```
-
 ---
 
-## Erreur : "Port 8080 already in use"
+## Les tables `app_users` / `pack_entitlements` n'existent pas
 
-### Solution
+Les scripts de `docker/postgres/init/` ne sont exécutés **que sur un volume
+PostgreSQL vierge**. Sur une base déjà initialisée, ils ne rejouent jamais.
 
-1. **Trouver le processus utilisant le port** :
-   ```bash
-   # Linux/Mac
-   lsof -i :8080
-   
-   # Windows
-   netstat -ano | findstr :8080
-   ```
+Le frontend applique le même DDL de façon idempotente au premier accès :
+ouvrez http://localhost:3000 une fois, puis vérifiez :
 
-2. **Tuer le processus** :
-   ```bash
-   # Linux/Mac
-   kill -9 <PID>
-   
-   # Windows
-   taskkill /PID <PID> /F
-   ```
-
----
-
-## Erreur : "Discovery Service unavailable"
-
-### Symptôme
-Les services ne s'enregistrent pas dans Eureka.
-
-### Solution
-
-1. **Vérifier que Discovery Service est démarré** :
-   ```bash
-   curl http://localhost:8761
-   ```
-
-2. **Vérifier l'ordre de démarrage** :
-   - ✅ 1. Docker (PostgreSQL, Keycloak)
-   - ✅ 2. Discovery Service
-   - ✅ 3. Autres microservices
-   - ✅ 4. API Gateway
-
-3. **Vérifier les logs Eureka** :
-   ```bash
-   cd discovery-service
-   mvn spring-boot:run
-   # Chercher "Registered instance" dans les logs
-   ```
-
----
-
-## Erreur : "HHH90000025: PostgreSQLDialect does not need to be specified"
-
-### Solution
-
-Supprimer la ligne `dialect:` dans `application.yml` :
-
-```yaml
-spring:
-  jpa:
-    properties:
-      hibernate:
-        # dialect: org.hibernate.dialect.PostgreSQLDialect  # ❌ SUPPRIMER
-        format_sql: true
+```bash
+docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"
 ```
 
 ---
 
-## Keycloak : "Realm not found"
+## Erreur : « Port 8080 already in use »
 
-### Solution
+```bash
+# Linux/Mac
+lsof -i :8080
+kill -9 <PID>
 
-1. **Vérifier que Keycloak est démarré** :
+# Windows
+netstat -ano | findstr :8080
+taskkill /PID <PID> /F
+```
+
+---
+
+## Erreur : « Discovery Service unavailable »
+
+Les services ne s'enregistrent pas dans Eureka.
+
+1. **Vérifier que Discovery Service répond** :
    ```bash
-   docker logs iadaf-keycloak
+   curl http://localhost:8761/actuator/health
    ```
 
-2. **Vérifier que le realm est importé** :
+2. **Respecter l'ordre de démarrage** :
+   - ✅ 1. PostgreSQL
+   - ✅ 2. Discovery Service
+   - ✅ 3. API Gateway et AI Service
+   - ✅ 4. Frontend
+
+   `docker compose up` applique cet ordre via les `healthcheck` ; en lancement
+   manuel, c'est à vous de le respecter.
+
+3. **Compter ~30 s** après le démarrage pour voir les instances apparaître :
    ```bash
-   curl http://localhost:8180/realms/iadaf/.well-known/openid-configuration
+   curl http://localhost:8761/eureka/apps | grep -i "<name>"
    ```
 
-3. **Réimporter le realm manuellement** :
-   - Ouvrir http://localhost:8180
-   - Login: admin / admin
-   - Import realm depuis `docker/keycloak/realm-export.json`
+---
+
+## Le chatbot répond toujours la même chose (mode dégradé)
+
+L'AI Service n'arrive pas à joindre le LLM.
+
+```bash
+docker compose logs ai-service | grep -i -E "openai|llm"
+```
+
+Vérifier que `OPENAI_API_KEY` est renseignée dans `.env` **et** que le
+conteneur a été recréé depuis :
+
+```bash
+docker compose up -d --force-recreate ai-service
+```
+
+---
+
+## Le paiement affiche « non configuré »
+
+`STRIPE_SECRET_KEY` est absente. Récupérez une clé de test sur
+https://dashboard.stripe.com/test/apikeys et renseignez-la dans `.env`.
+
+## Le paiement aboutit mais le pack reste verrouillé
+
+Le déblocage passe **uniquement** par le webhook. Si Stripe ne peut pas
+joindre l'application, aucun droit n'est écrit.
+
+```bash
+# En local, ouvrir un tunnel :
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+Reporter le secret `whsec_...` affiché dans `STRIPE_WEBHOOK_SECRET`, puis
+redémarrer le frontend. Vérifier ensuite :
+
+```bash
+docker compose logs frontend | grep stripe-webhook
+docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db \
+  -c "SELECT * FROM users.pack_entitlements;"
+```
+
+---
+
+## Connexion impossible après changement de `AUTH_SECRET`
+
+Les sessions existantes sont signées avec l'ancien secret et deviennent
+invalides. Videz les cookies du site, ou ouvrez une fenêtre de navigation
+privée.
 
 ---
 
@@ -141,18 +154,23 @@ spring:
 docker exec -it iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"
 ```
 
-### Keycloak
+### AI Service
 ```bash
-curl http://localhost:8180/realms/iadaf/.well-known/openid-configuration | jq
+curl http://localhost:8086/ai/health
 ```
 
 ### Eureka
 ```bash
-curl http://localhost:8761/eureka/apps | grep -i "user-service"
+curl http://localhost:8761/eureka/apps | grep -i "<name>"
 ```
 
 ### API Gateway
 ```bash
 curl http://localhost:8080/actuator/health
 curl http://localhost:8080/actuator/gateway/routes | jq
+```
+
+### Santé globale
+```bash
+bash tests/health-checks/check-all-services.sh
 ```

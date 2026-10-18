@@ -220,143 +220,25 @@ Les logs montrent :
 - Les erreurs de routage
 - Les activations du circuit breaker
 
-## Sécurité OAuth2
+## Sécurité
 
-L'API Gateway est sécurisé avec Spring Security OAuth2 Resource Server et valide les tokens JWT émis par Keycloak.
+La gateway n'accepte que les appels du frontend Next.js : chacun porte un
+**JWT interne** HS256 de 60 secondes, signé avec `INTERNAL_JWT_SECRET`
+(`iss=iadaf-frontend`, `aud=iadaf-backend`). Sans jeton valide, la réponse est
+**401** — seuls `/actuator/health` et les pré-vols CORS (`OPTIONS`) passent.
+Voir [`SecurityConfig`](src/main/java/com/iadaf/gateway/config/SecurityConfig.java).
 
-### Prérequis
+[`UserIdentityFilter`](src/main/java/com/iadaf/gateway/filter/UserIdentityFilter.java)
+supprime tout en-tête `X-User-Id` envoyé par l'appelant et le réécrit à partir
+du sujet du jeton vérifié (absent pour un visiteur anonyme). Les services en
+aval revalident eux-mêmes le jeton, qui leur est relayé tel quel.
 
-- Keycloak démarré sur http://localhost:8180
-- Realm `iadaf` configuré
-
-### Authentification
-
-Toutes les requêtes (sauf `/actuator/health` et `/actuator/info`) nécessitent un token JWT valide dans le header Authorization :
-
-```bash
-Authorization: Bearer <JWT_TOKEN>
-```
-
-### Obtenir un token JWT
-
-1. **Via l'API Keycloak** :
-```bash
-curl -X POST 'http://localhost:8180/realms/iadaf/protocol/openid-connect/token' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'client_id=iadaf-gateway' \
-  -d 'client_secret=<YOUR_CLIENT_SECRET>' \
-  -d 'grant_type=password' \
-  -d 'username=<USERNAME>' \
-  -d 'password=<PASSWORD>'
-```
-
-2. **Utiliser le token** :
-```bash
-# Récupérer le token de la réponse JSON (champ "access_token")
-export TOKEN="<ACCESS_TOKEN>"
-
-# Faire une requête authentifiée
-curl http://localhost:8080/api/users \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Rôles et permissions
-
-L'API Gateway supporte les rôles suivants (définis dans Keycloak) :
-
-| Rôle | Description | Accès |
-|------|-------------|-------|
-| **USER** | Utilisateur standard | `/api/users/**`, `/api/demarches/**`, `/api/documents/**`, `/api/ia/**` |
-| **AGENT** | Agent administratif | Tous les endpoints USER + `/api/agent/**` |
-| **SUPPORT** | Support technique | `/api/analytics/**` |
-| **ADMIN** | Administrateur | Tous les endpoints |
-
-### Exemples de requêtes authentifiées
-
-#### Appel avec authentification
-```bash
-# Utilisateur standard (rôle USER)
-curl http://localhost:8080/api/demarches \
-  -H "Authorization: Bearer $TOKEN"
-
-# Agent (rôle AGENT)
-curl http://localhost:8080/api/agent/pending-requests \
-  -H "Authorization: Bearer $TOKEN"
-
-# Admin (rôle ADMIN)
-curl http://localhost:8080/api/admin/users \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-#### Réponses d'erreur
-
-**401 Unauthorized** - Token manquant ou invalide :
-```json
-{
-  "timestamp": "2025-12-18T10:30:00",
-  "status": 401,
-  "error": "Unauthorized",
-  "message": "Authentication required. Please provide a valid JWT token.",
-  "path": "/api/users"
-}
-```
-
-**403 Forbidden** - Permissions insuffisantes :
-```json
-{
-  "timestamp": "2025-12-18T10:30:00",
-  "status": 403,
-  "error": "Forbidden",
-  "message": "You don't have permission to access this resource.",
-  "path": "/api/admin/users"
-}
-```
-
-### Configuration
-
-Les URLs Keycloak sont configurables via des variables d'environnement :
-
-```bash
-KEYCLOAK_ISSUER_URI=http://localhost:8180/realms/iadaf
-KEYCLOAK_JWK_SET_URI=http://localhost:8180/realms/iadaf/protocol/openid-connect/certs
-```
-
-### TokenRelay
-
-Le filtre `TokenRelay` propage automatiquement le token JWT aux microservices en aval. Les microservices peuvent ainsi valider l'authentification et récupérer les informations utilisateur.
-
-### Tests de sécurité
-
-Pour tester la sécurité :
-
-1. **Sans token** (doit renvoyer 401) :
-```bash
-curl http://localhost:8080/api/users
-```
-
-2. **Avec token valide** (doit fonctionner) :
-```bash
-curl http://localhost:8080/api/users \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-3. **Avec rôle insuffisant** (doit renvoyer 403) :
-```bash
-# Utilisateur avec rôle USER essayant d'accéder à un endpoint ADMIN
-curl http://localhost:8080/api/admin/users \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### Évolutions futures
-
-- Ajouter un rate limiter
-- Configurer HTTPS
-- Implémenter le refresh token
-- Ajouter des métriques de sécurité
+La gateway refuse de démarrer si `INTERNAL_JWT_SECRET` manque ou fait moins de
+32 octets. Le modèle complet est décrit dans [SECURITY.md](../SECURITY.md#-jetons-internes).
 
 ## Dépendances
 
-- Spring Boot 3.2.0
+- Spring Boot 4.0.8 (Spring Framework 7)
 - Spring Cloud Gateway
 - Spring Cloud Netflix Eureka Client
 - Resilience4J Circuit Breaker

@@ -15,8 +15,6 @@ public class DashboardSummaryDTO {
     private Long totalDemarches;
     private Long activeDemarches;
     private Long completedDemarches;
-    private Long totalDocuments;
-    private Long documentsUploadedToday;
     private Double averageDemarcheProgression;
     private LocalDateTime lastUpdate;
 }

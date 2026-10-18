@@ -1,163 +1,48 @@
-# 🧪 IA-DAF Integration Tests
+# 🧪 IA-DAF — Tests
 
-Suite complète de tests d'intégration pour vérifier le bon fonctionnement de tous les microservices.
+| Niveau | Où | Lancer |
+|--------|----|--------|
+| Unitaires Java (JUnit, MockMvc, jetons réels) | `*-service/src/test` | `mvn verify` |
+| Unitaires Python (pytest) | `ai-service/tests` | `cd ai-service && pip install -r requirements-dev.txt && pytest` |
+| Python sur PostgreSQL | `ai-service/tests/test_conversations_pg.py` | idem, avec `TEST_DATABASE_URL=postgresql+asyncpg://…` |
+| Frontend (types, lint, build) | `front/` | `npx tsc --noEmit && npx eslint src && npm run build` |
+| **De bout en bout** | `tests/e2e/` | stack lancée, puis `bash tests/e2e/run-all.sh` |
+| Santé rapide | `tests/health-checks/` | `bash tests/health-checks/check-all-services.sh` |
+| Fichiers de déploiement (shellcheck, compose de production, Caddyfile) | `deploy/`, `docker-compose.prod.yml` | job `deploy` de la CI |
+| **Après un déploiement** | `deploy/smoke-test.sh` | `deploy/smoke-test.sh <domaine>` — sans écriture, sûr en production |
+| Restauration d'une sauvegarde | `deploy/restore-test.sh` | voir [DEPLOYMENT.md](../DEPLOYMENT.md), étape 6 |
+| CSP, dans un vrai navigateur | `tests/browser/csp-check.mjs` | `node tests/browser/csp-check.mjs [url] [--signup]` — Chrome ou Edge ; chaque nuit en CI |
+| Charge (k6) | `tests/load/load-test.js` | voir [DEPLOYMENT.md](../DEPLOYMENT.md), étape 7 — sur le VPS, avant l'ouverture |
 
-## Prérequis
+La CI (`.github/workflows/ci.yml`) joue les quatre premiers niveaux et les
+contrôles des fichiers de déploiement à chaque PR ; la suite de bout en bout tourne chaque nuit et à la demande
+(`.github/workflows/e2e.yml`).
 
-- Bash shell
-- curl
-- jq
-- PostgreSQL client (psql)
-- Tous les services démarrés
+## Suite de bout en bout
 
-## Structure
-
-```
-tests/
-├── integration/                      # Tests d'intégration complets
-│   ├── test-all.sh                  # Lance tous les tests
-│   ├── test-docker-infrastructure.sh # Test infrastructure Docker
-│   ├── test-eureka-registration.sh  # Test enregistrement Eureka
-│   ├── test-oauth2-flow.sh          # Test flux OAuth2
-│   └── test-inter-service-communication.sh # Test communication
-└── health-checks/                    # Vérifications rapides
-    └── check-all-services.sh        # Health check de tous les services
-```
-
-## Utilisation
-
-### Lancer tous les tests
+Contre une stack de **développement** (avec `docker-compose.override.yml`,
+qui publie les ports sur `127.0.0.1` et ajoute Mailpit) :
 
 ```bash
-cd tests/integration
-chmod +x *.sh
-./test-all.sh
+docker compose up -d --build
+bash tests/e2e/run-all.sh          # code de sortie = nombre de scripts en échec
 ```
 
-### Lancer un test spécifique
+| Script | Ce qu'il vérifie |
+|--------|------------------|
+| `security.sh` | Rien ne répond sans jeton interne : gateway, chaque service en direct, `X-User-Id` forgé, jeton signé avec une autre clé, effacement sans scope ; routes d'administration réservées au scope `admin` |
+| `accounts.sh` | Inscription, connexion, mot de passe oublié via Mailpit (un seul e-mail, lien à usage unique, jeton haché), consentement aux e-mails, limitation de débit, suppression |
+| `documents.sh` | Dossier créé par pack, dépôt et retrait de pièces, étape cochée, faux PDF refusé, cloisonnement, chiffrement en base, effacement RGPD sur tous les services |
+| `precheck.sh` | Pré-vérification : titre expiré, justificatif récent, cloisonnement, statistiques anonymes et leur lecture réservée, résultat contesté |
+| `chat.sh` | Assistant en streaming : format SSE de bout en bout, texte reçu au fil de la génération, réponse enregistrée, limites de taille, effacement avec le compte |
 
-```bash
-# Test infrastructure Docker
-./test-docker-infrastructure.sh
+Configuration par variables d'environnement (voir `tests/e2e/lib.sh`) :
+`BASE_URL`, `GATEWAY_URL`, `MAILPIT_URL`, `ENV_FILE`, `PG_CONTAINER`, et
+`E2E_SKIP_LLM=1` pour sauter les contrôles qui appellent le LLM.
 
-# Test enregistrement Eureka
-./test-eureka-registration.sh
+> ⚠️ Les scripts créent des comptes, simulent des achats en écrivant
+> directement en base et vident les compteurs de limitation de débit : **à ne
+> jamais lancer contre une base de production.**
 
-# Test OAuth2
-./test-oauth2-flow.sh
-
-# Test communication inter-services
-./test-inter-service-communication.sh
-```
-
-### Health Check rapide
-
-```bash
-cd tests/health-checks
-chmod +x check-all-services.sh
-./check-all-services.sh
-```
-
-## Ce qui est testé
-
-### Test 1: Infrastructure Docker
-- ✅ Conteneurs PostgreSQL, Keycloak, pgAdmin running
-- ✅ Connexion PostgreSQL
-- ✅ Existence des schémas (users, demarches, documents, analytics, ai)
-- ✅ Santé de Keycloak
-- ✅ Configuration du realm
-
-### Test 2: Enregistrement Eureka
-- ✅ Eureka Server disponible
-- ✅ Tous les microservices enregistrés
-- ✅ Nombre d'instances correct
-
-### Test 3: Flux OAuth2
-- ✅ Obtention de token pour utilisateur admin
-- ✅ Structure du token JWT valide
-- ✅ Claims présents dans le token
-- ✅ Token accepté par API Gateway
-- ✅ Token invalide rejeté
-- ✅ Authentification de tous les utilisateurs de test
-
-### Test 4: Communication Inter-Services
-- ✅ API Gateway → User Service
-- ✅ API Gateway → Demarches Service
-- ✅ API Gateway → Document Service
-- ✅ API Gateway → Analytics Service
-- ✅ API Gateway → AI Service
-- ✅ Flux CRUD complet (Create/Read/Delete)
-
-## Interprétation des Résultats
-
-### ✅ Tous les tests PASSED
-Le système est complètement fonctionnel. Tous les services communiquent correctement.
-
-### ❌ Test Infrastructure FAILED
-Vérifier que Docker Compose est lancé : `docker compose up -d`
-
-### ❌ Test Eureka FAILED
-- Vérifier que Discovery Service est démarré
-- Attendre 30 secondes après le démarrage des services
-
-### ❌ Test OAuth2 FAILED
-- Vérifier que Keycloak est accessible
-- Vérifier la configuration du realm
-- Vérifier les credentials des utilisateurs de test
-
-### ❌ Test Communication FAILED
-- Vérifier que tous les services sont démarrés
-- Vérifier les logs des services défaillants
-- Vérifier la configuration réseau
-
-## Troubleshooting
-
-### Erreur: "jq command not found"
-```bash
-# macOS
-brew install jq
-
-# Ubuntu/Debian
-sudo apt-get install jq
-
-# CentOS/RHEL
-sudo yum install jq
-```
-
-### Erreur: "psql command not found"
-```bash
-# macOS
-brew install postgresql
-
-# Ubuntu/Debian
-sudo apt-get install postgresql-client
-
-# CentOS/RHEL
-sudo yum install postgresql
-```
-
-### Tests échouent de manière intermittente
-- Augmenter les temps d'attente dans les scripts
-- Vérifier la charge système
-- Vérifier les ressources Docker disponibles
-
-## CI/CD Integration
-
-Pour intégrer dans un pipeline CI/CD:
-
-```yaml
-# GitHub Actions example
-- name: Run Integration Tests
-  run: |
-    cd tests/integration
-    chmod +x test-all.sh
-    ./test-all.sh
-```
-
-## Contribution
-
-Pour ajouter de nouveaux tests :
-1. Créer un nouveau script dans `tests/integration/`
-2. Suivre le format des tests existants
-3. Ajouter l'appel dans `test-all.sh`
-4. Mettre à jour ce README
+Prérequis : Bash, `curl`, Python 3, Node (pour signer les jetons de test avec
+`front/scripts/dev-token.mjs`, donc `npm ci` dans `front/`), Docker.

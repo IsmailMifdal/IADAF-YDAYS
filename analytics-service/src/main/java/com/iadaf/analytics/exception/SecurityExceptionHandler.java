@@ -1,6 +1,8 @@
 package com.iadaf.analytics.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -12,7 +14,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Consulté avant {@code GlobalExceptionHandler} : sans cet ordre, son
+ * gestionnaire générique {@code Exception} capturait aussi les refus d'accès,
+ * qui partaient en 500 au lieu de 403.
+ */
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class SecurityExceptionHandler {
 

@@ -125,27 +125,6 @@ public class AnalyticsService {
         }
     }
 
-    @Cacheable(value = "documentStats", key = "'all'")
-    public DocumentStatsDTO getDocumentStats() {
-        log.info("Fetching document statistics");
-        DocumentStatsDTO stats = new DocumentStatsDTO();
-        
-        try {
-            // For now, return mock data as document service endpoints are not specified
-            stats.setTotalDocuments(0L);
-            stats.setTotalSize(0L);
-            stats.setByType(new HashMap<>());
-            stats.setAverageSize(0.0);
-            stats.setUploadsLastMonth(0L);
-            stats.setMostCommonType("N/A");
-            
-            log.info("Document stats: {}", stats);
-            return stats;
-        } catch (Exception e) {
-            log.error("Error fetching document statistics", e);
-            throw new ServiceUnavailableException("document-service", e);
-        }
-    }
 
     @Cacheable(value = "userActivity", key = "'all'")
     public List<UserActivityDTO> getUsersActivity() {
@@ -196,8 +175,6 @@ public class AnalyticsService {
                 activity.setCompletedDemarches(userDemarches.stream()
                         .filter(d -> "TERMINEE".equals(d.get("statut")))
                         .count());
-                activity.setTotalDocuments(0L);
-                activity.setLastActivityDate(LocalDateTime.now());
                 activity.setActivityScore(calculateActivityScore(activity));
                 
                 activities.add(activity);
@@ -263,8 +240,6 @@ public class AnalyticsService {
                 dashboard.setAverageDemarcheProgression(0.0);
             }
 
-            dashboard.setTotalDocuments(0L);
-            dashboard.setDocumentsUploadedToday(0L);
             dashboard.setLastUpdate(LocalDateTime.now());
 
             return dashboard;
@@ -274,28 +249,11 @@ public class AnalyticsService {
         }
     }
 
-    @Cacheable(value = "performance", key = "'metrics'")
-    public PerformanceMetricsDTO getPerformanceMetrics() {
-        log.info("Fetching performance metrics");
-        PerformanceMetricsDTO metrics = new PerformanceMetricsDTO();
-        
-        // Mock performance metrics
-        metrics.setAverageResponseTime(150.0);
-        metrics.setTotalRequests(1000L);
-        metrics.setSuccessfulRequests(980L);
-        metrics.setFailedRequests(20L);
-        metrics.setSuccessRate(98.0);
-        metrics.setActiveConnections(5);
-        metrics.setTimestamp(LocalDateTime.now());
-        
-        return metrics;
-    }
 
     private Integer calculateActivityScore(UserActivityDTO activity) {
         int score = 0;
         score += activity.getTotalDemarches() * 10;
         score += activity.getCompletedDemarches() * 20;
-        score += activity.getTotalDocuments() * 5;
         return score;
     }
 }

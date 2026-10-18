@@ -1,44 +1,38 @@
-"""SQLAlchemy async models for conversation persistence.
+"""Conversation persistence — PostgreSQL, schema ``ai``.
 
-Uses SQLite (via aiosqlite) for conversations.
-Uses PostgreSQL (via asyncpg) for lead emails.
+The schema is owned by Alembic migrations (``ai-service/alembic``), applied at
+startup by :func:`run_migrations`. These models describe it; they never create
+or alter tables themselves.
 """
 
-from datetime import datetime
+import asyncio
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import Column, DateTime, ForeignKey, MetaData, String, Text, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 from app.core.config import settings
 
+SCHEMA = "ai"
+
 # ---------------------------------------------------------------------------
-# Engines
+# Engine
 # ---------------------------------------------------------------------------
 
-# SQLite engine for conversations/messages
-engine = create_async_engine(settings.database_url, echo=False)
-
-# PostgreSQL engine for lead emails
-pg_engine = create_async_engine(settings.postgres_url, echo=False)
+engine = create_async_engine(settings.database_url, echo=False, pool_pre_ping=True)
 
 
 # ---------------------------------------------------------------------------
-# Base declarative classes
+# Models
 # ---------------------------------------------------------------------------
 
 
 class Base(DeclarativeBase):
-    """Shared declarative base for SQLite models."""
+    """Shared declarative base, bound to the ``ai`` schema."""
 
-
-class PgBase(DeclarativeBase):
-    """Declarative base for PostgreSQL models."""
-
-
-# ---------------------------------------------------------------------------
-# SQLite models (conversations)
-# ---------------------------------------------------------------------------
+    metadata = MetaData(schema=SCHEMA)
 
 
 class Conversation(Base):
@@ -47,11 +41,16 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(String(36), primary_key=True)
-    language = Column(String(5), default="FR")
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    # Account that owns the conversation, NULL for anonymous chats (accueil).
+    # Only set from a verified frontend token — see app.core.security.
+    user_id = Column(String(36), nullable=True, index=True)
+    language = Column(String(5), server_default="FR")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    messages = relationship(
+        "Message", back_populates="conversation", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Message(Base):
@@ -60,56 +59,69 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(String(36), primary_key=True)
-    conversation_id = Column(String(36), ForeignKey("conversations.id"), nullable=False)
+    conversation_id = Column(
+        String(36), ForeignKey(Conversation.id, ondelete="CASCADE"), nullable=False, index=True
+    )
     role = Column(String(20), nullable=False)  # 'user' | 'assistant'
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     conversation = relationship("Conversation", back_populates="messages")
 
 
 # ---------------------------------------------------------------------------
-# PostgreSQL models (lead emails)
+# Migrations
 # ---------------------------------------------------------------------------
 
+_ALEMBIC_DIR = Path(__file__).resolve().parents[2] / "alembic"
 
-class LeadEmail(PgBase):
-    """Stores lead emails collected from the accueil chat."""
 
-    __tablename__ = "lead_emails"
+def _upgrade_to_head() -> None:
+    from alembic import command
+    from alembic.config import Config
 
-    id = Column(String(36), primary_key=True)
-    email = Column(String(255), nullable=False)
-    source = Column(String(50), default="accueil_chat")
-    created_at = Column(DateTime, default=func.now())
+    config = Config()
+    config.set_main_option("script_location", str(_ALEMBIC_DIR))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(config, "head")
 
-    __table_args__ = (
-        UniqueConstraint("email", "source", name="uq_lead_email_source"),
-    )
+
+async def run_migrations() -> None:
+    """Bring the schema up to date (idempotent).
+
+    Run in a thread: Alembic's async environment starts its own event loop,
+    which cannot nest inside the application's.
+    """
+    await asyncio.to_thread(_upgrade_to_head)
 
 
 # ---------------------------------------------------------------------------
-# Helper: initialise tables
+# Helpers
 # ---------------------------------------------------------------------------
-
-
-async def init_db() -> None:
-    """Create all database tables (idempotent)."""
-    # SQLite tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # PostgreSQL tables
-    async with pg_engine.begin() as conn:
-        await conn.run_sync(PgBase.metadata.create_all)
 
 
 async def get_session() -> AsyncSession:  # type: ignore[return]
-    """Yield an async SQLAlchemy session for SQLite."""
+    """Yield an async SQLAlchemy session."""
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
 
-async def get_pg_session() -> AsyncSession:  # type: ignore[return]
-    """Yield an async SQLAlchemy session for PostgreSQL."""
-    async with AsyncSession(pg_engine, expire_on_commit=False) as session:
-        yield session
+async def _delete_conversations(session: AsyncSession, condition) -> int:
+    """Delete the conversations matching ``condition``; messages cascade."""
+    result = await session.execute(delete(Conversation).where(condition))
+    await session.commit()
+    return result.rowcount or 0
+
+
+async def delete_user_conversations(user_id: str) -> int:
+    """Erase every conversation owned by ``user_id``. Returns how many."""
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        return await _delete_conversations(session, Conversation.user_id == user_id)
+
+
+async def purge_expired_conversations(retention_days: int) -> int:
+    """Erase conversations inactive for more than ``retention_days``."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        return await _delete_conversations(session, Conversation.updated_at < cutoff)
+

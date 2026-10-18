@@ -8,14 +8,25 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Administration des fiches utilisateur (table {@code users.users}).
+ *
+ * <p>Réservée au scope {@code admin}, qu'aucun jeton ne porte aujourd'hui :
+ * ces routes listent, modifient et suppriment n'importe quelle fiche, sans
+ * notion de propriétaire. Ouvertes à tout jeton valide, un compte quelconque
+ * pouvait lire les e-mails de tous les autres. Les comptes de connexion
+ * vivent ailleurs ({@code users.app_users}, gérés par le frontend).
+ */
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasAuthority('SCOPE_admin')")
 public class UserController {
 
     private final UserService userService;

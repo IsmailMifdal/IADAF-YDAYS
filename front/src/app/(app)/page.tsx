@@ -91,7 +91,7 @@ export default function Home() {
           <div>
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1 rounded-full text-sm">
               <Sparkles className="w-4 h-4" />
-              Propulsé par l'Intelligence Artificielle
+              Propulsé par l’Intelligence Artificielle
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mt-6">
@@ -103,53 +103,72 @@ export default function Home() {
             </h1>
 
             <p className="text-lg text-blue-100 max-w-lg mt-6">
-              Votre assistant intelligent pour naviguer dans l'administration
+              Votre assistant intelligent pour naviguer dans l’administration
               française. Accessible, multilingue, et disponible 24/7.
             </p>
 
             <div className="flex gap-4 mt-8 flex-wrap">
               <Link
                 href="/nosPacks"
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-blue-800 shadow-sm transition duration-200 ease-out hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:scale-[0.97] motion-reduce:active:scale-100"
               >
                 Commencer maintenant →
               </Link>
               <Link
                 href="/procedures"
-                className="bg-white text-blue-800 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition"
+                className="rounded-xl bg-white/10 border border-white/25 text-white px-6 py-3 font-medium transition duration-200 ease-out hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:scale-[0.97] motion-reduce:active:scale-100"
               >
                 Explorer les démarches
               </Link>
             </div>
           </div>
 
-          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 backdrop-blur">
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                  <MessageSquare className="w-5 h-5" />
+          {/* Visuel hero — carte des atouts clés */}
+          <div className="relative hidden lg:block">
+            <div className="absolute -top-8 -right-8 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -left-6 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
+
+            <div className="relative rounded-2xl border border-white/20 bg-white/10 p-8 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Assistant IA</p>
-                  <p className="text-sm text-green-600">En ligne</p>
+                  <p className="font-semibold text-white text-lg">IA-DAF</p>
+                  <p className="text-sm text-blue-200">Votre allié administratif</p>
                 </div>
               </div>
 
-              <div className="bg-gray-100 rounded-lg p-4 text-gray-700 text-sm mb-4">
-                Bonjour ! Je suis votre assistant pour les démarches
-                administratives. Comment puis-je vous aider aujourd'hui ?
+              <div className="space-y-4">
+                {[
+                  { icon: Globe, label: "Multilingue", desc: "Dans votre langue" },
+                  { icon: Clock, label: "Disponible 24/7", desc: "À tout moment" },
+                  { icon: Shield, label: "Sécurisé", desc: "Données protégées" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-4 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 backdrop-blur-sm transition hover:bg-white/15"
+                  >
+                    <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center shrink-0">
+                      <item.icon className="w-5 h-5 text-blue-100" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{item.label}</p>
+                      <p className="text-sm text-blue-200">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-400 flex-1">
-                  Posez votre question...
-                </span>
-                <button
-                  type="button"
-                  className="bg-red-500 text-white px-3 py-1.5 rounded-md text-base"
-                >
-                  ⇨
-                </button>
+              <div className="mt-8 pt-6 border-t border-white/15 flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-white">15 000+</p>
+                  <p className="text-sm text-blue-200">Utilisateurs accompagnés</p>
+                </div>
+                <div className="flex items-center gap-2 bg-green-400/20 px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span className="text-sm text-green-100">En ligne</span>
+                </div>
               </div>
             </div>
           </div>
@@ -180,7 +199,7 @@ export default function Home() {
             <span className="px-5 py-2 rounded-xl text-lg font-semibold bg-orange-100 text-orange-700">
               France Travail
             </span>
-            <span className="px-5 py-2 rounded-xl text-lg font-semibold bg-red-100 text-red-700">
+            <span className="rounded-xl bg-blue-50 px-5 py-2 text-lg font-semibold text-blue-700">
               Préfecture
             </span>
             <span className="px-5 py-2 rounded-xl text-lg font-semibold bg-indigo-100 text-indigo-700">
@@ -227,8 +246,8 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <article className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition flex flex-col gap-4">
+          <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-10">
+            <article className="bg-white rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 flex flex-col gap-4">
               <div className="w-12 h-12 bg-blue-700 rounded-lg flex items-center justify-center text-white">
                 <MessageSquare className="w-6 h-6" />
               </div>
@@ -236,12 +255,12 @@ export default function Home() {
                 Assistant IA Multilingue
               </h3>
               <p className="text-gray-600">
-                Posez vos questions dans votre langue, l'IA vous répond de
+                Posez vos questions dans votre langue, l’IA vous répond de
                 manière claire et adaptée
               </p>
             </article>
 
-            <article className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition flex flex-col gap-4">
+            <article className="bg-white rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 flex flex-col gap-4">
               <div className="w-12 h-12 bg-blue-700 rounded-lg flex items-center justify-center text-white">
                 <Shield className="w-6 h-6" />
               </div>
@@ -254,7 +273,7 @@ export default function Home() {
               </p>
             </article>
 
-            <article className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition flex flex-col gap-4">
+            <article className="bg-white rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 flex flex-col gap-4">
               <div className="w-12 h-12 bg-blue-700 rounded-lg flex items-center justify-center text-white">
                 <Clock className="w-6 h-6" />
               </div>
@@ -262,12 +281,12 @@ export default function Home() {
                 Suivi en Temps Réel
               </h3>
               <p className="text-gray-600">
-                Suivez l'avancement de vos démarches avec des notifications à
+                Suivez l’avancement de vos démarches avec des notifications à
                 chaque étape
               </p>
             </article>
 
-            <article className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition flex flex-col gap-4">
+            <article className="bg-white rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 flex flex-col gap-4">
               <div className="w-12 h-12 bg-blue-700 rounded-lg flex items-center justify-center text-white">
                 <Globe className="w-6 h-6" />
               </div>
@@ -295,9 +314,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm hover:shadow-md transition relative flex flex-col gap-4">
-              <span className="absolute -top-4 left-6 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
+          <div className="stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 relative flex flex-col gap-4">
+              <span className="absolute -top-4 left-6 rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white">
                 01
               </span>
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -312,15 +331,15 @@ export default function Home() {
               </p>
             </article>
 
-            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm hover:shadow-md transition relative flex flex-col gap-4">
-              <span className="absolute -top-4 left-6 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
+            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 relative flex flex-col gap-4">
+              <span className="absolute -top-4 left-6 rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white">
                 02
               </span>
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                 <MessageSquare className="w-6 h-6 text-gray-700" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900">
-                Parlez à l'IA
+                Parlez à l’IA
               </h3>
               <p className="text-gray-600">
                 Expliquez votre situation à notre assistant intelligent qui vous
@@ -328,8 +347,8 @@ export default function Home() {
               </p>
             </article>
 
-            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm hover:shadow-md transition relative flex flex-col gap-4">
-              <span className="absolute -top-4 left-6 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
+            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 relative flex flex-col gap-4">
+              <span className="absolute -top-4 left-6 rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white">
                 03
               </span>
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -339,13 +358,13 @@ export default function Home() {
                 Préparez vos documents
               </h3>
               <p className="text-gray-600">
-                L'IA vous guide pour rassembler et uploader les documents
+                L’IA vous guide pour rassembler et uploader les documents
                 nécessaires.
               </p>
             </article>
 
-            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm hover:shadow-md transition relative flex flex-col gap-4">
-              <span className="absolute -top-4 left-6 bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
+            <article className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 relative flex flex-col gap-4">
+              <span className="absolute -top-4 left-6 rounded-full bg-blue-600 px-3 py-1 text-sm font-semibold text-white">
                 04
               </span>
               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -355,8 +374,8 @@ export default function Home() {
                 Suivez votre dossier
               </h3>
               <p className="text-gray-600">
-                Recevez des notifications et suivez l'avancement en temps réel
-                jusqu'à la validation.
+                Recevez des notifications et suivez l’avancement en temps réel
+                jusqu’à la validation.
               </p>
             </article>
           </div>
@@ -374,7 +393,7 @@ export default function Home() {
       </section>
 
       <section className="max-w-5xl mx-auto px-6 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-10">
           {profiles.map((profile) => (
             <ProfileCard key={profile.title} {...profile} />
           ))}
@@ -404,7 +423,7 @@ function ProfileCard({
   const palette = colorStyles[color];
 
   return (
-    <div className="relative bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition h-full flex flex-col justify-between overflow-hidden">
+    <div className="relative bg-white rounded-xl shadow-sm transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0 p-6 h-full flex flex-col justify-between overflow-hidden">
       <div
         className={`absolute inset-x-0 top-0 h-2 ${palette.bar} rounded-t-xl`}
       />
@@ -439,7 +458,7 @@ function ProfileCard({
 
         <Link
           href="/nosPacks"
-          className="bg-red-500 hover:bg-red-600 text-white w-full py-2 rounded-lg mt-4 font-medium transition text-center"
+          className="mt-4 block w-full rounded-xl bg-blue-600 py-2.5 text-center font-medium text-white transition duration-200 ease-out hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100"
         >
           Commencer →
         </Link>

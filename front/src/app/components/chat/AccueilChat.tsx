@@ -5,9 +5,10 @@ import { Send, Loader2, Bot, MessageSquare, X, Mail } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { api, type ChatResponse } from "../../lib/api";
+import { api, ApiError, ChatStreamError } from "../../lib/api";
 import { useLanguage, type LangCode } from "../../context/LanguageContext";
 import LanguageSelector from "../ui/LanguageSelector";
+import { packs } from "../../(app)/packs/packsData";
 
 type ChatMessage = {
   role: "ai" | "user";
@@ -15,6 +16,14 @@ type ChatMessage = {
 };
 
 const MAX_USER_MESSAGES = 3;
+
+const isRateLimited = (error: unknown) =>
+  error instanceof ApiError && error.status === 429;
+
+// Interpolated into every system prompt so the assistant can never advertise a
+// pack that is not actually on sale.
+const PACK_COUNT = packs.length;
+const PACK_NAMES = packs.map((pack) => pack.title).join(", ");
 
 const SYSTEM_CONTEXTS: Record<LangCode, string> = {
   fr: `Tu es l'assistant du site IA-DAF. Tu parles comme un ami, pas comme un robot.
@@ -31,7 +40,7 @@ RÈGLES ABSOLUES :
 - Tu tutoies, ton décontracté, 1 emoji max
 - JAMAIS "nous proposons", "notre plateforme", "n'hésite pas"
 
-CE QUE TU PEUX DIRE : IA-DAF simplifie les démarches administratives françaises grâce à l'IA. Il y a 4 packs (Étudiant étranger, Nouveau parent, Nouveau travailleur, Primo-arrivant), un assistant IA multilingue, du suivi de dossier, de l'analyse de documents.
+CE QUE TU PEUX DIRE : IA-DAF simplifie les démarches administratives françaises grâce à l'IA. Il y a ${PACK_COUNT} packs (${PACK_NAMES}), un assistant IA multilingue, du suivi de dossier, de l'analyse de documents.
 CE QUE TU NE DIS PAS : les étapes des démarches, les documents nécessaires, les procédures, les délais.`,
   en: `You are the IA-DAF website assistant. Talk like a friendly human, not a robot.
 
@@ -47,7 +56,7 @@ ABSOLUTE RULES:
 - Casual tone, 1 emoji max
 - NEVER "we offer", "our platform", "don't hesitate"
 
-WHAT YOU CAN SAY: IA-DAF simplifies French administrative procedures with AI. There are 4 packs (Foreign student, New parent, New worker, Newcomer), a multilingual AI assistant, file tracking, document analysis.
+WHAT YOU CAN SAY: IA-DAF simplifies French administrative procedures with AI. There are ${PACK_COUNT} packs (${PACK_NAMES}), a multilingual AI assistant, file tracking, document analysis.
 WHAT YOU DON'T SAY: procedure steps, required documents, processes, timelines.
 IMPORTANT: Always respond in English.`,
   ar: `أنت مساعد موقع IA-DAF. تحدث كصديق وليس كروبوت.
@@ -63,7 +72,7 @@ IMPORTANT: Always respond in English.`,
 - لا قوائم أبدًا، لا خط عريض، لا عناوين
 - نبرة ودية، إيموجي واحد كحد أقصى
 
-ما يمكنك قوله: IA-DAF يبسط الإجراءات الإدارية الفرنسية بالذكاء الاصطناعي. هناك 4 باقات، مساعد ذكاء اصطناعي متعدد اللغات، تتبع الملفات، تحليل المستندات.
+ما يمكنك قوله: IA-DAF يبسط الإجراءات الإدارية الفرنسية بالذكاء الاصطناعي. هناك ${PACK_COUNT} باقات (${PACK_NAMES})، مساعد ذكاء اصطناعي متعدد اللغات، تتبع الملفات، تحليل المستندات.
 مهم: أجب دائمًا بالعربية.`,
   es: `Eres el asistente del sitio web IA-DAF. Habla como un amigo, no como un robot.
 
@@ -79,15 +88,15 @@ REGLAS ABSOLUTAS:
 - Tono informal, 1 emoji máx
 - NUNCA "ofrecemos", "nuestra plataforma", "no dudes en"
 
-LO QUE PUEDES DECIR: IA-DAF simplifica los trámites administrativos franceses con IA. Hay 4 packs (Estudiante extranjero, Nuevo padre, Nuevo trabajador, Recién llegado), asistente IA multilingüe, seguimiento de expedientes, análisis de documentos.
+LO QUE PUEDES DECIR: IA-DAF simplifica los trámites administrativos franceses con IA. Hay ${PACK_COUNT} packs (${PACK_NAMES}), asistente IA multilingüe, seguimiento de expedientes, análisis de documentos.
 IMPORTANTE: Responde siempre en español.`,
 };
 
-const WELCOME_PROMPTS: Record<LangCode, string> = {
-  fr: "Dis bonjour en 1-2 phrases max. Présente IA-DAF en une ligne et demande ce qui amène l'utilisateur. Pas de liste, pas de gras, ton décontracté.",
-  en: "Say hello in 1-2 sentences max. Present IA-DAF in one line and ask what brings the user here. No lists, no bold, casual tone. Respond in English.",
-  ar: "قل مرحبًا في جملة أو جملتين. قدم IA-DAF في سطر واحد واسأل ما الذي يحتاجه المستخدم. بدون قوائم، بدون خط عريض. أجب بالعربية.",
-  es: "Saluda en 1-2 frases máx. Presenta IA-DAF en una línea y pregunta qué necesita el usuario. Sin listas, sin negrita, tono informal. Responde en español.",
+const FIRST_WELCOME_MESSAGES: Record<LangCode, string> = {
+  fr: "Salut ! IA-DAF est là pour vous accompagner et simplifier vos démarches administratives françaises grâce à l’intelligence artificielle. Comment puis-je vous aider aujourd’hui ?",
+  en: "Hi! IA-DAF is here to support you and simplify your French administrative procedures with artificial intelligence. How can I help you today?",
+  ar: "مرحبًا! IA-DAF هنا لمرافقتك وتبسيط إجراءاتك الإدارية الفرنسية بفضل الذكاء الاصطناعي. كيف يمكنني مساعدتك اليوم؟",
+  es: "¡Hola! IA-DAF está aquí para acompañarte y simplificar tus trámites administrativos franceses gracias a la inteligencia artificial. ¿Cómo puedo ayudarte hoy?",
 };
 
 export default function AccueilChat() {
@@ -98,96 +107,104 @@ export default function AccueilChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [userMessageCount, setUserMessageCount] = useState(0);
-  const [emailCollected, setEmailCollected] = useState(false);
   const [waitingForEmail, setWaitingForEmail] = useState(false);
+  // Unticked by default: consent must be an explicit act (RGPD, art. 7).
+  const [emailConsent, setEmailConsent] = useState(false);
   const [chatEnded, setChatEnded] = useState(false);
-  const [welcomeSent, setWelcomeSent] = useState(false);
+  const [emailAsked, setEmailAsked] = useState(false);
+  const [chatLang, setChatLang] = useState(lang);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Reset chat when language changes so welcome is re-sent in new language
-  useEffect(() => {
-    if (!isOpen) return;
+  // Language changed: start over, the welcome in the new language. Adjusted
+  // during render rather than in an effect, which would first paint the old
+  // conversation.
+  if (chatLang !== lang) {
+    setChatLang(lang);
     setMessages([]);
     setConversationId(undefined);
     setUserMessageCount(0);
-    setEmailCollected(false);
     setWaitingForEmail(false);
+    setEmailConsent(false);
     setChatEnded(false);
-    setWelcomeSent(false);
-  }, [lang]);
+    setEmailAsked(false);
+  }
+
+  // The welcome, then — a moment after opening — the e-mail offer, before the
+  // conversation itself.
+  const shownMessages: ChatMessage[] = [
+    { role: "ai", content: FIRST_WELCOME_MESSAGES[lang] },
+    ...(emailAsked ? [{ role: "ai" as const, content: t("chat.emailAsk") }] : []),
+    ...messages,
+  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, emailAsked]);
 
-  // Welcome message when chat opens
   useEffect(() => {
-    if (!isOpen || welcomeSent) return;
-    setWelcomeSent(true);
-    setIsLoading(true);
-
-    const welcomePrompt = `${SYSTEM_CONTEXTS[lang]}
-
-${WELCOME_PROMPTS[lang]}`;
-
-    api
-      .chat({ message: welcomePrompt, conversation_id: undefined, language: lang })
-      .then((res) => {
-        setConversationId(res.conversation_id);
-        setMessages([{ role: "ai", content: res.response }]);
-        // After welcome, ask for email
-        setTimeout(() => {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "ai",
-              content: t("chat.emailAsk"),
-            },
-          ]);
-          setWaitingForEmail(true);
-        }, 1500);
-      })
-      .catch(() => {
-        setMessages([
-          {
-            role: "ai",
-            content: t("chat.fallbackWelcome"),
-          },
-        ]);
-        setTimeout(() => {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "ai",
-              content: t("chat.emailAsk"),
-            },
-          ]);
-          setWaitingForEmail(true);
-        }, 1500);
-      })
-      .finally(() => setIsLoading(false));
-  }, [isOpen, welcomeSent]);
+    if (!isOpen || emailAsked) return;
+    const timer = setTimeout(() => {
+      setEmailAsked(true);
+      setWaitingForEmail(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isOpen, emailAsked]);
 
   const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const saveEmail = async (email: string) => {
+  /** Returns whether the address was stored — the chat goes on either way. */
+  const saveEmail = async (email: string): Promise<boolean> => {
     try {
-      await fetch("/api/ai/lead-email", {
+      const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "accueil_chat" }),
+        body: JSON.stringify({ email, source: "accueil_chat", consent: true }),
       });
+      return res.ok;
     } catch {
-      // Silently fail — don't block the chat
+      return false;
     }
   };
+
+  // Giving an e-mail is optional: the chat must never be conditional on it,
+  // or the consent would not be freely given (RGPD, art. 7.4).
+  const skipEmail = () => {
+    setWaitingForEmail(false);
+    setInputValue("");
+    setMessages((prev) => [...prev, { role: "ai", content: t("chat.emailSkipped") }]);
+  };
+
+  /** Sends `message`, the answer filling a new bubble as it arrives; `errorKey` if none came. */
+  const streamAnswer = useCallback(
+    async (message: string, errorKey: string) => {
+      setMessages((prev) => [...prev, { role: "ai", content: "" }]);
+      const showAnswer = (content: string) =>
+        setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
+      try {
+        const res = await api.chatStream(
+          { message, conversation_id: conversationId, language: lang },
+          showAnswer,
+        );
+        setConversationId(res.conversation_id);
+      } catch (error) {
+        if (error instanceof ChatStreamError && error.partial) {
+          showAnswer(`${error.partial}\n\n_${t("chat.interrupted")}_`);
+        } else {
+          showAnswer(t(isRateLimited(error) ? "chat.rateLimited" : errorKey));
+        }
+      }
+    },
+    [conversationId, lang, t],
+  );
 
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || isLoading || chatEnded) return;
+      // Enter bypasses the disabled send button: no address without consent.
+      if (waitingForEmail && !emailConsent) return;
 
       setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
       setInputValue("");
@@ -195,14 +212,13 @@ ${WELCOME_PROMPTS[lang]}`;
       // Handle email collection
       if (waitingForEmail) {
         if (isValidEmail(trimmed)) {
-          await saveEmail(trimmed);
-          setEmailCollected(true);
+          const saved = await saveEmail(trimmed);
           setWaitingForEmail(false);
           setMessages((prev) => [
             ...prev,
             {
               role: "ai",
-              content: t("chat.emailSuccess"),
+              content: t(saved ? "chat.emailSuccess" : "chat.emailError"),
             },
           ]);
         } else {
@@ -224,23 +240,11 @@ ${WELCOME_PROMPTS[lang]}`;
       if (newCount >= MAX_USER_MESSAGES) {
         setChatEnded(true);
         setIsLoading(true);
-
         try {
-          const res: ChatResponse = await api.chat({
-            message: `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}\n\nC'est son dernier message. Réponds BRIÈVEMENT à sa question en 1 phrase, puis enchaîne naturellement en l'invitant à découvrir nos packs pour aller plus loin. 1 emoji max, 2-3 lignes max.`,
-            conversation_id: conversationId,
-            language: lang,
-          });
-          setConversationId(res.conversation_id);
-          setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-        } catch {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "ai",
-              content: t("chat.fallbackEnd"),
-            },
-          ]);
+          await streamAnswer(
+            `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}\n\nC'est son dernier message. Réponds BRIÈVEMENT à sa question en 1 phrase, puis enchaîne naturellement en l'invitant à découvrir nos packs pour aller plus loin. 1 emoji max, 2-3 lignes max.`,
+            "chat.fallbackEnd",
+          );
         } finally {
           setIsLoading(false);
         }
@@ -250,26 +254,12 @@ ${WELCOME_PROMPTS[lang]}`;
       // Normal message — send to AI
       setIsLoading(true);
       try {
-        const res: ChatResponse = await api.chat({
-          message: `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`,
-          conversation_id: conversationId,
-          language: lang,
-        });
-        setConversationId(res.conversation_id);
-        setMessages((prev) => [...prev, { role: "ai", content: res.response }]);
-      } catch {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "ai",
-            content: t("chat.error"),
-          },
-        ]);
+        await streamAnswer(`${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`, "chat.error");
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, chatEnded, waitingForEmail, userMessageCount, conversationId, lang, t],
+    [isLoading, chatEnded, waitingForEmail, emailConsent, userMessageCount, streamAnswer, lang, t],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -278,8 +268,6 @@ ${WELCOME_PROMPTS[lang]}`;
       sendMessage(inputValue);
     }
   };
-
-  const remainingMessages = MAX_USER_MESSAGES - userMessageCount;
 
   return (
     <>
@@ -324,7 +312,7 @@ ${WELCOME_PROMPTS[lang]}`;
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((msg, idx) => (
+            {shownMessages.map((msg, idx) => msg.content === "" ? null : (
               <div
                 key={idx}
                 className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
@@ -350,7 +338,8 @@ ${WELCOME_PROMPTS[lang]}`;
               </div>
             ))}
 
-            {isLoading && (
+            {/* Until the first words of the answer arrive. */}
+            {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-2.5">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
                   <Bot className="w-4 h-4" />
@@ -370,7 +359,7 @@ ${WELCOME_PROMPTS[lang]}`;
             <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
               <Link
                 href="/nosPacks"
-                className="block w-full bg-red-500 hover:bg-red-600 text-white text-center py-3 rounded-xl font-medium transition text-sm"
+                className="block w-full rounded-xl bg-blue-600 py-3 text-center text-sm font-medium text-white transition hover:bg-blue-700"
               >
                 {t("chat.discoverPacks")}
               </Link>
@@ -381,9 +370,29 @@ ${WELCOME_PROMPTS[lang]}`;
           {!chatEnded && (
             <div className="border-t border-gray-100 p-3">
               {waitingForEmail && (
-                <div className="flex items-center gap-1.5 text-xs text-blue-600 mb-2 px-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>{t("chat.emailPrompt")}</span>
+                <div className="mb-2 space-y-2 px-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{t("chat.emailPrompt")}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={skipEmail}
+                      className="rounded-xl px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+                    >
+                      {t("chat.emailSkip")}
+                    </button>
+                  </div>
+                  <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-500">
+                    <input
+                      type="checkbox"
+                      checked={emailConsent}
+                      onChange={(e) => setEmailConsent(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-blue-600"
+                    />
+                    <span>{t("chat.emailConsent")}</span>
+                  </label>
                 </div>
               )}
               <div className="flex gap-2">
@@ -402,7 +411,11 @@ ${WELCOME_PROMPTS[lang]}`;
                 />
                 <button
                   type="button"
-                  disabled={inputValue.trim().length === 0 || isLoading}
+                  disabled={
+                    inputValue.trim().length === 0 ||
+                    isLoading ||
+                    (waitingForEmail && !emailConsent)
+                  }
                   onClick={() => sendMessage(inputValue)}
                   title="Envoyer"
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition"

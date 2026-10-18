@@ -26,7 +26,7 @@ async def translate(request: TranslationRequest) -> TranslationResponse:
                 detail=f"Unsupported {label}: '{code}'. Supported: {sorted(_SUPPORTED)}",
             )
 
-    translated = translation_service.translate(
+    translated = await translation_service.translate(
         text=request.text,
         target_language=tgt,
         source_language=src,

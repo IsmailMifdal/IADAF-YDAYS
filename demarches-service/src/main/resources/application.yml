@@ -8,19 +8,23 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Le schéma appartient aux migrations Flyway : Hibernate se contente de
+      # vérifier qu'il correspond aux entités, et refuse de démarrer sinon.
+      ddl-auto: validate
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: demarches
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
+
+  flyway:
+    schemas: demarches
+    default-schema: demarches
+    # Bases créées avant Flyway (par Hibernate, ddl-auto=update) : leur schéma
+    # correspond à V1, qui est donc marquée appliquée sans être rejouée.
+    baseline-on-migrate: true
+    baseline-version: 1
 
 server:
   port: 8082
@@ -36,4 +40,10 @@ eureka:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+
+# Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
+# Le service refuse de démarrer sans elle.
+iadaf:
+  security:
+    internal-jwt-secret: ${INTERNAL_JWT_SECRET:}

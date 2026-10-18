@@ -1,0 +1,40 @@
+# IA-DAF — reverse proxy de production (docker-compose.prod.yml).
+#
+# HTTPS automatique (Let's Encrypt) pour {$DOMAIN}, HTTP redirigé vers HTTPS.
+# Seul point publié de la stack : ports 80 et 443.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Une pièce fait 10 Mo au plus ; la marge couvre le reste du formulaire.
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# Filet de sécurité seulement (« ? » : si la réponse n'en a pas). Les
+		# pages portent la politique stricte du frontend, avec un nonce par
+		# requête (front/src/proxy.ts) : la remplacer ici rouvrirait la porte aux
+		# scripts injectés.
+		?Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com"
+		-Server
+		-X-Powered-By
+	}
+
+	# Caddy remplace tout X-Forwarded-For envoyé par le client par l'adresse
+	# réelle de la connexion : la limitation de débit du frontend, qui lit la
+	# dernière entrée, ne peut donc pas être trompée.
+	reverse_proxy frontend:3000
+
+	log {
+		output stdout
+		format json
+	}
+}

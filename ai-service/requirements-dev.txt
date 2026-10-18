@@ -1,0 +1,19 @@
+# Test dependencies — what the test suite imports, without the ML stack
+# (torch, sentence-transformers, chromadb, langchain), which the tests never
+# load. Keeps CI installs to seconds. Versions match requirements.txt.
+#
+#   pip install -r requirements-dev.txt && pytest
+fastapi==0.142.2
+starlette==1.7.0
+httpx==0.28.1
+openai==1.109.1
+pydantic-settings>=2.4.0
+numpy<2.0
+Pillow==12.3.0
+pypdf==6.19.0
+PyJWT==2.15.1
+sqlalchemy==2.0.30
+asyncpg==0.30.0
+alembic==1.20.0
+loguru==0.7.2
+pytest==9.1.1

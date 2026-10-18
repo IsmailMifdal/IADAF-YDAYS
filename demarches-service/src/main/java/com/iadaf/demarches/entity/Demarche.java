@@ -76,6 +76,14 @@ public class Demarche {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * Pack dont ce dossier est l'espace de suivi, ou null pour une démarche
+     * créée librement. Unique par utilisateur (migration V2) : un pack acheté
+     * n'a qu'un dossier.
+     */
+    @Column(name = "pack_slug", length = 64)
+    private String packSlug;
+
     @Column(nullable = false)
     private Boolean active = true;
 

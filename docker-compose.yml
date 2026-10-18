@@ -7,6 +7,13 @@
 #   ai-service         :8086   (Python / FastAPI + OpenAI)
 #   frontend           :3000   (Next.js)
 #
+# Ports : seul le frontend est publié, sur la loopback.
+# docker-compose.override.yml, chargé automatiquement en développement, publie
+# les autres sur 127.0.0.1. En production, docker-compose.prod.yml ajoute Caddy
+# (HTTPS), retire ce port et tire les images de GHCR : voir DEPLOYMENT.md.
+#   Développement : docker compose up -d --build
+#   Production    : docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
 # Lancement :  docker compose up -d --build
 # Arrêt :      docker compose down
 # Logs :       docker compose logs -f <service>
@@ -25,10 +32,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-iadaf_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
       TZ: Europe/Paris
-    ports:
-      - "5432:5432"
     volumes:
-      - C:/postgres-data:/var/lib/postgresql/data
+      # Defaults to the named volume below. Set POSTGRES_DATA_PATH to a host
+      # path to bind-mount instead — a hardcoded Windows path would break any
+      # Linux deployment.
+      - ${POSTGRES_DATA_PATH:-postgres_data}:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
     networks:
       - iadaf-network
@@ -39,16 +47,47 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- Comptes PostgreSQL par service ---
+  # Un compte par service, propriétaire de son seul schéma : une injection SQL
+  # dans un service ne lit plus les données des autres. Joué à chaque
+  # démarrage, avant les services : crée ce qui manque, remet les mots de passe
+  # du .env, rend à chaque compte ses tables (docker/postgres/provision.sql).
+  db-provision:
+    image: postgres:16-alpine
+    container_name: iadaf-db-provision
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-iadaf_user}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-iadaf_password}
+      PGDATABASE: ${POSTGRES_DB:-iadaf_db}
+      # Valeurs de développement ; docker-compose.prod.yml les exige.
+      FRONTEND_DB_PASSWORD: ${FRONTEND_DB_PASSWORD:-dev-frontend-db}
+      PROFILES_DB_PASSWORD: ${PROFILES_DB_PASSWORD:-dev-profiles-db}
+      DEMARCHES_DB_PASSWORD: ${DEMARCHES_DB_PASSWORD:-dev-demarches-db}
+      DOCUMENTS_DB_PASSWORD: ${DOCUMENTS_DB_PASSWORD:-dev-documents-db}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:-dev-analytics-db}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD:-dev-ai-db}
+    volumes:
+      - ./docker/postgres/provision.sql:/provision.sql:ro
+    command: ["psql", "--quiet", "--file=/provision.sql"]
+    networks:
+      - iadaf-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # --- Eureka Discovery ---
   discovery-service:
     build:
       context: .
       dockerfile: discovery-service/Dockerfile
     container_name: iadaf-discovery
-    ports:
-      - "8761:8761"
     environment:
       - EUREKA_INSTANCE_HOSTNAME=discovery-service
+      # Sert le registre sans le cache de 30 s : un service qui (re)démarre est
+      # visible de la gateway tout de suite, pas une minute et demie plus tard.
+      - EUREKA_SERVER_USEREADONLYRESPONSECACHE=false
     networks:
       - iadaf-network
     restart: unless-stopped
@@ -57,7 +96,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      # Eureka met jusqu'à ~85 s à démarrer sur une machine chargée (5 JVM qui
+      # démarrent ensemble) : 40 s faisait échouer toute la stack, dont chaque
+      # service attend ce healthcheck.
+      start_period: 120s
 
   # ====================================================================
   #  GATEWAY
@@ -68,11 +110,20 @@ services:
       context: .
       dockerfile: api-gateway/Dockerfile
     container_name: iadaf-gateway
-    ports:
-      - "8080:8080"
     environment:
       - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
-      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS-CONFIGURATIONS_[/**]_ALLOWED-ORIGINS=http://localhost:3000
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      # Par défaut, la gateway relit le registre toutes les 30 s et garde sa
+      # liste d'instances 35 s : après un démarrage ou une mise à jour, les
+      # appels échouaient (503) pendant plus d'une minute alors que les
+      # services étaient déjà « healthy ».
+      - EUREKA_CLIENT_REGISTRYFETCHINTERVALSECONDS=5
+      - SPRING_CLOUD_LOADBALANCER_CACHE_TTL=5s
+      # Le load balancer prépare chaque service à la première requête qui le
+      # vise : 3 s sur une machine au repos, plus de 10 s quand toute la stack
+      # démarre — assez pour faire échouer une suppression de compte. Préparés
+      # au démarrage de la gateway, avant qu'elle ne se déclare « healthy ».
+      - SPRING_CLOUD_LOADBALANCER_EAGERLOAD_CLIENTS=AI-SERVICE,USER-SERVICE,DEMARCHES-SERVICE,DOCUMENT-SERVICE,ANALYTICS-SERVICE
     networks:
       - iadaf-network
     depends_on:
@@ -84,7 +135,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # ====================================================================
   #  BACKEND SERVICES
@@ -94,18 +148,37 @@ services:
   ai-service:
     build: ./ai-service
     container_name: iadaf-ai
-    ports:
-      - "8086:8086"
     environment:
       - EUREKA_SERVER_URL=http://discovery-service:8761/eureka
       - EUREKA_INSTANCE_HOSTNAME=ai-service
       - USE_OPENAI=true
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.1}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-1000}
+      - OPENAI_TIMEOUT_SECONDS=${OPENAI_TIMEOUT_SECONDS:-60}
       - CHROMA_PERSIST_DIR=/data/vectorstore
-      - DATABASE_URL=sqlite+aiosqlite:///./app/data/iadaf.db
-      - POSTGRES_URL=postgresql+asyncpg://${POSTGRES_USER:-iadaf_user}:${POSTGRES_PASSWORD:-iadaf_password}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - CORS_ORIGINS=${AUTH_URL:-http://localhost:3000}
+      # Conversations in PostgreSQL (schema `ai`), migrated at startup.
+      - DATABASE_URL=postgresql+asyncpg://iadaf_ai:${AI_DB_PASSWORD:-dev-ai-db}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - CONVERSATION_RETENTION_DAYS=${CONVERSATION_RETENTION_DAYS:-30}
+      # Pré-vérification des pièces (Phase 4) : désactivée tant que l'AIPD n'est
+      # pas menée. docker-compose.override.yml l'active en développement.
+      - DOCUMENT_ANALYSIS_ENABLED=${DOCUMENT_ANALYSIS_ENABLED:-false}
+      - GATEWAY_URL=http://api-gateway:8080
+      # OCR des photos et scans : envoie l'image des pièces à un tiers (DPA,
+      # hébergement UE, AIPD requis). Vide = désactivé.
+      - OCR_PROVIDER=${OCR_PROVIDER:-}
+      - OCR_API_KEY=${OCR_API_KEY:-}
     volumes:
       - ai_vectorstore:/data/vectorstore
+      # Modèles téléchargés au premier démarrage (~450 Mo : embeddings Hugging
+      # Face, ONNX de ChromaDB). Sans ce volume, chaque mise à jour les
+      # retéléchargerait, et une panne de Hugging Face empêcherait le service
+      # de redémarrer.
+      - ai_model_cache:/home/app/.cache
     networks:
       - iadaf-network
     depends_on:
@@ -113,13 +186,155 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8086/ai/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s
+      # Le premier démarrage télécharge le modèle d'embeddings HuggingFace et
+      # initialise ChromaDB : compter ~4 min. Une fenêtre plus courte fait
+      # basculer le conteneur en "unhealthy" alors qu'il démarre normalement.
+      start_period: 360s
+
+  # --- User Service (Spring Boot / JPA) ---
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: iadaf-user
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=profiles
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - SPRING_DATASOURCE_USERNAME=iadaf_profiles
+      - SPRING_DATASOURCE_PASSWORD=${PROFILES_DB_PASSWORD:-dev-profiles-db}
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
+
+  # --- Demarches Service (Spring Boot / JPA) ---
+  demarches-service:
+    build:
+      context: .
+      dockerfile: demarches-service/Dockerfile
+    container_name: iadaf-demarches
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=demarches
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - SPRING_DATASOURCE_USERNAME=iadaf_demarches
+      - SPRING_DATASOURCE_PASSWORD=${DEMARCHES_DB_PASSWORD:-dev-demarches-db}
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
+
+  # --- Document Service (Spring Boot) ---
+  # Pièces des dossiers, chiffrées (AES-256-GCM) avant d'être écrites en base
+  # (schéma `documents`). La clé ne doit jamais être perdue : sans elle, les
+  # pièces stockées sont illisibles.
+  document-service:
+    build:
+      context: .
+      dockerfile: document-service/Dockerfile
+    container_name: iadaf-document
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=documents
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - DOCUMENT_ENCRYPTION_KEY=${DOCUMENT_ENCRYPTION_KEY:?DOCUMENT_ENCRYPTION_KEY is required — see .env.example}
+      - DOCUMENT_RETENTION_DAYS=${DOCUMENT_RETENTION_DAYS:-180}
+      - SPRING_DATASOURCE_USERNAME=iadaf_documents
+      - SPRING_DATASOURCE_PASSWORD=${DOCUMENTS_DB_PASSWORD:-dev-documents-db}
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
+
+  # --- Analytics Service (Spring Boot) ---
+  # Agrège les données des trois services ci-dessus via RestClient.
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: iadaf-analytics
+    environment:
+      - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}?currentSchema=analytics
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - SPRING_DATASOURCE_USERNAME=iadaf_analytics
+      - SPRING_DATASOURCE_PASSWORD=${ANALYTICS_DB_PASSWORD:-dev-analytics-db}
+      - USER_SERVICE_URL=http://user-service:8081
+      - DEMARCHES_SERVICE_URL=http://demarches-service:8082
+      - DOCUMENT_SERVICE_URL=http://document-service:8083
+    networks:
+      - iadaf-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # Les JVM démarrent ensemble et se disputent le CPU : mesuré jusqu'à
+      # ~370 s sur 8 vCPU. La fenêtre est large, mais le service passe
+      # « healthy » dès le premier contrôle réussi : elle ne retarde rien.
+      start_period: 300s
 
   # ====================================================================
   #  FRONTEND
@@ -130,16 +345,46 @@ services:
       context: ./front
       dockerfile: DockerFile
     container_name: iadaf-front
+    # Loopback only. Rate limiting trusts X-Forwarded-For, which a client
+    # reaching port 3000 directly could forge. docker-compose.prod.yml drops
+    # the port: Caddy reaches the frontend on the internal network.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - API_GATEWAY_URL=http://api-gateway:8080
+      # Auth.js reads users straight from Postgres (schema `users`).
+      - DATABASE_URL=postgresql://iadaf_frontend:${FRONTEND_DB_PASSWORD:-dev-frontend-db}@postgres:5432/${POSTGRES_DB:-iadaf_db}
+      - AUTH_SECRET=${AUTH_SECRET:?AUTH_SECRET is required — see .env.example}
+      - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
+      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
+      - AUTH_TRUST_HOST=true
+      - AUTH_GOOGLE_ID=${AUTH_GOOGLE_ID:-}
+      - AUTH_GOOGLE_SECRET=${AUTH_GOOGLE_SECRET:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      # Password-reset e-mails. Without SMTP_URL in production the reset
+      # request is logged as an error and no mail leaves.
+      - SMTP_URL=${SMTP_URL:-}
+      - MAIL_FROM=${MAIL_FROM:-}
     networks:
       - iadaf-network
     depends_on:
       api-gateway:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
+      db-provision:
+        condition: service_completed_successfully
     restart: unless-stopped
+    healthcheck:
+      # node:24-alpine n'a pas curl, mais busybox fournit wget.
+      # 127.0.0.1 et non localhost : ce dernier résout en ::1 dans le conteneur,
+      # où le serveur Next n'écoute pas.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # ====================================================================
 #  NETWORKS & VOLUMES
@@ -153,4 +398,6 @@ volumes:
   postgres_data:
     driver: local
   ai_vectorstore:
+    driver: local
+  ai_model_cache:
     driver: local

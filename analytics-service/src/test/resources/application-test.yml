@@ -1,0 +1,8 @@
+eureka:
+  client:
+    enabled: false
+
+# Clé de test uniquement (32 octets minimum).
+iadaf:
+  security:
+    internal-jwt-secret: test-secret-at-least-32-bytes-long-0123456789

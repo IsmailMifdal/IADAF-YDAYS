@@ -1,34 +1,23 @@
-"use client";
+import { cookies } from "next/headers";
 
-import { useState } from "react";
-import Sidebar from "../components/layout/Sidebar";
-import { Menu } from "lucide-react";
+import AppShell from "../components/layout/AppShell";
+import {
+  isSidebarState,
+  SIDEBAR_COOKIE,
+} from "../components/layout/sidebarPreference";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // Lu côté serveur : la sidebar est rendue à la bonne largeur dès le premier
+  // octet, sans le saut qu'entraînerait un repli appliqué après hydratation.
+  const stored = (await cookies()).get(SIDEBAR_COOKIE)?.value;
 
   return (
-    <div className="flex w-full min-h-screen bg-slate-100">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-
-      {!isSidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Ouvrir la sidebar"
-          className="fixed top-4 left-4 z-50 bg-blue-600 text-white p-2 rounded-lg shadow-md hover:bg-blue-700 transition"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      )}
-
-      <main
-        className={`flex-1 w-full min-h-screen overflow-y-auto transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "ml-64" : "ml-0"
-        }`}
-      >
-        {children}
-      </main>
-    </div>
+    <AppShell initialState={isSidebarState(stored) ? stored : "expanded"}>
+      {children}
+    </AppShell>
   );
 }

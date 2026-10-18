@@ -1,16 +1,16 @@
 # AI Service — Python / FastAPI
 
-Service d'intelligence artificielle pour IA-DAF, réécrit en Python avec FastAPI, LangChain et ChromaDB.
+Service d'intelligence artificielle pour IA-DAF, réécrit en Python avec FastAPI, ChromaDB et le SDK openai.
 
 ## Stack technique
 
 | Composant | Technologie |
 |-----------|------------|
 | API | FastAPI + Uvicorn |
-| LLM | Ollama (Mistral 7B) avec fallback OpenAI |
-| RAG | LangChain + ChromaDB |
+| LLM | Toute API compatible OpenAI (OpenAI, Mistral, Ollama local) — SDK `openai` seul |
+| RAG | ChromaDB, sans LangChain (retiré : un gros arbre de dépendances et ses failles pour trois appels) |
 | Embeddings | sentence-transformers multilingue |
-| DB | SQLite (aiosqlite) |
+| DB | PostgreSQL, schéma `ai` (asyncpg, migrations Alembic) |
 | Discovery | py-eureka-client |
 
 ## Endpoints
@@ -63,7 +63,31 @@ Pour ré-indexer manuellement les données dans ChromaDB :
 python scripts/ingest_data.py
 ```
 
-L'indexation automatique se fait au démarrage si le vector store est vide.
+L'indexation se fait au démarrage : si le vector store est vide, ou si les fiches
+(ou le modèle d'embeddings) ont changé depuis la dernière indexation — une
+empreinte SHA-256 est conservée à côté de l'index (`knowledge-base.sha256`).
+Une mise à jour de la base de connaissances est donc prise en compte au
+redéploiement, sans vider le volume.
+
+### Fiches officielles (service-public.gouv.fr)
+
+`app/data/knowledge_base/service_public.json` est **généré** : ne pas le
+modifier à la main. Il reprend les fiches listées dans
+`app/data/service_public_fiches.json`, découpées en passages courts (le modèle
+d'embeddings ne lit que ~128 tokens par passage), chacun avec le lien de la
+fiche, sa date de mise à jour et la mention de la source (DILA, Licence
+Ouverte 2.0).
+
+```bash
+python scripts/sync_service_public.py                   # télécharge le flux du jour (~25 Mo)
+python scripts/sync_service_public.py --archive f.zip   # ou une copie locale
+```
+
+Le workflow `.github/workflows/kb-sync.yml` le lance chaque lundi et ouvre une
+pull request si le texte a changé. Pour suivre une nouvelle fiche, ajouter son
+identifiant `F…` (fin de son URL) à la liste. Une fiche retirée ou renumérotée
+par la DILA fait échouer la synchronisation plutôt que de disparaître en
+silence.
 
 ## Architecture
 
@@ -80,7 +104,7 @@ app/
 │   └── health.py        # GET /ai/health
 ├── services/
 │   ├── llm_service.py   # Interface LLM (Ollama / OpenAI)
-│   ├── rag_service.py   # Pipeline RAG (LangChain + ChromaDB)
+│   ├── rag_service.py   # Pipeline RAG (sentence-transformers + ChromaDB)
 │   ├── chat_service.py  # Gestion conversations
 │   └── translation_service.py
 ├── models/

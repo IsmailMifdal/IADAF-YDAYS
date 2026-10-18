@@ -27,16 +27,17 @@ export default function LanguageSelector({ variant = "default" }: { variant?: "d
         title="Change language"
         className={
           variant === "compact"
-            ? "flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition text-white"
-            : "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-700"
+            ? "flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition duration-200 ease-out text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-[0.97] motion-reduce:active:scale-100"
+            : "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-200 ease-out text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-[0.97] motion-reduce:active:scale-100"
         }
       >
         <Globe className="w-3.5 h-3.5" />
         <span>{current.flag}</span>
+        <span>{current.code.toUpperCase()}</span>
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-1 right-0 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-[100] min-w-[140px]">
+        <div className="animate-fade-in absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-[100] min-w-[140px]">
           {LANGUAGES.map((l) => (
             <button
               key={l.code}

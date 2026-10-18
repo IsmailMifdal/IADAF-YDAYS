@@ -8,19 +8,23 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Le schéma appartient aux migrations Flyway.
+      ddl-auto: validate
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: documents
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/iadaf}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/iadaf/protocol/openid-connect/certs}
+
+  flyway:
+    schemas: documents
+    default-schema: documents
+  servlet:
+    multipart:
+      # 10 Mo par pièce, plus la marge des autres champs du formulaire.
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 server:
   port: 8083
@@ -36,4 +40,17 @@ eureka:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+
+# Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
+# Le service refuse de démarrer sans elle.
+iadaf:
+  security:
+    internal-jwt-secret: ${INTERNAL_JWT_SECRET:}
+  documents:
+    # Clé AES-256 (32 octets en base64) qui chiffre chaque fichier avant son
+    # écriture en base. Le service refuse de démarrer sans elle.
+    #   openssl rand -base64 32
+    encryption-key: ${DOCUMENT_ENCRYPTION_KEY:}
+    # Pièces effacées automatiquement au-delà de cette durée (RGPD).
+    retention-days: ${DOCUMENT_RETENTION_DAYS:180}
