@@ -6,7 +6,10 @@
 
 import { ImageResponse } from "next/og";
 
-const BLUE = "#2563eb";
+// brand-600 et violet-600 : le dégradé de BrandMark, en couleurs fixes
+// (next/og ne lit pas les variables CSS).
+const BLUE = "#4f46e5";
+const VIOLET = "#7c3aed";
 
 /** `mark`: share of the side taken by the sheet (smaller for maskable icons). */
 export function appIcon(size: number, mark = 0.5): ImageResponse {
@@ -26,7 +29,7 @@ export function appIcon(size: number, mark = 0.5): ImageResponse {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundImage: `linear-gradient(135deg, ${BLUE}, #4338ca)`,
+          backgroundImage: `linear-gradient(135deg, ${BLUE}, ${VIOLET})`,
         }}
       >
         <div

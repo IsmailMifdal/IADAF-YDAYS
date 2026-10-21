@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { AlertCircle, Loader2, LogIn, Sparkles } from "lucide-react";
+import { AlertCircle, Loader2, LogIn } from "lucide-react";
+import { AuthBrand, authButtonClass, authCardClass, authInputClass } from "../AuthCard";
 
 type Props = {
   googleEnabled: boolean;
@@ -49,17 +50,9 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
 
   return (
     <div className="w-full max-w-md">
-      <div className="flex items-center gap-3 mb-8 justify-center">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-          <Sparkles className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <p className="font-bold text-lg text-gray-900">IA-DAF</p>
-          <p className="text-sm text-gray-500">Assistant Administratif</p>
-        </div>
-      </div>
+      <AuthBrand />
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <div className={authCardClass}>
         <h1 className="text-2xl font-bold text-gray-900">Connexion</h1>
         <p className="text-gray-600 mt-1 text-sm">
           Accédez à votre espace et suivez vos démarches.
@@ -68,7 +61,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
         {notice && !error && (
           <div
             role="status"
-            className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+            className="mt-5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800"
           >
             {notice}
           </div>
@@ -100,7 +93,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="vous@exemple.com"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={authInputClass}
             />
           </div>
 
@@ -114,7 +107,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               </label>
               <Link
                 href="/mot-de-passe-oublie"
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-brand-600 hover:text-brand-700 font-medium"
               >
                 Mot de passe oublié ?
               </Link>
@@ -127,14 +120,14 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={authInputClass}
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 transition shadow-lg shadow-blue-500/20"
+            className={authButtonClass}
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -170,7 +163,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
           Pas encore de compte ?{" "}
           <Link
             href="/register"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-brand-600 hover:text-brand-700 font-medium"
           >
             Créer un compte
           </Link>

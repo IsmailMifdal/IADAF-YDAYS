@@ -191,9 +191,9 @@ export default function ProceduresPage() {
                     type="button"
                     onClick={() => setSelectedFilter(filter.label)}
                     aria-pressed={isActive}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
+                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
                       isActive
-                        ? "border-blue-600 bg-blue-600 text-white"
+                        ? "border-brand-600 bg-brand-600 text-white"
                         : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                     }`}
                   >

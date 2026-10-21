@@ -43,7 +43,7 @@ const iconByKey: Record<
 
 /** Accent coloré par pack — seule variation admise, le reste est unifié. */
 const accentByColor: Record<PackColor, { bar: string; icon: string }> = {
-  blue: { bar: "bg-blue-600", icon: "bg-blue-50 text-blue-600" },
+  blue: { bar: "bg-brand-600", icon: "bg-brand-50 text-brand-600" },
   green: { bar: "bg-emerald-600", icon: "bg-emerald-50 text-emerald-600" },
   orange: { bar: "bg-orange-500", icon: "bg-orange-50 text-orange-600" },
   violet: { bar: "bg-violet-600", icon: "bg-violet-50 text-violet-600" },
@@ -124,7 +124,7 @@ function PackCard({
         <h2 className="mt-4 font-semibold text-gray-900">{pack.title}</h2>
         <p className="mt-1 text-sm text-gray-500">{pack.shortDescription}</p>
 
-        <p className="mt-5 text-3xl font-bold text-gray-900">
+        <p className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900">
           {formatPrice(pack.priceCents)}
         </p>
         <p className="text-xs text-gray-400">paiement unique</p>
@@ -161,8 +161,9 @@ function AllAccessCard({
   isUnlocked: boolean;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white shadow-sm">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 text-white shadow-glow">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl" />
 
       <div className="relative flex flex-col gap-6 p-7 md:flex-row md:items-center md:justify-between md:p-9">
         <div className="min-w-0">
@@ -172,7 +173,7 @@ function AllAccessCard({
           </span>
 
           <h2 className="mt-3 text-2xl font-bold">{pack.title}</h2>
-          <p className="mt-1.5 max-w-xl text-blue-100">
+          <p className="mt-1.5 max-w-xl text-brand-100">
             {pack.shortDescription} Toutes les démarches ci-dessus sont incluses.
           </p>
 
@@ -182,7 +183,7 @@ function AllAccessCard({
               .map((p) => (
                 <li
                   key={p.slug}
-                  className="flex items-center gap-1.5 text-sm text-blue-100"
+                  className="flex items-center gap-1.5 text-sm text-brand-100"
                 >
                   <Check className="h-4 w-4 shrink-0 text-emerald-300" />
                   {p.title}
@@ -199,7 +200,7 @@ function AllAccessCard({
               <p className="text-4xl font-bold">
                 {formatPrice(pack.priceCents)}
               </p>
-              <p className="text-sm text-blue-200">au lieu de {formatPrice(
+              <p className="text-sm text-brand-200">au lieu de {formatPrice(
                 packs
                   .filter((p) => p.slug !== pack.slug)
                   .reduce((sum, p) => sum + p.priceCents, 0),
@@ -210,7 +211,7 @@ function AllAccessCard({
           <div className="mt-4">
             <Link
               href={isUnlocked ? `/packs/${pack.slug}` : `/payment/${pack.slug}`}
-              className="inline-flex w-full items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-blue-800 transition hover:bg-blue-50 md:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-brand-700 shadow-lg transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700 active:scale-[0.97] motion-reduce:active:scale-100 md:w-auto"
             >
               {isUnlocked ? "Accéder au pack" : "Tout débloquer"}
             </Link>

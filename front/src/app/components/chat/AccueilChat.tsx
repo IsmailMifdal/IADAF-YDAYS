@@ -277,24 +277,25 @@ export default function AccueilChat() {
           type="button"
           onClick={() => setIsOpen(true)}
           title="Ouvrir le chat"
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110"
+          aria-label="Ouvrir le chat"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-glow ring-1 ring-inset ring-white/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
         >
-          <MessageSquare className="w-7 h-7" />
+          <MessageSquare className="w-6 h-6" />
         </button>
       )}
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[560px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+        <div className="animate-fade-up fixed inset-x-3 bottom-3 z-50 flex h-[min(560px,calc(100dvh-1.5rem))] flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[400px]">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-4 flex items-center justify-between shrink-0">
+          <div className="bg-gradient-to-br from-brand-600 to-violet-600 text-white px-5 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                 <Bot className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-semibold text-sm">{t("chat.assistant")}</h3>
-                <p className="text-blue-200 text-xs">{t("chat.online")}</p>
+                <p className="text-brand-200 text-xs">{t("chat.online")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -303,7 +304,8 @@ export default function AccueilChat() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 title="Fermer le chat"
-                className="p-1.5 rounded-lg hover:bg-white/20 transition"
+                aria-label="Fermer le chat"
+                className="p-1.5 rounded-lg hover:bg-white/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -311,26 +313,26 @@ export default function AccueilChat() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto bg-gray-50/60 p-4 space-y-4">
             {shownMessages.map((msg, idx) => msg.content === "" ? null : (
               <div
                 key={idx}
                 className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
                 {msg.role === "ai" && (
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-violet-700 rounded-lg flex items-center justify-center text-white shrink-0">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
                 <div className={`max-w-[80%] ${msg.role === "user" ? "text-right" : ""}`}>
                   {msg.role === "ai" ? (
-                    <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-100/60 rounded-2xl rounded-tl-sm px-4 py-3 text-[13.5px] text-gray-700 leading-relaxed shadow-sm">
+                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-tl-md px-4 py-3 text-[13.5px] text-gray-700 leading-relaxed shadow-xs">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[13.5px] shadow-sm">
+                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-[13.5px] shadow-sm">
                       {msg.content}
                     </div>
                   )}
@@ -341,11 +343,11 @@ export default function AccueilChat() {
             {/* Until the first words of the answer arrive. */}
             {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
+                <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-violet-700 rounded-lg flex items-center justify-center text-white shrink-0">
                   <Bot className="w-4 h-4" />
                 </div>
-                <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                <div className="bg-white border border-gray-200/80 rounded-2xl px-4 py-3 flex items-center gap-2 shadow-xs">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
                   <span className="text-xs text-gray-500">{t("chat.loading")}</span>
                 </div>
               </div>
@@ -356,10 +358,10 @@ export default function AccueilChat() {
 
           {/* CTA after chat ended */}
           {chatEnded && (
-            <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-brand-50 to-violet-50">
               <Link
                 href="/nosPacks"
-                className="block w-full rounded-xl bg-blue-600 py-3 text-center text-sm font-medium text-white transition hover:bg-blue-700"
+                className="block w-full rounded-xl bg-brand-600 py-3 text-center text-sm font-medium text-white transition hover:bg-brand-700"
               >
                 {t("chat.discoverPacks")}
               </Link>
@@ -372,7 +374,7 @@ export default function AccueilChat() {
               {waitingForEmail && (
                 <div className="mb-2 space-y-2 px-1">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                    <div className="flex items-center gap-1.5 text-xs text-brand-600">
                       <Mail className="w-3.5 h-3.5" />
                       <span>{t("chat.emailPrompt")}</span>
                     </div>
@@ -389,7 +391,7 @@ export default function AccueilChat() {
                       type="checkbox"
                       checked={emailConsent}
                       onChange={(e) => setEmailConsent(e.target.checked)}
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-blue-600"
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-600"
                     />
                     <span>{t("chat.emailConsent")}</span>
                   </label>
@@ -407,7 +409,8 @@ export default function AccueilChat() {
                       : t("chat.placeholder")
                   }
                   disabled={isLoading}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                  dir="auto"
+                  className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm transition focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:opacity-50"
                 />
                 <button
                   type="button"
@@ -418,7 +421,8 @@ export default function AccueilChat() {
                   }
                   onClick={() => sendMessage(inputValue)}
                   title="Envoyer"
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition"
+                  aria-label="Envoyer"
+                  className="bg-brand-600 hover:bg-brand-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-2.5 rounded-xl shadow-sm transition"
                 >
                   <Send className="w-4 h-4" />
                 </button>

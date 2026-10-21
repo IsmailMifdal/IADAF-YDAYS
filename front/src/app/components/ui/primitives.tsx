@@ -148,9 +148,12 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm",
+  primary:
+    "bg-brand-600 hover:bg-brand-700 text-white shadow-sm shadow-brand-600/30 " +
+    "ring-1 ring-inset ring-white/10",
   secondary:
-    "bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm",
+    "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-xs " +
+    "hover:border-gray-300",
   ghost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
   danger: "bg-red-600 hover:bg-red-700 text-white shadow-sm",
 };
@@ -166,7 +169,7 @@ function buttonClass(
   fullWidth: boolean,
 ) {
   return cx(
-    "inline-flex items-center justify-center gap-2 font-medium",
+    "inline-flex items-center justify-center gap-2 font-semibold",
     "transition duration-200 ease-out",
     RADIUS.control,
     VARIANTS[variant],

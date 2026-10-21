@@ -28,7 +28,7 @@ export default function LanguageSelector({ variant = "default" }: { variant?: "d
         className={
           variant === "compact"
             ? "flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 transition duration-200 ease-out text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-[0.97] motion-reduce:active:scale-100"
-            : "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-200 ease-out text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-[0.97] motion-reduce:active:scale-100"
+            : "flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-200 ease-out text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100"
         }
       >
         <Globe className="w-3.5 h-3.5" />
@@ -46,8 +46,8 @@ export default function LanguageSelector({ variant = "default" }: { variant?: "d
                 setLang(l.code as LangCode);
                 setOpen(false);
               }}
-              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-blue-50 transition ${
-                l.code === lang ? "text-blue-600 font-medium bg-blue-50/50" : "text-gray-700"
+              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 transition ${
+                l.code === lang ? "text-brand-600 font-medium bg-brand-50/50" : "text-gray-700"
               }`}
             >
               <span>{l.flag}</span>

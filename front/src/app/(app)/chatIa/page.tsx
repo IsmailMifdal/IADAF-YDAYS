@@ -40,13 +40,17 @@ export default function ChatIa() {
 
   const suggestions = [
     "Comment obtenir une carte vitale ?",
-    "Inscription \u00e0 P\u00f4le Emploi",
+    "Inscription \u00e0 France Travail",
     "Demande d\u2019allocations CAF",
     "Renouvellement titre de s\u00e9jour",
   ];
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Pas au seul message d'accueil : la page sauterait sous son titre dès
+    // l'arrivée, et le message d'accueil disparaîtrait hors de l'écran.
+    if (messages.length > 1) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const sendMessage = useCallback(
@@ -97,8 +101,8 @@ export default function ChatIa() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <PageHeader
         title="Assistant IA"
-        subtitle="Posez vos questions sur les d\u00e9marches administratives"
-        rightContent={<LanguageSelector variant="compact" />}
+        subtitle="Posez vos questions sur les démarches administratives"
+        rightContent={<LanguageSelector />}
       />
 
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
@@ -107,7 +111,7 @@ export default function ChatIa() {
             {messages.map((msg, idx) => msg.content === "" ? null : (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
-                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                  <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-violet-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                     <Bot className="w-5 h-5" />
                   </div>
                 ) : (
@@ -117,13 +121,13 @@ export default function ChatIa() {
                 )}
                 <div className={`max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
                   {msg.role === "assistant" ? (
-                    <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-sm prose prose-sm prose-blue max-w-none
-                      prose-headings:text-blue-800 prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base
-                      prose-h2:border-b prose-h2:border-blue-100 prose-h2:pb-1
+                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-tl-md px-6 py-4 shadow-soft prose prose-sm max-w-none
+                      prose-headings:text-brand-800 prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base
+                      prose-h2:border-b prose-h2:border-brand-100 prose-h2:pb-1
                       prose-p:text-gray-700 prose-p:leading-relaxed
-                      prose-li:text-gray-700 prose-li:leading-relaxed prose-li:marker:text-blue-500
-                      prose-strong:text-blue-900
-                      prose-a:text-blue-600 prose-a:underline prose-a:decoration-blue-300 hover:prose-a:text-blue-800
+                      prose-li:text-gray-700 prose-li:leading-relaxed prose-li:marker:text-brand-500
+                      prose-strong:text-brand-900
+                      prose-a:text-brand-600 prose-a:underline prose-a:decoration-brand-300 hover:prose-a:text-brand-800
                       prose-ul:my-1 prose-ol:my-1"
                     >
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -131,7 +135,7 @@ export default function ChatIa() {
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl px-5 py-3 shadow-sm">
+                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-tr-md px-5 py-3 shadow-sm shadow-brand-600/20">
                       {msg.content}
                     </div>
                   )}
@@ -152,11 +156,11 @@ export default function ChatIa() {
             {/* Until the first words of the answer arrive. */}
             {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-violet-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
                 </div>
-                <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-sm text-gray-500 flex items-center gap-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                <div className="bg-white border border-gray-200/80 rounded-2xl px-6 py-4 shadow-soft text-gray-500 flex items-center gap-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
                   <span className="text-sm">L&apos;IA génère votre réponse…</span>
                 </div>
               </div>
@@ -174,7 +178,7 @@ export default function ChatIa() {
                     key={suggestion}
                     type="button"
                     onClick={() => sendMessage(suggestion)}
-                    className="border border-blue-100 bg-blue-50/50 rounded-xl px-4 py-3 text-sm text-blue-700 hover:bg-blue-100 hover:border-blue-200 transition-all text-left"
+                    className="rounded-xl border border-gray-200/80 bg-white px-4 py-3 text-left text-sm font-medium text-gray-700 shadow-xs transition hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand-700 hover:shadow-soft motion-reduce:hover:translate-y-0"
                   >
                     {suggestion}
                   </button>
@@ -192,16 +196,18 @@ export default function ChatIa() {
               placeholder="Posez votre question sur une démarche administrative…"
               maxLength={2000}
               disabled={isLoading}
-              className="flex-1 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 shadow-sm"
+              dir="auto"
+              className="min-w-0 flex-1 rounded-2xl border border-gray-300 bg-white px-5 py-3.5 text-sm shadow-xs transition focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:opacity-50"
             />
             <button
               type="button"
               disabled={isSendDisabled}
               onClick={() => sendMessage(inputValue)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white px-6 py-3.5 rounded-2xl flex items-center gap-2 transition-all shadow-sm hover:shadow-md"
+              aria-label="Envoyer"
+              className="flex shrink-0 items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3.5 text-white sm:px-6 shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span className="text-sm font-medium">Envoyer</span>
+              <span className="hidden text-sm font-semibold sm:inline">Envoyer</span>
             </button>
           </div>
         </div>

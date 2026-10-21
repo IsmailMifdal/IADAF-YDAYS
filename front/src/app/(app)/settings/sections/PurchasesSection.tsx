@@ -75,7 +75,7 @@ export default function PurchasesSection() {
           </p>
           <Link
             href="/nosPacks"
-            className="inline-block mt-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 font-medium transition"
+            className="inline-block mt-5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 font-medium transition"
           >
             Découvrir les packs
           </Link>
@@ -101,7 +101,7 @@ export default function PurchasesSection() {
                 </span>
                 <Link
                   href={`/packs/${purchase.slug}`}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  className="text-sm font-medium text-brand-600 hover:text-brand-700"
                 >
                   Ouvrir
                 </Link>

@@ -74,7 +74,7 @@ export default function ForgotPasswordForm() {
       )}
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+        <Link href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
           Retour à la connexion
         </Link>
       </p>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
@@ -19,8 +20,25 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#4f46e5",
 };
+
+// Téléchargées au build et servies par le site lui-même : aucune requête vers
+// Google à l'exécution, ce que la CSP (font-src 'self') impose de toute façon.
+// Inter plutôt qu'une police plus « ronde » : ses virgules et ses points
+// restent collés au mot même en très grand (Plus Jakarta Sans les écartait,
+// « démarches , »), et elle se lit bien en seconde langue.
+const latin = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-latin",
+  display: "swap",
+});
+const arabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
+  display: "swap",
+});
 
 export default async function RootLayout({
   children,
@@ -31,8 +49,8 @@ export default async function RootLayout({
   const initialLang = isLangCode(stored) ? stored : "fr";
 
   return (
-    <html lang={initialLang}>
-      <body className="m-0 p-0 antialiased bg-slate-100">
+    <html lang={initialLang} className={`${latin.variable} ${arabic.variable}`}>
+      <body className="m-0 p-0 font-sans antialiased bg-gray-50 text-gray-900">
         <SessionProvider>
           <LanguageProvider initialLang={initialLang}>
             <ToastProvider>{children}</ToastProvider>

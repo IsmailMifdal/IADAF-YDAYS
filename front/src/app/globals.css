@@ -10,6 +10,82 @@
      au clic. Les définir ici évite que chaque composant invente la sienne. */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Couleur de marque : un indigo, moins saturé que le bleu par défaut de
+     Tailwind 4. Toutes les pages passent par `brand-*` : changer la marque,
+     c'est changer ces onze lignes. Le 600 garde un contraste de 6,3:1 sur
+     blanc (WCAG AA pour le texte courant). */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+  --color-brand-950: #1e1b4b;
+
+  /* Ombres douces et étagées : une surface se pose, une carte survolée se
+     soulève. Les ombres par défaut, plus dures, faisaient « gabarit ». */
+  --shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 2px 8px -2px rgb(16 24 40 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(16 24 40 / 0.04), 0 16px 32px -12px rgb(16 24 40 / 0.18);
+  --shadow-glow: 0 10px 30px -10px rgb(79 70 229 / 0.55);
+}
+
+/* Polices auto-hébergées par next/font (voir layout.tsx) : Inter pour
+   l'alphabet latin, IBM Plex Sans Arabic pour l'arabe, que la première n'a
+   pas. Le navigateur choisit glyphe par glyphe : un message en arabe
+   s'affiche dans une vraie police arabe, sans changer de composant. */
+@theme inline {
+  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* --- Décors de marque ----------------------------------------------------- */
+
+/* Halo coloré derrière les en-têtes et le hero : de la profondeur sans image
+   à télécharger. */
+.bg-glow {
+  background-image:
+    radial-gradient(48rem 26rem at 88% -12%, rgb(99 102 241 / 0.18), transparent 62%),
+    radial-gradient(36rem 22rem at -4% -8%, rgb(14 165 233 / 0.12), transparent 60%),
+    radial-gradient(30rem 20rem at 50% 120%, rgb(139 92 246 / 0.08), transparent 60%);
+}
+
+/* Trame de points, estompée vers le bas. */
+.bg-dots {
+  background-image: radial-gradient(rgb(15 23 42 / 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black 30%, transparent 90%);
+}
+
+/* Mot mis en valeur dans un titre. */
+.text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-brand-600),
+    var(--color-violet-600) 55%,
+    var(--color-sky-500)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes iadaf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Légère flottaison des pastilles du hero. */
+.animate-float {
+  animation: iadaf-float 6s ease-in-out infinite;
 }
 
 /* --- Animations d'entrée -------------------------------------------------- */
@@ -102,6 +178,23 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Dans la couche « base » : une classe `tracking-*` posée sur un titre
+   l'emporte toujours. */
+@layer base {
+  /* Titres un peu resserrés : c'est ce qui donne l'allure « produit » aux
+     grandes tailles. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
 }
 
 /* Barre de défilement discrète : la barre native de Windows est large et

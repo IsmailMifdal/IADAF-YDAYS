@@ -31,7 +31,7 @@ export default async function PaymentPage({
           </p>
           <Link
             href="/nosPacks"
-            className="mt-6 inline-block rounded-xl bg-blue-600 px-5 py-3 font-medium text-white transition hover:bg-blue-700"
+            className="mt-6 inline-block rounded-xl bg-brand-600 px-5 py-3 font-medium text-white transition hover:bg-brand-700"
           >
             Retour aux packs
           </Link>
@@ -50,12 +50,12 @@ export default async function PaymentPage({
 
   return (
     <div className="relative min-h-screen bg-white px-4 py-12 overflow-hidden">
-      <div className="pointer-events-none absolute -top-28 -left-24 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -top-28 -left-24 h-80 w-80 rounded-full bg-brand-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-violet-200/40 blur-3xl" />
 
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-10">
-          <p className="inline-flex items-center gap-2 border border-blue-200 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm">
+          <p className="inline-flex items-center gap-2 border border-brand-200 bg-brand-50 text-brand-700 px-4 py-1.5 rounded-full text-sm">
             <ShieldCheck className="h-4 w-4" />
             Paiement sécurisé par Stripe
           </p>
@@ -119,7 +119,7 @@ export default async function PaymentPage({
               </div>
             </div>
 
-            <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+            <div className="mt-6 rounded-xl border border-brand-200 bg-brand-50 p-3 text-xs text-brand-800">
               Accès au pack débloqué immédiatement après confirmation du
               paiement par Stripe.
             </div>

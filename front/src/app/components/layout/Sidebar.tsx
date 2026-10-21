@@ -15,10 +15,11 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
   X,
   type LucideIcon,
 } from "lucide-react";
+
+import { BrandLogo } from "../brand/BrandMark";
 
 type SidebarProps = {
   /** Desktop : rail d'icônes plutôt que sidebar étendue. */
@@ -63,35 +64,25 @@ export default function Sidebar({
     <aside
       id="sidebar-navigation"
       aria-label="Navigation principale"
-      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto overflow-x-hidden bg-blue-700 text-white
+      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto overflow-x-hidden border-r border-gray-200/80 bg-white text-gray-700
                   transition-transform duration-300 ease-out
                   lg:w-[var(--sidebar-w)] lg:translate-x-0 lg:transition-[width]
                   ${isDrawerOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
     >
       {/* ── En-tête ─────────────────────────────────────────────── */}
       <div
-        className={`flex shrink-0 items-center gap-2 border-b border-blue-600 p-4 ${
+        className={`flex h-16 shrink-0 items-center gap-1 border-b border-gray-100 px-3 ${
           isCollapsed ? "lg:justify-center lg:px-0" : "justify-between"
         }`}
       >
         <Link
           href="/"
           onClick={onNavigate}
-          className={`flex min-w-0 items-center gap-2.5 rounded-lg p-1 transition hover:bg-blue-600/60 ${
+          className={`flex min-w-0 items-center rounded-xl p-1 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
             isCollapsed ? "lg:hidden" : ""
           }`}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-base font-semibold leading-tight">
-              IA-DAF
-            </span>
-            <span className="block truncate text-xs text-blue-200">
-              Assistant Administratif
-            </span>
-          </span>
+          <BrandLogo />
         </Link>
 
         {/* Bascule rail / étendu — desktop uniquement. */}
@@ -104,7 +95,7 @@ export default function Sidebar({
           aria-expanded={!isCollapsed}
           aria-controls="sidebar-navigation"
           title={isCollapsed ? "Déplier" : "Replier"}
-          className="hidden shrink-0 rounded-lg p-2 transition hover:bg-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:block"
+          className="hidden shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 lg:block"
         >
           {isCollapsed ? (
             <PanelLeftOpen className="h-5 w-5" />
@@ -118,7 +109,7 @@ export default function Sidebar({
           type="button"
           onClick={onNavigate}
           aria-label="Fermer le menu"
-          className="shrink-0 rounded-lg p-2 transition hover:bg-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:hidden"
+          className="shrink-0 rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 lg:hidden"
         >
           <X className="h-5 w-5" />
         </button>
@@ -126,6 +117,9 @@ export default function Sidebar({
 
       {/* ── Navigation ──────────────────────────────────────────── */}
       <nav className="flex-1 space-y-1 p-3">
+        <p className={`px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 ${labelClass}`}>
+          Menu
+        </p>
         {menu.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -137,13 +131,20 @@ export default function Sidebar({
               onClick={onNavigate}
               title={tooltipFor(item.label, isCollapsed)}
               aria-current={isActive ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass} ${
+              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${rowClass} ${
                 isActive
-                  ? "bg-blue-600 font-medium text-white"
-                  : "text-blue-100 hover:bg-blue-600/60 hover:text-white"
+                  ? "bg-brand-50 font-semibold text-brand-700"
+                  : "font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              {isActive && (
+                <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-brand-600" />
+              )}
+              <Icon
+                className={`h-5 w-5 shrink-0 ${
+                  isActive ? "text-brand-600" : "text-gray-400 group-hover:text-gray-600"
+                }`}
+              />
               <span className={`truncate ${labelClass}`}>{item.label}</span>
             </Link>
           );
@@ -189,20 +190,20 @@ function AccountPanel({
 
   if (status === "loading") {
     return (
-      <div className="mt-auto shrink-0 border-t border-blue-600 p-3">
-        <div className="h-14 animate-pulse rounded-lg bg-blue-600/40" />
+      <div className="mt-auto shrink-0 border-t border-gray-100 p-3">
+        <div className="h-14 animate-pulse rounded-xl bg-gray-100" />
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="mt-auto shrink-0 border-t border-blue-600 p-3">
+      <div className="mt-auto shrink-0 border-t border-gray-100 p-3">
         <Link
           href="/login"
           onClick={onNavigate}
           title={tooltipFor("Se connecter", isCollapsed)}
-          className={`flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2.5 font-medium transition hover:bg-blue-500 ${rowClass}`}
+          className={`flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${rowClass}`}
         >
           <LogIn className="h-5 w-5 shrink-0" />
           <span className={labelClass}>Se connecter</span>
@@ -215,19 +216,19 @@ function AccountPanel({
   const initials = getInitials(name, email);
 
   return (
-    <div className="mt-auto shrink-0 space-y-2 border-t border-blue-600 p-3">
+    <div className="mt-auto shrink-0 space-y-1 border-t border-gray-100 p-3">
       <div
         title={tooltipFor(name ?? email ?? "Mon compte", isCollapsed)}
-        className={`flex items-center gap-3 rounded-lg bg-blue-600 p-2.5 ${rowClass}`}
+        className={`mb-2 flex items-center gap-3 rounded-xl border border-gray-200/80 bg-gray-50 p-2.5 ${rowClass}`}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500 text-sm font-semibold">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-violet-600 text-sm font-semibold text-white">
           {initials}
         </span>
         <span className={`min-w-0 ${labelClass}`}>
-          <span className="block truncate text-sm font-semibold">
+          <span className="block truncate text-sm font-semibold text-gray-900">
             {name ?? "Mon compte"}
           </span>
-          <span className="block truncate text-xs text-blue-200">{email}</span>
+          <span className="block truncate text-xs text-gray-500">{email}</span>
         </span>
       </div>
 
@@ -235,7 +236,7 @@ function AccountPanel({
         href="/settings"
         onClick={onNavigate}
         title={tooltipFor("Paramètres", isCollapsed)}
-        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-blue-100 transition hover:bg-blue-600 hover:text-white ${rowClass}`}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${rowClass}`}
       >
         <Settings className="h-5 w-5 shrink-0" />
         <span className={labelClass}>Paramètres</span>
@@ -245,7 +246,7 @@ function AccountPanel({
         type="button"
         onClick={() => signOut({ redirectTo: "/" })}
         title={tooltipFor("Déconnexion", isCollapsed)}
-        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-blue-100 transition hover:bg-blue-600 hover:text-white ${rowClass}`}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-600 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${rowClass}`}
       >
         <LogOut className="h-5 w-5 shrink-0" />
         <span className={labelClass}>Déconnexion</span>

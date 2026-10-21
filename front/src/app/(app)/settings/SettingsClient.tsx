@@ -184,7 +184,7 @@ function NavButton({
   const activeClass =
     tone === "danger"
       ? "bg-red-50 text-red-700 font-medium"
-      : "bg-blue-50 text-blue-700 font-medium";
+      : "bg-brand-50 text-brand-700 font-medium";
   const idleClass =
     tone === "danger"
       ? "text-red-600 hover:bg-red-50"
@@ -195,7 +195,7 @@ function NavButton({
       type="button"
       onClick={() => onSelect(id)}
       aria-current={isActive ? "page" : undefined}
-      className={`flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm text-left transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
+      className={`flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm text-left transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
         isActive ? activeClass : idleClass
       }`}
     >

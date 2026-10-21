@@ -48,7 +48,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           Utilisez le lien complet reçu par e-mail, ou demandez-en un nouveau.
         </AuthMessage>
         <p className="mt-6 text-center text-sm">
-          <Link href="/mot-de-passe-oublie" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href="/mot-de-passe-oublie" className="text-brand-600 hover:text-brand-700 font-medium">
             Demander un nouveau lien
           </Link>
         </p>
@@ -61,7 +61,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
       <AuthCard title="Mot de passe modifié" subtitle="Vous pouvez maintenant vous connecter.">
         <AuthMessage tone="success">Votre nouveau mot de passe est enregistré.</AuthMessage>
         <p className="mt-6 text-center text-sm">
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
             Se connecter
           </Link>
         </p>

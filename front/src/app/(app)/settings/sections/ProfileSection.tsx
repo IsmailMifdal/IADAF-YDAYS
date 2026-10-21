@@ -71,7 +71,7 @@ export default function ProfileSection({
         description="Ces informations apparaissent dans votre espace personnel."
       >
         <div className="flex items-center gap-4 pb-6 mb-6 border-b border-gray-100">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xl font-semibold shrink-0">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-violet-600 text-white flex items-center justify-center text-xl font-semibold shrink-0">
             {getInitials(account.name, account.email)}
           </div>
           <div className="min-w-0">

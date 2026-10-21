@@ -45,7 +45,7 @@ export default async function PackPage({
           </p>
           <Link
             href="/nosPacks"
-            className="inline-block mt-6 bg-blue-600 text-white px-4 py-2 rounded-lg"
+            className="inline-block mt-6 bg-brand-600 text-white px-4 py-2 rounded-lg"
           >
             Retour aux packs
           </Link>

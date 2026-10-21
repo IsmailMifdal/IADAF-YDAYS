@@ -1,5 +1,22 @@
 import type { ReactNode } from "react";
-import { AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+
+import { BrandLogo } from "../components/brand/BrandMark";
+
+/** Logo au-dessus du formulaire : il ramène à l'accueil. */
+export function AuthBrand() {
+  return (
+    <div className="mb-8 flex justify-center lg:justify-start">
+      <Link
+        href="/"
+        className="rounded-xl p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
+        <BrandLogo size="lg" />
+      </Link>
+    </div>
+  );
+}
 
 /** Brand header + white card shared by the account-recovery pages. */
 export function AuthCard({
@@ -12,18 +29,10 @@ export function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <div className="w-full max-w-md px-4">
-      <div className="flex items-center gap-3 mb-8 justify-center">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-          <Sparkles className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <p className="font-bold text-lg text-gray-900">IA-DAF</p>
-          <p className="text-sm text-gray-500">Assistant Administratif</p>
-        </div>
-      </div>
+    <div className="w-full max-w-md">
+      <AuthBrand />
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <div className={authCardClass}>
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         <p className="text-gray-600 mt-1 text-sm">{subtitle}</p>
         {children}
@@ -56,8 +65,11 @@ export function AuthMessage({
   );
 }
 
+export const authCardClass =
+  "rounded-3xl border border-gray-200/80 bg-white p-8 shadow-lift sm:p-10";
+
 export const authInputClass =
-  "w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-xs transition placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15";
 
 export const authButtonClass =
-  "w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 transition shadow-lg shadow-blue-500/20";
+  "w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-3.5 font-semibold text-white shadow-glow ring-1 ring-inset ring-white/10 transition hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.99] motion-reduce:active:scale-100";

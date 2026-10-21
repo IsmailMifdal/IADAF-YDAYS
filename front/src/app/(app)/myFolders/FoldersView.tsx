@@ -25,7 +25,7 @@ import type { Folder, FolderStatus } from "../../lib/demarches";
 
 const STATUS: Record<FolderStatus, { label: string; tone: Tone; bar: string }> = {
   EN_ATTENTE: { label: "En préparation", tone: "neutral", bar: "bg-gray-400" },
-  EN_COURS: { label: "En cours", tone: "info", bar: "bg-blue-600" },
+  EN_COURS: { label: "En cours", tone: "info", bar: "bg-brand-600" },
   TERMINEE: { label: "Terminé", tone: "success", bar: "bg-emerald-600" },
   ANNULEE: { label: "Annulé", tone: "neutral", bar: "bg-gray-300" },
 };
@@ -98,9 +98,9 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
                 type="button"
                 onClick={() => setFilter(value)}
                 aria-pressed={isActive}
-                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
+                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
                   isActive
-                    ? "border-blue-600 bg-blue-600 text-white"
+                    ? "border-brand-600 bg-brand-600 text-white"
                     : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
@@ -171,7 +171,7 @@ function FolderCard({ folder }: { folder: Folder }) {
       {folder.packSlug && (
         <Link
           href={`/packs/${folder.packSlug}`}
-          className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
         >
           Ouvrir l’espace du pack
           <ArrowRight className="h-4 w-4" />

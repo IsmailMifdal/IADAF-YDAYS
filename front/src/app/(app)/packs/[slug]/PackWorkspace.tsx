@@ -490,7 +490,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
             <section className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
               {/* Header + progression */}
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-violet-700 flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
@@ -508,7 +508,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   <span className="text-sm font-medium text-gray-600">
                     Progression
                   </span>
-                  <span className="text-sm font-semibold text-blue-700">
+                  <span className="text-sm font-semibold text-brand-700">
                     {filledDocs}/{totalDocs} documents
                   </span>
                 </div>
@@ -521,7 +521,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   aria-label="Documents déposés"
                 >
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-brand-500 to-violet-600 rounded-full transition-all duration-500"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -536,17 +536,17 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   return (
                     <div key={document}>
                     <label
-                      className={`group flex items-center gap-4 p-3.5 rounded-xl border cursor-pointer transition duration-200 ease-out active:scale-[0.99] motion-reduce:active:scale-100 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 ${
+                      className={`group flex items-center gap-4 p-3.5 rounded-xl border cursor-pointer transition duration-200 ease-out active:scale-[0.99] motion-reduce:active:scale-100 focus-within:ring-2 focus-within:ring-brand-500 focus-within:ring-offset-2 ${
                         file
                           ? "border-emerald-200 bg-emerald-50/60"
-                          : "border-gray-200 hover:border-blue-300 hover:bg-blue-50/40"
+                          : "border-gray-200 hover:border-brand-300 hover:bg-brand-50/40"
                       }`}
                     >
                       <div
                         className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition ${
                           file
                             ? "bg-emerald-100 text-emerald-600"
-                            : "bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500"
+                            : "bg-gray-100 text-gray-400 group-hover:bg-brand-100 group-hover:text-brand-500"
                         }`}
                       >
                         {isBusy ? (
@@ -594,7 +594,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                           <X className="w-4 h-4" />
                         </button>
                       ) : (
-                        <span className="shrink-0 text-xs font-medium bg-blue-600 group-hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition">
+                        <span className="shrink-0 text-xs font-medium bg-brand-600 group-hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition">
                           Parcourir
                         </span>
                       )}
@@ -632,8 +632,8 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                 onClick={() => dropInputRef.current?.click()}
                 className={`border-dashed border-2 rounded-xl p-5 text-center mt-4 cursor-pointer transition ${
                   isDragging
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                    ? "border-brand-500 bg-brand-50"
+                    : "border-gray-200 hover:border-brand-300 hover:bg-gray-50"
                 }`}
               >
                 <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1.5" />
@@ -661,7 +661,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       key={file.id}
                       className="flex items-center gap-3 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
                     >
-                      <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                      <FileText className="w-4 h-4 text-brand-500 shrink-0" />
                       <a
                         href={`/api/documents/${file.id}`}
                         className="flex-1 truncate text-gray-700 hover:underline"
@@ -709,7 +709,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                 type="button"
                 onClick={handleAnalyze}
                 disabled={uploadedCount === 0 || isAnalyzing}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-semibold text-white transition duration-200 ease-out hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:scale-[0.98] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:active:scale-100"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3.5 font-semibold text-white transition duration-200 ease-out hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:active:scale-100"
               >
                 {isAnalyzing ? (
                   <>
@@ -748,7 +748,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
             <aside className="w-full">
               <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col lg:sticky lg:top-6 h-[600px] lg:h-[calc(100vh-3rem)] p-4 gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                  <div className="h-10 w-10 rounded-lg bg-brand-600 flex items-center justify-center shrink-0">
                     <MessageSquare className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -769,23 +769,23 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       className={`flex items-start gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                     >
                       {message.role === "ai" ? (
-                        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
+                        <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-violet-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                           <Bot className="w-4 h-4" />
                         </div>
                       ) : (
-                        <div className="w-9 h-9 bg-gray-200 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-orange-200">
+                        <div className="w-9 h-9 bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 shrink-0">
                           <span className="text-xs font-bold">U</span>
                         </div>
                       )}
                       <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : ""}`}>
                         {message.role === "ai" ? (
-                          <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm prose prose-sm prose-blue max-w-none
-                            prose-headings:text-blue-800 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-headings:text-sm
-                            prose-h2:border-b prose-h2:border-blue-100 prose-h2:pb-1
+                          <div dir="auto" className="bg-white border border-gray-200/80 rounded-xl rounded-tl-md px-4 py-3 shadow-xs prose prose-sm max-w-none
+                            prose-headings:text-brand-800 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-headings:text-sm
+                            prose-h2:border-b prose-h2:border-brand-100 prose-h2:pb-1
                             prose-p:text-gray-700 prose-p:leading-relaxed prose-p:text-sm
-                            prose-li:text-gray-700 prose-li:leading-relaxed prose-li:text-sm prose-li:marker:text-blue-500
-                            prose-strong:text-blue-900
-                            prose-a:text-blue-600 prose-a:underline prose-a:decoration-blue-300 hover:prose-a:text-blue-800
+                            prose-li:text-gray-700 prose-li:leading-relaxed prose-li:text-sm prose-li:marker:text-brand-500
+                            prose-strong:text-brand-900
+                            prose-a:text-brand-600 prose-a:underline prose-a:decoration-brand-300 hover:prose-a:text-brand-800
                             prose-ul:my-1 prose-ol:my-1"
                           >
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -793,7 +793,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                             </ReactMarkdown>
                           </div>
                         ) : (
-                          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl px-4 py-2.5 shadow-sm text-sm">
+                          <div dir="auto" className="bg-brand-600 text-white rounded-xl rounded-tr-md px-4 py-2.5 shadow-sm text-sm">
                             {message.content}
                           </div>
                         )}
@@ -811,11 +811,11 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   {/* Until the first words of the answer arrive. */}
                   {(isWelcoming || (isLoading && messages[messages.length - 1]?.content === "")) && (
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
+                      <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-violet-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                         <Bot className="w-4 h-4" />
                       </div>
                       <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm text-gray-500 flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                        <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
                         <span className="text-sm">{t("pack.chat.loading")}</span>
                       </div>
                     </div>
@@ -824,7 +824,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className="border border-gray-200 rounded-xl p-2 flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-xl border border-gray-300 bg-white p-2 shadow-xs transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15">
                   <input
                     type="text"
                     value={chatInput}
@@ -837,13 +837,15 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                     }}
                     placeholder={t("pack.chat.placeholder")}
                     disabled={isBusy}
+                    dir="auto"
                     className="flex-1 bg-transparent outline-none px-2 py-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
                   />
                   <button
                     type="button"
                     onClick={handleSendMessage}
                     disabled={isBusy || chatInput.trim().length === 0}
-                    className="h-10 w-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition disabled:opacity-50"
+                    aria-label="Envoyer"
+                    className="h-10 w-10 rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center shadow-sm transition disabled:opacity-50"
                   >
                     <ArrowRight className="h-4 w-4" />
                   </button>

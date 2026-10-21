@@ -74,12 +74,12 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
           type="checkbox"
           checked={waivesWithdrawal}
           onChange={(e) => setWaivesWithdrawal(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
         />
         <span>
           Je demande l’accès immédiat au pack et je reconnais perdre mon droit
           de rétractation de 14 jours. J’accepte les{" "}
-          <Link href="/cgv" target="_blank" className="text-blue-600 underline">
+          <Link href="/cgv" target="_blank" className="text-brand-600 underline">
             conditions générales de vente
           </Link>
           .
@@ -90,7 +90,7 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
         type="button"
         onClick={handleCheckout}
         disabled={isRedirecting || !waivesWithdrawal}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 transition shadow-sm"
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 transition shadow-sm"
       >
         {isRedirecting ? (
           <Loader2 className="w-4 h-4 animate-spin" />

@@ -89,7 +89,7 @@ export default async function DocumentsPage() {
                   </div>
                   <Link
                     href={`/packs/${pack.slug}`}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                   >
                     Gérer dans l’espace du pack
                     <ArrowRight className="h-4 w-4" />
@@ -108,7 +108,7 @@ export default async function DocumentsPage() {
                   <ul className="mt-4 divide-y divide-gray-100">
                     {pack.filed.map((document) => (
                       <li key={document.id} className="flex items-center gap-3 py-2.5 text-sm">
-                        <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+                        <FileText className="h-4 w-4 shrink-0 text-brand-500" />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-gray-800">
                             {document.documentType}
@@ -119,7 +119,7 @@ export default async function DocumentsPage() {
                         </span>
                         <a
                           href={`/api/documents/${document.id}`}
-                          className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-700"
+                          className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
                         >
                           Télécharger
                         </a>

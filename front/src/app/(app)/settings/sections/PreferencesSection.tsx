@@ -39,7 +39,7 @@ export default function PreferencesSection() {
               }}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
                 isSelected
-                  ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600"
+                  ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
                   : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
               }`}
             >
@@ -49,7 +49,7 @@ export default function PreferencesSection() {
               <span className="flex-1 min-w-0">
                 <span
                   className={`block font-medium ${
-                    isSelected ? "text-blue-900" : "text-gray-900"
+                    isSelected ? "text-brand-900" : "text-gray-900"
                   }`}
                 >
                   {option.label}
@@ -59,7 +59,7 @@ export default function PreferencesSection() {
                 </span>
               </span>
               {isSelected && (
-                <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                <Check className="w-4 h-4 text-brand-600 shrink-0" />
               )}
             </button>
           );

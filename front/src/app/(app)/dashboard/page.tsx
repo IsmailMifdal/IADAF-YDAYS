@@ -164,7 +164,7 @@ export default async function DashboardPage() {
                               {pack.shortDescription}
                             </p>
                           </div>
-                          <ArrowRight className="w-4 h-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+                          <ArrowRight className="w-4 h-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-brand-600" />
                         </div>
                       </Card>
                     </Link>
@@ -193,12 +193,12 @@ function QuickAction({
   return (
     <Link href={href} className="group">
       <Card interactive className="flex h-full flex-col gap-3 p-5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
           {icon}
         </span>
         <h3 className="font-semibold text-gray-900">{title}</h3>
         <p className="flex-1 text-sm text-gray-500">{description}</p>
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-blue-600">
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-600">
           Accéder
           <ArrowRight className="w-4 h-4 transition group-hover:translate-x-0.5" />
         </span>
