@@ -490,7 +490,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
             <section className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
               {/* Header + progression */}
               <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-violet-700 flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-700 flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
@@ -521,7 +521,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   aria-label="Documents déposés"
                 >
                   <div
-                    className="h-full bg-gradient-to-r from-brand-500 to-violet-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-brand-500 to-indigo-600 rounded-full transition-all duration-500"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -769,7 +769,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       className={`flex items-start gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                     >
                       {message.role === "ai" ? (
-                        <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-violet-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
+                        <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                           <Bot className="w-4 h-4" />
                         </div>
                       ) : (
@@ -811,7 +811,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   {/* Until the first words of the answer arrive. */}
                   {(isWelcoming || (isLoading && messages[messages.length - 1]?.content === "")) && (
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-violet-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
+                      <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-brand-200">
                         <Bot className="w-4 h-4" />
                       </div>
                       <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm text-gray-500 flex items-center gap-2">

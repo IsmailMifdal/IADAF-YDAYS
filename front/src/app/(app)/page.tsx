@@ -28,15 +28,15 @@ const guidedPacks = packs.filter((pack) => pack.slug !== ALL_ACCESS_SLUG);
 const shortTitle = (title: string) => title.replace(/\s*\(.*\)\s*$/, "");
 
 const primaryCta =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3.5 font-semibold text-white " +
-  "shadow-glow ring-1 ring-inset ring-white/10 transition duration-200 ease-out hover:bg-brand-700 " +
-  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 " +
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 font-semibold text-brand-800 " +
+  "shadow-lg transition duration-200 ease-out hover:bg-brand-50 " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 " +
   "active:scale-[0.97] motion-reduce:active:scale-100";
 
 const secondaryCta =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white/80 px-6 py-3.5 " +
-  "font-semibold text-gray-800 shadow-xs backdrop-blur transition duration-200 ease-out hover:border-gray-300 " +
-  "hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 " +
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 " +
+  "font-semibold text-white backdrop-blur transition duration-200 ease-out hover:bg-white/20 " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 " +
   "active:scale-[0.97] motion-reduce:active:scale-100";
 
 const ADMINISTRATIONS = ["Préfecture · ANEF", "CAF", "Ameli", "Impôts", "URSSAF", "France Travail"];
@@ -160,13 +160,13 @@ export default function Home() {
   return (
     <div className="bg-white">
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden="true" className="bg-glow pointer-events-none absolute inset-0" />
-        <div aria-hidden="true" className="bg-dots pointer-events-none absolute inset-0" />
+      <section className="relative overflow-hidden bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-[28rem] w-[28rem] rounded-full bg-brand-400/20 blur-3xl" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 left-1/4 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
 
         <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 pb-24 pt-14 md:px-12 lg:grid-cols-[1.05fr_1fr] lg:pt-20">
           <div className="animate-fade-up">
-            <span className="inline-flex items-center gap-2 rounded-full border border-brand-200/70 bg-white/70 px-3.5 py-1.5 text-sm font-medium text-brand-700 shadow-xs backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white backdrop-blur">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -174,12 +174,12 @@ export default function Home() {
               Assistant IA · en {LANGUAGES.length} langues
             </span>
 
-            <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
               Vos démarches en France,{" "}
-              <span className="text-gradient">enfin simples.</span>
+              <span className="text-brand-200">enfin simples.</span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-gray-600">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-brand-100">
               IA-DAF répond à vos questions dans votre langue, s’appuie sur les
               fiches officielles de service-public.gouv.fr et vérifie vos pièces
               avant que vous ne déposiez votre dossier.
@@ -195,10 +195,10 @@ export default function Home() {
               </Link>
             </div>
 
-            <ul className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-gray-600">
+            <ul className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-brand-100">
               {["Réponses sourcées", "Pièces chiffrées", "Compte gratuit"].map((item) => (
                 <li key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
                   {item}
                 </li>
               ))}
@@ -253,7 +253,7 @@ export default function Home() {
           />
 
           <div className="stagger mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
-            <article className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 p-8 text-white shadow-glow md:col-span-2 md:p-10">
+            <article className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 p-8 text-white shadow-glow md:col-span-2 md:p-10">
               <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
               <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 left-10 h-56 w-56 rounded-full bg-sky-400/20 blur-3xl" />
               <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-inset ring-white/20">
@@ -338,7 +338,7 @@ export default function Home() {
 
       {/* ── Appel final ──────────────────────────────────────────────── */}
       <section className="px-6 py-20 md:px-12">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 px-8 py-16 text-center text-white shadow-glow md:px-16">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 px-8 py-16 text-center text-white shadow-glow md:px-16">
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-sky-400/20 blur-3xl" />
           <h2 className="relative text-3xl font-bold md:text-4xl">
@@ -377,7 +377,7 @@ function HeroPreview() {
     <div className="relative mx-auto w-full max-w-lg animate-fade-up [animation-delay:120ms]">
       <div
         aria-hidden="true"
-        className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-brand-500/25 via-violet-500/15 to-sky-400/25 blur-2xl"
+        className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-brand-400/30 via-indigo-400/20 to-sky-300/25 blur-2xl"
       />
 
       <figure

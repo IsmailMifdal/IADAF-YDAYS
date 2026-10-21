@@ -51,7 +51,7 @@ export default async function PaymentPage({
   return (
     <div className="relative min-h-screen bg-white px-4 py-12 overflow-hidden">
       <div className="pointer-events-none absolute -top-28 -left-24 h-80 w-80 rounded-full bg-brand-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-violet-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
 
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-10">

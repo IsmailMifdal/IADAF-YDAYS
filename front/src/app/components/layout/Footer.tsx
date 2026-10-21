@@ -26,17 +26,17 @@ const legalLinks = [
 ];
 
 const linkClass =
-  "rounded text-sm text-gray-600 transition hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500";
+  "rounded text-sm text-brand-100 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gray-200/80 bg-white">
+    <footer className="bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div>
-            <BrandLogo />
-            <p className="mt-4 text-gray-600 text-sm leading-relaxed">
+            <BrandLogo onDark />
+            <p className="mt-4 text-brand-100 text-sm leading-relaxed">
               Votre assistant pour réussir vos démarches administratives en
               France, dans votre langue, à toute heure.
             </p>
@@ -44,7 +44,7 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">
               Navigation
             </h3>
             <ul className="space-y-2.5">
@@ -60,7 +60,7 @@ export default function Footer() {
 
           {/* Packs */}
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">
               Nos packs
             </h3>
             <ul className="space-y-2.5">
@@ -76,36 +76,36 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-white">
               Contact
             </h3>
             {/* Only real details: an invented phone number or address on a
                 commercial site misleads customers. Empty fields are hidden. */}
             <ul className="space-y-3">
               {LEGAL_INFO.contactEmail && (
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <Mail className="w-4 h-4 text-brand-500 shrink-0" />
+                <li className="flex items-center gap-3 text-sm text-brand-100">
+                  <Mail className="w-4 h-4 text-brand-300 shrink-0" />
                   <a href={`mailto:${LEGAL_INFO.contactEmail}`} className={linkClass}>
                     {LEGAL_INFO.contactEmail}
                   </a>
                 </li>
               )}
               {LEGAL_INFO.phone && (
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <Phone className="w-4 h-4 text-brand-500 shrink-0" />
+                <li className="flex items-center gap-3 text-sm text-brand-100">
+                  <Phone className="w-4 h-4 text-brand-300 shrink-0" />
                   {LEGAL_INFO.phone}
                 </li>
               )}
               {LEGAL_INFO.address && (
-                <li className="flex items-center gap-3 text-sm text-gray-600">
-                  <MapPin className="w-4 h-4 text-brand-500 shrink-0" />
+                <li className="flex items-center gap-3 text-sm text-brand-100">
+                  <MapPin className="w-4 h-4 text-brand-300 shrink-0" />
                   {LEGAL_INFO.address}
                 </li>
               )}
               <li>
                 <Link
                   href="/mentions-legales"
-                  className="rounded text-sm font-medium text-brand-700 transition hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  className="rounded text-sm font-medium text-white transition hover:text-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                 >
                   Toutes nos coordonnées →
                 </Link>
@@ -116,9 +116,9 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-gray-100">
+      <div className="border-t border-white/15">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-gray-500 text-sm">
+          <p className="text-brand-200 text-sm">
             © {new Date().getFullYear()} IA-DAF. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6">

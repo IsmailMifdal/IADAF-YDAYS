@@ -16,35 +16,44 @@ export function BrandMark({ size = "md" }: { size?: keyof typeof SIZES }) {
   return (
     <span
       aria-hidden="true"
-      className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-brand-500 to-violet-600 shadow-glow ring-1 ring-inset ring-white/20 ${box}`}
+      className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-brand-500 to-indigo-600 shadow-glow ring-1 ring-inset ring-white/20 ${box}`}
     >
       <svg width={sheet} height={sheet * 1.2} viewBox="0 0 20 24" fill="none">
         <rect width="20" height="24" rx="3.5" fill="white" />
-        <rect x="4" y="7" width="12" height="2" rx="1" fill="#4f46e5" />
-        <rect x="4" y="11" width="12" height="2" rx="1" fill="#4f46e5" />
-        <rect x="4" y="15" width="7.5" height="2" rx="1" fill="#4f46e5" />
+        <rect x="4" y="7" width="12" height="2" rx="1" fill="#2563eb" />
+        <rect x="4" y="11" width="12" height="2" rx="1" fill="#2563eb" />
+        <rect x="4" y="15" width="7.5" height="2" rx="1" fill="#2563eb" />
       </svg>
     </span>
   );
 }
 
-/** Logo et nom, avec ou sans la ligne de description. */
+/**
+ * Logo et nom, avec ou sans la ligne de description. `onDark` pour les
+ * surfaces bleues (barre latérale, pied de page).
+ */
 export function BrandLogo({
   size = "md",
   tagline = true,
+  onDark = false,
 }: {
   size?: keyof typeof SIZES;
   tagline?: boolean;
+  onDark?: boolean;
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <BrandMark size={size} />
       <span className="min-w-0">
-        <span className="block truncate font-bold leading-tight tracking-tight text-gray-900">
+        <span
+          className={`block truncate font-bold leading-tight tracking-tight ${
+            onDark ? "text-white" : "text-gray-900"
+          }`}
+        >
           IA-DAF
         </span>
         {tagline && (
-          <span className="block truncate text-xs text-gray-500">
+          <span className={`block truncate text-xs ${onDark ? "text-brand-200" : "text-gray-500"}`}>
             Assistant administratif
           </span>
         )}

@@ -9,10 +9,8 @@ type PageHeaderProps = {
 };
 
 /**
- * Bandeau de tête commun à toutes les pages de l'application.
- *
- * Clair, avec un halo de marque : le titre reste le premier repère sans le
- * poids d'un aplat sombre, qui écrasait le contenu juste en dessous.
+ * Bandeau de tête commun à toutes les pages de l'application, dans le bleu
+ * d'IA-DAF (celui du drapeau français).
  *
  * Les gouttières suivent celles de PageContainer (`px-4 md:px-8`) : sans cela,
  * le titre et le contenu de la page n'étaient pas alignés verticalement.
@@ -25,17 +23,16 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <header
-      className={`relative overflow-hidden border-b border-gray-200/70 bg-white px-4 md:px-8 py-8 md:py-10 ${className}`}
+      className={`relative overflow-hidden bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white px-4 md:px-8 py-8 md:py-10 ${className}`}
     >
-      <div aria-hidden="true" className="bg-glow pointer-events-none absolute inset-0" />
-      <div aria-hidden="true" className="bg-dots pointer-events-none absolute inset-0 opacity-60" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {title}
           </h1>
-          <p className="text-gray-600 mt-2 text-sm md:text-base max-w-2xl">{subtitle}</p>
+          <p className="text-brand-100 mt-2 text-sm md:text-base max-w-2xl">{subtitle}</p>
         </div>
 
         {rightContent && <div className="shrink-0">{rightContent}</div>}

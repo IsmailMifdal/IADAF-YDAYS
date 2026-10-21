@@ -102,7 +102,7 @@ export default function ChatIa() {
       <PageHeader
         title="Assistant IA"
         subtitle="Posez vos questions sur les démarches administratives"
-        rightContent={<LanguageSelector />}
+        rightContent={<LanguageSelector variant="compact" />}
       />
 
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
@@ -111,7 +111,7 @@ export default function ChatIa() {
             {messages.map((msg, idx) => msg.content === "" ? null : (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
-                  <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-violet-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                  <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                     <Bot className="w-5 h-5" />
                   </div>
                 ) : (
@@ -156,7 +156,7 @@ export default function ChatIa() {
             {/* Until the first words of the answer arrive. */}
             {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-violet-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div className="bg-white border border-gray-200/80 rounded-2xl px-6 py-4 shadow-soft text-gray-500 flex items-center gap-3">

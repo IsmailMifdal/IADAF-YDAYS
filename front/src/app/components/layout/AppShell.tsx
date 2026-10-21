@@ -95,20 +95,20 @@ export default function AppShell({
       <div className="flex min-h-screen flex-col transition-[padding] duration-300 ease-out lg:pl-[var(--sidebar-w)]">
         {/* Barre mobile : porte l'ouverture du tiroir sans recouvrir le contenu,
             contrairement à un bouton flottant. */}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-gray-200/80 bg-white/85 px-4 text-gray-900 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-brand-800/40 bg-brand-700 px-4 text-white lg:hidden">
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
             aria-label="Ouvrir le menu"
             aria-expanded={isDrawerOpen}
             aria-controls="sidebar-navigation"
-            className="-ml-1 rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            className="-ml-1 rounded-lg p-2 transition hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          <Link href="/" className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-            <BrandLogo size="sm" tagline={false} />
+          <Link href="/" className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+            <BrandLogo size="sm" tagline={false} onDark />
           </Link>
         </header>
 

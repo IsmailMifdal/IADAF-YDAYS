@@ -278,7 +278,7 @@ export default function AccueilChat() {
           onClick={() => setIsOpen(true)}
           title="Ouvrir le chat"
           aria-label="Ouvrir le chat"
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-glow ring-1 ring-inset ring-white/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-glow ring-1 ring-inset ring-white/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
         >
           <MessageSquare className="w-6 h-6" />
         </button>
@@ -288,7 +288,7 @@ export default function AccueilChat() {
       {isOpen && (
         <div className="animate-fade-up fixed inset-x-3 bottom-3 z-50 flex h-[min(560px,calc(100dvh-1.5rem))] flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[400px]">
           {/* Header */}
-          <div className="bg-gradient-to-br from-brand-600 to-violet-600 text-white px-5 py-4 flex items-center justify-between shrink-0">
+          <div className="bg-gradient-to-br from-brand-600 to-indigo-600 text-white px-5 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                 <Bot className="w-5 h-5" />
@@ -320,7 +320,7 @@ export default function AccueilChat() {
                 className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
                 {msg.role === "ai" && (
-                  <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-violet-700 rounded-lg flex items-center justify-center text-white shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
@@ -343,7 +343,7 @@ export default function AccueilChat() {
             {/* Until the first words of the answer arrive. */}
             {isLoading && messages[messages.length - 1]?.content === "" && (
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-violet-700 rounded-lg flex items-center justify-center text-white shrink-0">
+                <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-lg flex items-center justify-center text-white shrink-0">
                   <Bot className="w-4 h-4" />
                 </div>
                 <div className="bg-white border border-gray-200/80 rounded-2xl px-4 py-3 flex items-center gap-2 shadow-xs">
@@ -358,7 +358,7 @@ export default function AccueilChat() {
 
           {/* CTA after chat ended */}
           {chatEnded && (
-            <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-brand-50 to-violet-50">
+            <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-brand-50 to-indigo-50">
               <Link
                 href="/nosPacks"
                 className="block w-full rounded-xl bg-brand-600 py-3 text-center text-sm font-medium text-white transition hover:bg-brand-700"

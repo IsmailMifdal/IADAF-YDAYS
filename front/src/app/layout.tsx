@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f46e5",
+  themeColor: "#2563eb",
 };
 
 // Téléchargées au build et servies par le site lui-même : aucune requête vers

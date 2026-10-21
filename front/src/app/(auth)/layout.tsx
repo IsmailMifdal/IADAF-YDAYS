@@ -34,7 +34,7 @@ export default function AuthLayout({
 
       {/* Panneau de marque, à partir de l'écran d'ordinateur : il rappelle ce
           que l'on gagne à créer son compte, sans allonger la page mobile. */}
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-violet-800 p-12 text-white lg:flex lg:flex-col lg:justify-center xl:p-16">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 p-12 text-white lg:flex lg:flex-col lg:justify-center xl:p-16">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl" />
 
