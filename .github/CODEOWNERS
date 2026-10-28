@@ -1,0 +1,41 @@
+# Propriétaires du code, par équipe (voir docs/equipe/ORGANISATION.md).
+#
+# GitHub demande la relecture du propriétaire d'un dossier dès qu'une PR le touche.
+# La dernière règle qui correspond l'emporte : les règles générales d'abord.
+#
+# En attendant les pseudos GitHub des membres, le porteur du projet possède tout.
+# Pour chaque équipe, remplacez @IsmailMifdal par les pseudos de ses membres sur
+# les lignes de son bloc (exemple : /ai-service/ @pseudo-1 @pseudo-2).
+
+# Tout le dépôt, par défaut
+*                                         @IsmailMifdal
+
+# ── Équipe Web — pôle Usager et IA ──────────────────────────────────────────
+/front/src/app/(app)/                     @IsmailMifdal
+/front/src/app/i18n/                      @IsmailMifdal
+/demarches-service/                       @IsmailMifdal
+/ai-service/                              @IsmailMifdal
+/document-service/                        @IsmailMifdal
+
+# ── Équipe Web — pôle Plateforme ────────────────────────────────────────────
+/analytics-service/                       @IsmailMifdal
+/user-service/                            @IsmailMifdal
+/api-gateway/                             @IsmailMifdal
+/front/src/app/api/checkout/              @IsmailMifdal
+/front/src/app/api/stripe/                @IsmailMifdal
+
+# ── Équipe Mobile ───────────────────────────────────────────────────────────
+# Dossier créé en novembre ; décommentez la ligne à ce moment-là.
+# /mobile/                                @IsmailMifdal
+
+# ── Transverse : DevOps ─────────────────────────────────────────────────────
+/deploy/                                  @IsmailMifdal
+/docker/                                  @IsmailMifdal
+/docker-compose*.yml                      @IsmailMifdal
+/.github/workflows/                       @IsmailMifdal
+
+# ── Transverse : sécurité (relecture obligatoire sur ces fichiers) ──────────
+/front/src/auth.ts                        @IsmailMifdal
+/front/src/auth.config.ts                 @IsmailMifdal
+/front/src/proxy.ts                       @IsmailMifdal
+/SECURITY.md                              @IsmailMifdal
