@@ -24,8 +24,8 @@ Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
   [template](.github/ISSUE_TEMPLATE) and fill in every section.
 - Title: `<type>(<scope>): <subject>`, e.g. `fix(db): remove CREATE SCHEMA from V1 migrations`.
 - One team label (`team:backend`, `team:front-web`…), then assign yourself and
-  move it to **En cours** (in progress) on the [Project](https://github.com/users/IsmailMifdal/projects/3).
-  Columns: À faire → En cours → En relecture → Terminé.
+  move it to **In progress** on the [Project](https://github.com/users/IsmailMifdal/projects/3).
+  Columns: Todo → In progress → In review → Done.
 
 > **Why?** With ten people and no issue, two of us build the same thing without
 > knowing it. The board shows who does what at a glance.
