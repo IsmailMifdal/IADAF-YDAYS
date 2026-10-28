@@ -60,10 +60,10 @@ docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"
 ## Flyway: `Migration checksum mismatch for migration version 1`
 
 `demarches-service`, `document-service` or `analytics-service` stops at startup
-with this error on a database created before issue #42. Their V1 migration no
-longer runs
-`CREATE SCHEMA` (schemas are created by `docker/postgres/provision.sql`), so
-its checksum changed; the resulting schema is identical.
+with this error on a database where their V1 migration ran before issue #42
+(a `demarches` database baselined from Hibernate is not affected). V1 no longer
+runs `CREATE SCHEMA` (schemas are created by `docker/postgres/provision.sql`),
+so its checksum changed; the resulting schema is identical.
 
 Local data you do not need: start from a fresh volume.
 
@@ -73,7 +73,10 @@ docker compose down -v && docker compose up -d --build
 
 Data to keep: run `flyway repair`, which only realigns the stored checksum
 (no SQL is replayed), with the stack running, then restart the services.
-Passwords are the `*_DB_PASSWORD` values of your `.env` (defaults shown):
+Run it from the repository root. Passwords are the `*_DB_PASSWORD` values of
+your `.env` (defaults shown). The network is `<compose project>_iadaf-network`
+(`iadaf-ydays_…` when the folder is `IADAF-YDAYS`); check it with
+`docker network ls`.
 
 ```bash
 while read -r service schema password; do
