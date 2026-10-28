@@ -24,7 +24,8 @@ Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
   [template](.github/ISSUE_TEMPLATE) and fill in every section.
 - Title: `<type>(<scope>): <subject>`, e.g. `fix(db): remove CREATE SCHEMA from V1 migrations`.
 - One team label (`equipe:backend`, `equipe:front-web`…), then assign yourself and
-  move it to **In progress** on the [Project](https://github.com/users/IsmailMifdal/projects/3).
+  move it to **En cours** (in progress) on the [Project](https://github.com/users/IsmailMifdal/projects/3).
+  Columns: À faire → En cours → En relecture → Terminé.
 
 > **Why?** With ten people and no issue, two of us build the same thing without
 > knowing it. The board shows who does what at a glance.
@@ -89,16 +90,26 @@ assistant. A bug or a missing test? Fix it before pushing.
 
 ## 7. Review and merge
 
-- **Ismail reviews every PR**, helped by **Copilot and Codex** (they comment, never
-  approve).
+- **Reviewers**: the lead of your team, then Ismail. Bot reviewers (Copilot, Codex)
+  will help once enabled; they comment, never approve.
+
+  | Team | Lead |
+  |---|---|
+  | Backend | @benoit-bremaud |
+  | Front web | @SoulSkunk |
+  | Mobile | @vitalikevin |
+  | AI | @Sqwado |
+
 - **Every comment gets a reply** in its thread: fixed, deferred (with an issue) or
   disputed (with the argument).
-- **Check a remark against the code** before applying it: bots are sometimes wrong.
-- **Merge** by Ismail, squashed, once CI is green, comments are handled and the PR is
-  approved. Then delete your branch.
+- **Check a remark against the code** before applying it: reviewers, human or bot,
+  are sometimes wrong.
+- **Merge** by Ismail, squashed, once CI is green, comments are handled and both
+  reviewers approved. Then delete your branch.
 
-> **Why?** One gatekeeper keeps `main` consistent. Squashing gives one commit per
-> feature: the history stays readable and easy to revert.
+> **Why?** The team lead knows the code best; Ismail keeps `main` consistent across
+> teams. Squashing gives one commit per feature: the history stays readable and easy
+> to revert.
 
 ## 8. Security
 

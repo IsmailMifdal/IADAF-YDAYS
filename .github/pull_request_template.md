@@ -2,8 +2,6 @@
 
 <!-- Two or three sentences: the need, and what changes for the user. -->
 
-Issue: #
-
 Team: <!-- backend / front-web / mobile / ia / devops / marketing -->
 
 ## How to check
