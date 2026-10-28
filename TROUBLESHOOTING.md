@@ -73,22 +73,26 @@ docker compose down -v && docker compose up -d --build
 
 Data to keep: run `flyway repair`, which only realigns the stored checksum
 (no SQL is replayed), with the stack running, then restart the services.
-Run it from the repository root. Passwords are the `*_DB_PASSWORD` values of
-your `.env` (defaults shown). The network is `<compose project>_iadaf-network`
+Run it from the repository root: it reads `POSTGRES_DB` and the
+`*_DB_PASSWORD` values from your `.env`, with the same defaults as
+`docker-compose.yml`. The network is `<compose project>_iadaf-network`
 (`iadaf-ydays_…` when the folder is `IADAF-YDAYS`); check it with
 `docker network ls`.
 
 ```bash
-while read -r service schema password; do
+( # subshell: the .env values do not stay in your terminal
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+repair() { # <service folder> <schema> <password>
   docker run --rm --network iadaf-ydays_iadaf-network \
-    -v "$PWD/$service/src/main/resources/db/migration:/flyway/sql:ro" \
-    flyway/flyway:11 -url=jdbc:postgresql://postgres:5432/iadaf_db \
-    -user="iadaf_$schema" -password="$password" -schemas="$schema" repair
-done <<'EOF'
-demarches-service demarches dev-demarches-db
-document-service documents dev-documents-db
-analytics-service analytics dev-analytics-db
-EOF
+    -v "$PWD/$1/src/main/resources/db/migration:/flyway/sql:ro" \
+    -e FLYWAY_PASSWORD="$3" flyway/flyway:11 \
+    -url="jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}" \
+    -user="iadaf_$2" -schemas="$2" repair
+}
+repair demarches-service demarches "${DEMARCHES_DB_PASSWORD:-dev-demarches-db}"
+repair document-service documents "${DOCUMENTS_DB_PASSWORD:-dev-documents-db}"
+repair analytics-service analytics "${ANALYTICS_DB_PASSWORD:-dev-analytics-db}"
+)
 docker restart iadaf-demarches iadaf-document iadaf-analytics
 ```
 
