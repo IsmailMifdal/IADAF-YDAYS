@@ -25,7 +25,7 @@ labels: ""
 
 ## Team
 
-<!-- Add the team label: equipe:backend, equipe:front-web, equipe:mobile, equipe:ia, equipe:devops or equipe:marketing. -->
+<!-- Add the team label: team:backend, team:front-web, team:mobile, team:ai, team:devops or team:marketing. -->
 
 ## Mock-up
 

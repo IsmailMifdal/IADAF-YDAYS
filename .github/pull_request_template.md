@@ -2,7 +2,7 @@
 
 <!-- Two or three sentences: the need, and what changes for the user. -->
 
-Team: <!-- backend / front-web / mobile / ia / devops / marketing -->
+Team: <!-- backend / front-web / mobile / ai / devops / marketing -->
 
 ## How to check
 
