@@ -1,58 +1,58 @@
-# IADAF — consignes pour les assistants IA
+# IADAF — instructions for AI assistants
 
-Ce fichier est lu par Codex, Copilot, Cursor, Gemini et Claude Code (via
-`CLAUDE.md`). Il résume [CONTRIBUTING.md](CONTRIBUTING.md) : en cas de doute, c'est
-CONTRIBUTING qui fait foi. Toute modification passe par une PR, validée par Ismail.
+Read by Codex, Copilot, Cursor, Gemini and Claude Code (through `CLAUDE.md`). It
+summarises [CONTRIBUTING.md](CONTRIBUTING.md): when in doubt, CONTRIBUTING wins. Any
+change goes through a PR approved by Ismail.
 
-## Le projet
+## The project
 
-IADAF aide une personne non francophone à mener ses démarches administratives.
+IADAF helps non-French speakers through French administrative procedures.
 
 ```
 front Next.js (:3000) → api-gateway (:8080) → user (:8081), demarches (:8082),
                                               document (:8083), analytics (:8085),
                                               ai-service FastAPI (:8086)
-discovery-service Eureka (:8761) · PostgreSQL : un schéma et un compte par service
+discovery-service Eureka (:8761) · PostgreSQL: one schema and one account per service
 ```
 
-- Services Java : Spring Boot, Java 17, Maven, migrations Flyway.
-- `ai-service` : Python 3.12, FastAPI, RAG.
-- Front : Next.js, TypeScript strict, 4 langues (fr, en, ar, es).
+- Java services: Spring Boot, Java 17, Maven, Flyway migrations.
+- `ai-service`: Python 3.12, FastAPI, RAG.
+- Front: Next.js, strict TypeScript, 4 UI languages (fr, en, ar, es).
 
-## Commandes
+## Commands
 
-| Quoi | Commande |
+| What | Command |
 |---|---|
-| Lancer la stack | `docker compose up -d --build` |
-| Services Java | `mvn -B -ntp verify` |
+| Start the stack | `docker compose up -d --build` |
+| Java services | `mvn -B -ntp verify` |
 | Front | `cd front && npx tsc --noEmit && npx eslint src && npm run build` |
 | AI service | `cd ai-service && pytest -q` |
-| Bout en bout | `bash tests/e2e/run-all.sh` |
+| End-to-end | `bash tests/e2e/run-all.sh` |
 
-Lance les commandes de la partie touchée avant de proposer un commit.
+Run the commands for the area you touched before proposing a commit.
 
-## Toujours
+## Always
 
-- Partir d'une issue ; branche `<type>/<n° issue>-<descriptif>` depuis `main` à jour.
-- Commit `<type>(<périmètre>): <sujet en français, à l'impératif> (#<issue>)`.
-- `git add <chemin>`, fichier par fichier.
-- Un test avec chaque fonctionnalité et chaque correction.
-- Les textes du front dans les 4 langues (`front/src/app/i18n/messages/*.ts`).
-- Le code le plus simple qui marche ; suivre le style du fichier modifié.
-- Mentionner l'assistant dans le commit (`Co-Authored-By:`).
+- Write everything in English: code, comments, commits, issues, PRs, docs. Only the
+  translated UI texts (`front/src/app/i18n/messages/*.ts`) use other languages.
+- Start from an issue; branch `<type>/<issue #>-<short-slug>` from an up-to-date `main`.
+- Commit `<type>(<scope>): <imperative subject> (#<issue>)`.
+- `git add <path>`, one file at a time.
+- A test with every feature and every fix.
+- UI texts in the 4 languages.
+- The simplest code that works; follow the style of the file you edit.
+- Credit the assistant in the commit (`Co-Authored-By:`).
 
-## Jamais
+## Never
 
-- Pousser sur `main`, forcer un push, fusionner une PR : c'est le rôle d'Ismail.
-- `git add .` ou `git add -A`.
-- Écrire un secret ailleurs que dans `.env` (non versionné), ni le recopier dans une
-  réponse.
-- Modifier une migration Flyway déjà fusionnée : en ajouter une nouvelle.
-- Utiliser `any` en TypeScript ; appeler du code bloquant dans une fonction `async`.
-- Mettre de vraies données personnelles dans un test, une issue ou une capture.
+- Push to `main`, force-push, merge a PR: that is Ismail's role.
+- `git add .` or `git add -A`.
+- Write a secret anywhere but `.env` (not versioned), or echo it in an answer.
+- Edit a merged Flyway migration: add a new one.
+- Use `any` in TypeScript; make a blocking call inside an `async` function.
+- Put real personal data in a test, an issue or a screenshot.
 
-## Avant de modifier
+## Before changing code
 
-Lis le code concerné avant de le changer, et propose un plan quand le changement
-touche plusieurs fichiers ou une API. Pour une nouvelle fonctionnalité, un schéma
-validé d'abord (CONTRIBUTING § 3).
+Read the code before changing it, and propose a plan when the change spans several
+files or an API. For a new feature, an approved diagram first (CONTRIBUTING § 3).

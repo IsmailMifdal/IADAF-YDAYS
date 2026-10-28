@@ -1,12 +1,10 @@
-Les consignes complètes sont dans `AGENTS.md`, à la racine du dépôt.
+The full instructions live in `AGENTS.md`, at the repository root.
 
-La relecture de code de Copilot ne lit que ce fichier ; en relisant une PR, vérifie
-en priorité :
+Copilot code review only reads this file; when reviewing a PR, check first:
 
-- aucun secret, et aucune donnée personnelle réelle, dans le diff ;
-- aucune migration Flyway déjà fusionnée modifiée ;
-- un test pour chaque fonctionnalité ou correction ;
-- pas de `any` en TypeScript, pas d'appel bloquant dans une fonction `async` ;
-- les textes du front présents dans les 4 langues (fr, en, ar, es).
-
-Rédige tes commentaires en français.
+- no secret and no real personal data in the diff;
+- no edit to an already merged Flyway migration;
+- a test for every feature or fix;
+- no `any` in TypeScript, no blocking call inside an `async` function;
+- UI texts present in the 4 languages (fr, en, ar, es);
+- code, comments, commits and docs written in English.
