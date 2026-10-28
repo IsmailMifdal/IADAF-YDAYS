@@ -1,134 +1,135 @@
-# Contribuer à IADAF
+# Contributing to IADAF
 
-Le chemin d'une contribution, de l'issue à `main`, en 10 minutes de lecture.
-Les équipes, le rythme et la définition de « terminé » sont dans
+How a contribution travels from an issue to `main`, in a 10-minute read.
+Teams, cadence and the definition of done live in
 [ORGANISATION.md](docs/equipe/ORGANISATION.md).
 
 ```
-issue → branche → commits → vérifs locales → PR → relecture → fusion
+issue → branch → commits → local checks → PR → review → merge
 ```
 
-## 1. Démarrer
+## 1. Get started
 
 ```bash
-cp .env.example .env          # puis renseigner les secrets
+cp .env.example .env          # then fill in the secrets
 docker compose up -d --build
-bash tests/e2e/run-all.sh     # tout doit être vert
+bash tests/e2e/run-all.sh     # everything must be green
 ```
 
-Site : http://localhost:3000 · Problème : [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-## 2. Une issue d'abord
+## 2. Issue first
 
-- Cherchez si elle existe ; sinon, créez-la avec un [modèle](.github/ISSUE_TEMPLATE)
-  et remplissez toutes ses sections.
-- Titre : `<type>(<périmètre>): <sujet>`, par exemple `fix(db): retirer CREATE SCHEMA des migrations V1`.
-- Une étiquette d'équipe (`equipe:backend`, `equipe:front-web`…), puis assignez-vous
-  et passez-la en **En cours** dans le [Project](https://github.com/users/IsmailMifdal/projects/3).
+- Search for an existing issue; otherwise open one from a
+  [template](.github/ISSUE_TEMPLATE) and fill in every section.
+- Title: `<type>(<scope>): <subject>`, e.g. `fix(db): remove CREATE SCHEMA from V1 migrations`.
+- One team label (`equipe:backend`, `equipe:front-web`…), then assign yourself and
+  move it to **In progress** on the [Project](https://github.com/users/IsmailMifdal/projects/3).
 
-> **Pourquoi ?** À dix, sans issue, deux personnes codent la même chose sans le
-> savoir. Le tableau montre qui fait quoi, en un coup d'œil.
+> **Why?** With ten people and no issue, two of us build the same thing without
+> knowing it. The board shows who does what at a glance.
 
-**Première fois ?** Prenez une issue `premiere-issue`.
+**First time?** Pick a `premiere-issue` issue.
 
-## 3. Concevoir avant de coder
+## 3. Design before code
 
-Pour une **nouvelle fonctionnalité** (écran, API, flux de données) : un petit schéma
-[Mermaid](https://mermaid.js.org/) dans l'issue (qui appelle quoi, quelles données),
-validé par Ismail ou le référent, **puis** le code.
+For a **new feature** (screen, API, data flow): a small [Mermaid](https://mermaid.js.org/)
+diagram in the issue (who calls what, which data), approved by Ismail or the team
+lead, **then** the code.
 
-> **Pourquoi ?** Corriger un schéma prend 5 minutes, réécrire une PR prend 2 jours.
-> Une correction d'une ligne, elle, n'a besoin d'aucun schéma.
+> **Why?** Fixing a diagram takes 5 minutes; rewriting a PR takes 2 days. A one-line
+> fix needs no diagram.
 
-## 4. Branche et commits
+## 4. Branches and commits
 
 ```
-Branche : <type>/<n° issue>-<descriptif>     fix/1-flyway-create-schema
-Commit  : <type>(<périmètre>): <sujet> (#n)  fix(db): retirer CREATE SCHEMA des V1 (#1)
+Branch: <type>/<issue #>-<short-slug>        fix/1-flyway-create-schema
+Commit: <type>(<scope>): <subject> (#n)      fix(db): remove CREATE SCHEMA from V1 (#1)
 ```
 
-| Type | Pour | | Type | Pour |
+| Type | For | | Type | For |
 |---|---|---|---|---|
-| `feat` | fonctionnalité | | `test` | tests seuls |
-| `fix` | correction | | `refactor` | réorganisation sans changement |
-| `docs` | documentation | | `build` / `ci` | dépendances, Docker, CI |
+| `feat` | feature | | `test` | tests only |
+| `fix` | bug fix | | `refactor` | restructuring, no behaviour change |
+| `docs` | documentation | | `build` / `ci` | dependencies, Docker, CI |
 | `perf` | performance | | `chore` | maintenance |
 
-Sujet en français, à l'impératif, sans point final. Ajoutez vos fichiers un par un
-(`git add <chemin>`), jamais `git add .`.
+Everything in English, imperative mood, no final period. Stage files one by one
+(`git add <path>`), never `git add .`.
 
-> **Pourquoi ?** Le numéro relie chaque ligne de code à son issue ; le type permet de
-> lire l'historique d'un coup d'œil. `git add .` est la façon n° 1 de commiter un
-> `.env` par accident.
+> **Why?** The issue number ties every line of code to its reason; the type makes the
+> history readable at a glance. `git add .` is the #1 way to commit a `.env` by
+> accident.
 
-## 5. Vérifier avant de pousser
+## 5. Check before pushing
 
-| Partie touchée | Commande |
+| Area | Command |
 |---|---|
 | Front | `cd front && npm ci && npx tsc --noEmit && npx eslint src && npm run build` |
-| Services Java | `mvn -B -ntp verify` |
+| Java services | `mvn -B -ntp verify` |
 | AI service | `cd ai-service && pytest -q` |
-| Tout | `bash tests/e2e/run-all.sh` |
+| Everything | `bash tests/e2e/run-all.sh` |
 
-Puis **relisez votre propre diff** (`git diff origin/main...HEAD`), seul ou avec un
-assistant IA. Un bug ou un test manquant ? On corrige avant de pousser.
+Then **review your own diff** (`git diff origin/main...HEAD`), alone or with an AI
+assistant. A bug or a missing test? Fix it before pushing.
 
-> **Pourquoi ?** Une CI rouge bloque tout le monde ; vos propres erreurs sont plus
-> rapides à corriger avant qu'un relecteur ne les trouve.
+> **Why?** A red CI blocks everyone, and your own mistakes are faster to fix before a
+> reviewer finds them.
 
-## 6. La pull request
+## 6. The pull request
 
-- **Petite** : relisible en 20 minutes, sinon découpez-la.
-- Titre au format des commits, [modèle](.github/pull_request_template.md) rempli,
-  `Closes #<issue>` à la fin.
-- Juste après, un **commentaire d'info en français simple** qui mentionne les
-  personnes concernées : ce qui change, et pourquoi.
+- **Small**: reviewable in 20 minutes, otherwise split it.
+- Title in the commit format, [template](.github/pull_request_template.md) filled in,
+  `Closes #<issue>` at the end.
+- Right after, a **plain-language comment** that mentions the people concerned: what
+  changes, and why.
 
-> **Pourquoi ?** Une grosse PR n'est jamais vraiment relue. Le commentaire d'info
-> tient au courant toute l'équipe, marketing compris, sans lire le code.
+> **Why?** A big PR never really gets reviewed. The heads-up comment keeps the whole
+> team, marketing included, informed without reading code.
 
-## 7. Relecture et fusion
+## 7. Review and merge
 
-- **Ismail relit toutes les PR**, aidé par **Copilot et Codex** (qui commentent, sans
-  approuver).
-- **Chaque commentaire reçoit une réponse** dans son fil : corrigé, reporté (avec une
-  issue) ou contesté (avec l'argument).
-- **Vérifiez une remarque dans le code** avant de l'appliquer : les robots se trompent
-  parfois.
-- **Fusion** par Ismail, en squash, quand la CI est verte, les commentaires traités et
-  la PR approuvée. Supprimez ensuite votre branche.
+- **Ismail reviews every PR**, helped by **Copilot and Codex** (they comment, never
+  approve).
+- **Every comment gets a reply** in its thread: fixed, deferred (with an issue) or
+  disputed (with the argument).
+- **Check a remark against the code** before applying it: bots are sometimes wrong.
+- **Merge** by Ismail, squashed, once CI is green, comments are handled and the PR is
+  approved. Then delete your branch.
 
-> **Pourquoi ?** Un seul gardien de `main` garde le code cohérent. Le squash donne un
-> commit par fonctionnalité : l'historique reste lisible, et on annule facilement.
+> **Why?** One gatekeeper keeps `main` consistent. Squashing gives one commit per
+> feature: the history stays readable and easy to revert.
 
-## 8. Sécurité
+## 8. Security
 
-- **Aucun secret dans le code** : tout va dans `.env`, qui n'est pas versionné.
-- **Un secret commité ?** Prévenez Ismail et **révoquez-le** tout de suite.
-- **Pas de vraies données personnelles** dans les tests, les issues ou les captures.
-- **Une faille ?** Signalez-la en privé à Ismail, pas dans une issue publique.
-- Authentification, paiement ou documents touchés : demandez une relecture sécurité.
+- **No secret in the code**: everything goes in `.env`, which is not versioned.
+- **Committed a secret?** Tell Ismail and **revoke it** right away.
+- **No real personal data** in tests, issues or screenshots.
+- **Found a vulnerability?** Report it privately to Ismail, not in a public issue.
+- Touching authentication, payment or documents: ask for a security review.
 
-> **Pourquoi ?** Le dépôt est public : un secret poussé est lu par des robots en
-> quelques minutes, et le supprimer ne suffit pas, l'historique le garde. IADAF
-> manipule des pièces d'identité : le RGPD ne pardonne pas.
+> **Why?** The repository is public: a pushed secret is read by bots within minutes,
+> and deleting it is not enough, the history keeps it. IADAF handles identity
+> documents: GDPR is unforgiving.
 
-## 9. Écrire du code
+## 9. Writing code
 
-- **Le plus simple qui marche** : pas de code « au cas où ».
-- **Des tests** pour toute fonctionnalité et toute correction ; on simule le réseau,
-  la base et le LLM, pas notre propre logique.
-- **Java** : injection par constructeur ; une migration Flyway fusionnée ne se modifie
-  plus, on en ajoute une.
-- **TypeScript** : pas de `any`, textes dans les 4 langues.
-- **Python** : pas d'appel bloquant dans une fonction `async`.
+- **The simplest thing that works**: no "just in case" code.
+- **Tests** for every feature and every fix; mock the network, the database and the
+  LLM, not our own logic.
+- **Java**: constructor injection; a merged Flyway migration is never edited, add a new
+  one.
+- **TypeScript**: no `any`, UI texts in the 4 languages.
+- **Python**: no blocking call inside an `async` function.
+- **Language**: code, comments, commits, issues, PRs and docs in English. Only the
+  product's translated UI texts are in other languages.
 
-> **Pourquoi ?** Du code simple se relit vite et se reprend facilement, même par
-> quelqu'un d'une autre équipe.
+> **Why?** Simple code reads fast and can be picked up by anyone, even from another
+> team. One language for the repository keeps it searchable and consistent.
 
-## 10. Assistants IA
+## 10. AI assistants
 
-Permis, et bienvenus. Celui qui pousse reste l'auteur : il a relu, compris et testé
-chaque ligne. Mentionnez l'assistant (`Co-Authored-By:` dans le commit).
+Allowed, and welcome. Whoever pushes stays the author: they read, understood and
+tested every line. Credit the assistant (`Co-Authored-By:` in the commit).
 
-> **Pourquoi ?** La transparence aide les relecteurs à savoir où regarder.
+> **Why?** Transparency tells reviewers where to look harder.
