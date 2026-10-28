@@ -7,6 +7,8 @@ import remarkGfm from "remark-gfm";
 import PageHeader from "../../components/ui/PageHeader";
 import LanguageSelector from "../../components/ui/LanguageSelector";
 import { api, ApiError, ChatStreamError } from "../../lib/api";
+import { useLanguage } from "../../context/LanguageContext";
+import { intlLocale, type LangCode } from "../../context/languages";
 
 type Message = {
   role: "assistant" | "user";
@@ -14,41 +16,31 @@ type Message = {
   timestamp: string;
 };
 
-const INTERRUPTED = "Réponse interrompue — renvoyez votre question pour la suite.";
-
-function timeNow(): string {
-  return new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+function timeNow(lang: LangCode): string {
+  return new Date().toLocaleTimeString(intlLocale(lang), { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function ChatIa() {
+  const { lang, m } = useLanguage();
+  const t = m.assistantPage;
   const [inputValue, setInputValue] = useState("");
+  /** The exchange itself; the welcome is not stored, so it follows the language. */
+  const [messages, setMessages] = useState<Message[]>([]);
   // No timestamp on the welcome: one computed during render would differ
   // between the server and the client, causing a hydration mismatch.
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Bonjour ! Je suis votre assistant IA. Je peux vous aider pour vos d\u00e9marches administratives. Que souhaitez-vous faire aujourd\u2019hui ?",
-      timestamp: "",
-    },
-  ]);
+  const shown: Message[] = [{ role: "assistant", content: t.welcome, timestamp: "" }, ...messages];
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isSendDisabled = inputValue.trim().length === 0 || isLoading;
 
-  const suggestions = [
-    "Comment obtenir une carte vitale ?",
-    "Inscription \u00e0 France Travail",
-    "Demande d\u2019allocations CAF",
-    "Renouvellement titre de s\u00e9jour",
-  ];
+  const suggestions = t.suggestions;
 
   useEffect(() => {
     // Pas au seul message d'accueil : la page sauterait sous son titre dès
     // l'arrivée, et le message d'accueil disparaîtrait hors de l'écran.
-    if (messages.length > 1) {
+    if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
@@ -57,37 +49,37 @@ export default function ChatIa() {
     async (text: string) => {
       if (!text.trim() || isLoading) return;
 
-      const userMsg: Message = { role: "user", content: text.trim(), timestamp: timeNow() };
+      const userMsg: Message = { role: "user", content: text.trim(), timestamp: timeNow(lang) };
       setMessages((prev) => [...prev, userMsg]);
       setInputValue("");
       setIsLoading(true);
 
       // The answer's bubble, filled in as the text arrives.
-      setMessages((prev) => [...prev, { role: "assistant", content: "", timestamp: timeNow() }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "", timestamp: timeNow(lang) }]);
       const showAnswer = (content: string) =>
         setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
 
       try {
         const res = await api.chatStream(
-          { message: text.trim(), conversation_id: conversationId, language: "fr" },
+          { message: text.trim(), conversation_id: conversationId, language: lang },
           showAnswer,
         );
         setConversationId(res.conversation_id);
       } catch (error) {
         if (error instanceof ChatStreamError && error.partial) {
-          showAnswer(`${error.partial}\n\n_${INTERRUPTED}_`);
+          showAnswer(`${error.partial}\n\n_${t.interrupted}_`);
         } else {
           showAnswer(
             error instanceof ApiError && error.status === 429
-              ? "Vous avez envoyé beaucoup de messages. Réessayez dans quelques minutes."
-              : "Désolé, une erreur est survenue. Veuillez réessayer.",
+              ? t.rateLimited
+              : m.packChat.error,
           );
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [conversationId, isLoading],
+    [conversationId, isLoading, lang, t, m],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -100,15 +92,15 @@ export default function ChatIa() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <PageHeader
-        title="Assistant IA"
-        subtitle="Posez vos questions sur les démarches administratives"
+        title={t.title}
+        subtitle={t.subtitle}
         rightContent={<LanguageSelector variant="compact" />}
       />
 
       <section className="flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex flex-col">
         <div className="flex-1 min-h-0 p-2 md:p-4 flex flex-col">
-          <div className="flex-1 overflow-y-auto flex flex-col gap-6 pr-1">
-            {messages.map((msg, idx) => msg.content === "" ? null : (
+          <div className="flex-1 overflow-y-auto flex flex-col gap-6 pe-1">
+            {shown.map((msg, idx) => msg.content === "" ? null : (
               <div key={idx} className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "assistant" ? (
                   <div className="w-11 h-11 bg-gradient-to-br from-brand-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -119,9 +111,9 @@ export default function ChatIa() {
                     <span className="text-sm font-bold">U</span>
                   </div>
                 )}
-                <div className={`max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
+                <div className={`max-w-[85%] ${msg.role === "user" ? "text-end" : ""}`}>
                   {msg.role === "assistant" ? (
-                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-tl-md px-6 py-4 shadow-soft prose prose-sm max-w-none
+                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-ss-md px-6 py-4 shadow-soft prose prose-sm max-w-none
                       prose-headings:text-brand-800 prose-headings:font-semibold prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base
                       prose-h2:border-b prose-h2:border-brand-100 prose-h2:pb-1
                       prose-p:text-gray-700 prose-p:leading-relaxed
@@ -135,7 +127,7 @@ export default function ChatIa() {
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-tr-md px-5 py-3 shadow-sm shadow-brand-600/20">
+                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-se-md px-5 py-3 shadow-sm shadow-brand-600/20">
                       {msg.content}
                     </div>
                   )}
@@ -161,7 +153,7 @@ export default function ChatIa() {
                 </div>
                 <div className="bg-white border border-gray-200/80 rounded-2xl px-6 py-4 shadow-soft text-gray-500 flex items-center gap-3">
                   <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
-                  <span className="text-sm">L&apos;IA génère votre réponse…</span>
+                  <span className="text-sm">{m.packChat.loading}</span>
                 </div>
               </div>
             )}
@@ -169,16 +161,16 @@ export default function ChatIa() {
             <div ref={messagesEndRef} />
           </div>
 
-          {messages.length === 1 && (
+          {messages.length === 0 && (
             <div className="border-t border-gray-100 pt-4 pb-4 mt-4">
-              <p className="text-sm text-gray-500 mb-3 font-medium">Suggestions</p>
+              <p className="text-sm text-gray-500 mb-3 font-medium">{t.suggestionsTitle}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {suggestions.map((suggestion) => (
                   <button
                     key={suggestion}
                     type="button"
                     onClick={() => sendMessage(suggestion)}
-                    className="rounded-xl border border-gray-200/80 bg-white px-4 py-3 text-left text-sm font-medium text-gray-700 shadow-xs transition hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand-700 hover:shadow-soft motion-reduce:hover:translate-y-0"
+                    className="rounded-xl border border-gray-200/80 bg-white px-4 py-3 text-start text-sm font-medium text-gray-700 shadow-xs transition hover:-translate-y-0.5 hover:border-brand-200 hover:text-brand-700 hover:shadow-soft motion-reduce:hover:translate-y-0"
                   >
                     {suggestion}
                   </button>
@@ -193,7 +185,7 @@ export default function ChatIa() {
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Posez votre question sur une démarche administrative…"
+              placeholder={t.placeholder}
               maxLength={2000}
               disabled={isLoading}
               dir="auto"
@@ -203,11 +195,11 @@ export default function ChatIa() {
               type="button"
               disabled={isSendDisabled}
               onClick={() => sendMessage(inputValue)}
-              aria-label="Envoyer"
+              aria-label={m.common.send}
               className="flex shrink-0 items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3.5 text-white sm:px-6 shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span className="hidden text-sm font-semibold sm:inline">Envoyer</span>
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:-scale-x-100" />}
+              <span className="hidden text-sm font-semibold sm:inline">{m.common.send}</span>
             </button>
           </div>
         </div>

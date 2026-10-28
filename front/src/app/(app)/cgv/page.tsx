@@ -4,8 +4,11 @@ import Link from "next/link";
 import LegalLayout from "../../components/legal/LegalLayout";
 import { CGV_VERSION, LEGAL_INFO, orPlaceholder } from "../../lib/legalInfo";
 import { formatPrice, packs } from "../packs/packsData";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Conditions générales de vente" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).legal.terms };
+}
 
 export default function TermsPage() {
   return (

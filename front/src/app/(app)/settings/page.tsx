@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 
 import SettingsClient from "./SettingsClient";
 import { DEFAULT_SECTION, isSectionId } from "./navigation";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = {
-  title: "Paramètres",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).settings.title };
+}
 
 export default async function SettingsPage({
   searchParams,

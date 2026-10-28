@@ -3,8 +3,11 @@ import Link from "next/link";
 
 import LegalLayout from "../../components/legal/LegalLayout";
 import { LEGAL_INFO, orPlaceholder } from "../../lib/legalInfo";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Mentions légales" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).legal.legalNotice };
+}
 
 export default function LegalNoticePage() {
   const { host } = LEGAL_INFO;

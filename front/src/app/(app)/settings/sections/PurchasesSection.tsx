@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
-import { formatPrice } from "../../packs/packsData";
+import { formatPrice, getPackBySlug, localizedPack } from "../../packs/packsData";
 import { Alert, SectionCard, formatDate } from "../ui";
+import { useLanguage } from "../../../context/LanguageContext";
+import { fmt } from "../../../i18n";
 
 type Purchase = {
   slug: string;
@@ -16,6 +18,8 @@ type Purchase = {
 };
 
 export default function PurchasesSection() {
+  const { lang, m } = useLanguage();
+  const t = m.settings.purchases;
   const [purchases, setPurchases] = useState<Purchase[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +31,7 @@ export default function PurchasesSection() {
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
-          setError(data.error ?? "Impossible de charger vos achats.");
+          setError(data.error ?? m.errors.purchasesLoadFailed);
           setPurchases([]);
           return;
         }
@@ -35,7 +39,7 @@ export default function PurchasesSection() {
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Une erreur réseau est survenue.");
+          setError(m.common.networkError);
           setPurchases([]);
         }
       });
@@ -43,14 +47,16 @@ export default function PurchasesSection() {
     return () => {
       cancelled = true;
     };
+    // Chargé une fois : un changement de langue ne recharge pas l'historique.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (purchases === null) {
     return (
-      <SectionCard title="Mes achats">
+      <SectionCard title={t.title}>
         <div className="flex items-center gap-2 text-sm text-gray-500 py-6">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Chargement de vos achats…
+          {t.loading}
         </div>
       </SectionCard>
     );
@@ -58,8 +64,8 @@ export default function PurchasesSection() {
 
   return (
     <SectionCard
-      title="Mes achats"
-      description="Historique des packs que vous avez achetés."
+      title={t.title}
+      description={t.description}
     >
       {error && (
         <div className="mb-4">
@@ -69,15 +75,15 @@ export default function PurchasesSection() {
 
       {purchases.length === 0 ? (
         <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
-          <p className="text-gray-900 font-medium">Aucun achat pour le moment</p>
+          <p className="text-gray-900 font-medium">{t.emptyTitle}</p>
           <p className="text-sm text-gray-500 mt-1">
-            Les packs que vous achetez apparaîtront ici.
+            {t.emptyText}
           </p>
           <Link
             href="/nosPacks"
             className="inline-block mt-5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 font-medium transition"
           >
-            Découvrir les packs
+            {m.dashboard.discoverPacks}
           </Link>
         </div>
       ) : (
@@ -89,21 +95,24 @@ export default function PurchasesSection() {
             >
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 truncate">
-                  {purchase.title}
+                  {(() => {
+                    const pack = getPackBySlug(purchase.slug);
+                    return pack ? localizedPack(m, pack).title : purchase.title;
+                  })()}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Acheté le {formatDate(purchase.purchasedAt)}
+                  {fmt(t.boughtOn, { date: formatDate(purchase.purchasedAt, lang) })}
                 </p>
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <span className="font-semibold text-gray-900">
-                  {formatPrice(purchase.amountCents)}
+                  {formatPrice(purchase.amountCents, lang)}
                 </span>
                 <Link
                   href={`/packs/${purchase.slug}`}
                   className="text-sm font-medium text-brand-600 hover:text-brand-700"
                 >
-                  Ouvrir
+                  {t.open}
                 </Link>
               </div>
             </li>

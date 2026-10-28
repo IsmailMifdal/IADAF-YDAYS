@@ -5,13 +5,15 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { listPurchases } from "../../../lib/entitlements";
 import { getPackBySlug } from "../../../(app)/packs/packsData";
+import { getMessages } from "../../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const m = await getMessages();
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   try {
@@ -30,7 +32,7 @@ export async function GET() {
   } catch (error) {
     console.error("[account/purchases] lookup failed", error);
     return NextResponse.json(
-      { error: "Impossible de charger vos achats." },
+      { error: m.errors.purchasesLoadFailed },
       { status: 500 },
     );
   }

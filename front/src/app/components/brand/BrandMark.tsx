@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "../../context/LanguageContext";
+
 /**
  * Logo d'IA-DAF dans l'interface : la même feuille lignée que l'icône de
  * l'application (appIcon.tsx), pour qu'on reconnaisse le site installé sur
@@ -41,6 +45,8 @@ export function BrandLogo({
   tagline?: boolean;
   onDark?: boolean;
 }) {
+  const { m } = useLanguage();
+
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <BrandMark size={size} />
@@ -54,7 +60,7 @@ export function BrandLogo({
         </span>
         {tagline && (
           <span className={`block truncate text-xs ${onDark ? "text-brand-200" : "text-gray-500"}`}>
-            Assistant administratif
+            {m.brand.tagline}
           </span>
         )}
       </span>

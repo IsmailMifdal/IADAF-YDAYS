@@ -4,10 +4,12 @@ import { NextResponse } from "next/server";
 
 import { auth } from "../../../auth";
 import { listUnlockedPacks } from "../../lib/entitlements";
+import { getMessages } from "../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const m = await getMessages();
   const session = await auth();
 
   // Anonymous visitors simply own nothing — not an error worth surfacing.
@@ -21,7 +23,7 @@ export async function GET() {
   } catch (error) {
     console.error("[entitlements] lookup failed", error);
     return NextResponse.json(
-      { error: "Impossible de récupérer vos accès." },
+      { error: m.errors.entitlementsFailed },
       { status: 500 },
     );
   }

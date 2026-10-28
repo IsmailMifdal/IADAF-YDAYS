@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Mot de passe oublié" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).auth.forgot.title };
+}
 
 export default function ForgotPasswordPage() {
   return <ForgotPasswordForm />;

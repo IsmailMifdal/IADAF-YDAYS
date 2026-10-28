@@ -6,11 +6,14 @@ import { Alert, ButtonLink, PageContainer } from "../../components/ui/primitives
 import { ensurePackFolders, listFolders, type Folder } from "../../lib/demarches";
 import { listUnlockedPacks } from "../../lib/entitlements";
 import FoldersView from "./FoldersView";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Mes dossiers" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).folders.title };
+}
 
 export default async function MyFoldersPage() {
-  const session = await auth();
+  const [session, m] = await Promise.all([auth(), getMessages()]);
   // Protected by the proxy; this only guards the queries below.
   const userId = session?.user?.id;
 
@@ -29,11 +32,11 @@ export default async function MyFoldersPage() {
   return (
     <div>
       <PageHeader
-        title="Mes Dossiers"
-        subtitle="Suivez l’avancement de toutes vos démarches en cours."
+        title={m.folders.title}
+        subtitle={m.folders.subtitle}
         rightContent={
           <ButtonLink href="/procedures" variant="secondary">
-            Démarrer une démarche
+            {m.folders.start}
           </ButtonLink>
         }
       />
@@ -42,8 +45,7 @@ export default async function MyFoldersPage() {
           <FoldersView folders={folders} />
         ) : (
           <Alert tone="danger">
-            Impossible de charger vos dossiers pour le moment. Réessayez dans
-            quelques instants.
+            {m.folders.loadError}
           </Alert>
         )}
       </PageContainer>

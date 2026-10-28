@@ -11,14 +11,16 @@ import {
 } from "../../lib/documents";
 import { hasPackAccess } from "../../lib/entitlements";
 import { RATE_LIMITS, hit, tooManyRequests } from "../../lib/rateLimit";
+import { getMessages } from "../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   const limit = await hit(RATE_LIMITS.documentUpload, userId);
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
-    return NextResponse.json({ error: "Formulaire invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidForm }, { status: 400 });
   }
 
   const packSlug = String(form.get("packSlug") ?? "");
@@ -36,17 +38,17 @@ export async function POST(request: Request) {
   const file = form.get("file");
 
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: "Aucun fichier reçu." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.noFile }, { status: 400 });
   }
   if (file.size > MAX_DOCUMENT_BYTES) {
-    return NextResponse.json({ error: "Fichier trop volumineux (10 Mo maximum)." }, { status: 413 });
+    return NextResponse.json({ error: m.errors.fileTooLarge }, { status: 413 });
   }
   if (!isAllowedDocumentType(packSlug, documentType)) {
-    return NextResponse.json({ error: "Pièce inconnue pour ce pack." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.unknownDocumentForPack }, { status: 400 });
   }
   // The document service trusts us on this: storage is only for owned packs.
   if (!(await hasPackAccess(userId, packSlug))) {
-    return NextResponse.json({ error: "Ce pack ne fait pas partie de vos achats." }, { status: 403 });
+    return NextResponse.json({ error: m.errors.packNotOwned }, { status: 403 });
   }
 
   try {
@@ -63,6 +65,6 @@ export async function POST(request: Request) {
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("[documents] upload failed", error);
-    return NextResponse.json({ error: "Le dépôt a échoué. Réessayez." }, { status: 502 });
+    return NextResponse.json({ error: m.errors.uploadFailed }, { status: 502 });
   }
 }

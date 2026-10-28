@@ -23,9 +23,9 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <header
-      className={`relative overflow-hidden bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white px-4 md:px-8 py-8 md:py-10 ${className}`}
+      className={`relative overflow-hidden bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white rtl:bg-gradient-to-l px-4 md:px-8 py-8 md:py-10 ${className}`}
     >
-      <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -end-20 -top-24 h-72 w-72 rounded-full bg-brand-400/20 blur-3xl" />
 
       <div className="relative max-w-6xl mx-auto flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">

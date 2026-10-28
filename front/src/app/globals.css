@@ -197,6 +197,12 @@ html {
   }
 }
 
+/* L'arabe est une écriture cursive : un espacement des lettres, même
+   négatif, casse les liaisons entre elles. Prime sur les classes tracking-*. */
+:lang(ar) {
+  letter-spacing: normal !important;
+}
+
 /* Barre de défilement discrète : la barre native de Windows est large et
    contraste mal avec les surfaces claires du produit. */
 @supports (scrollbar-width: thin) {

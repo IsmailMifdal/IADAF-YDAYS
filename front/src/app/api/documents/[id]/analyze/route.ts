@@ -10,18 +10,20 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { GATEWAY_URL, backendAuthHeaders } from "../../../../lib/aiService";
 import { RATE_LIMITS, hit, tooManyRequests } from "../../../../lib/rateLimit";
+import { getMessages } from "../../../../i18n/server";
 
 export const runtime = "nodejs";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const m = await getMessages();
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
 
   const { id } = await params;
-  if (!UUID.test(id)) return NextResponse.json({ error: "Pièce introuvable." }, { status: 404 });
+  if (!UUID.test(id)) return NextResponse.json({ error: m.errors.documentNotFound }, { status: 404 });
 
   const limit = await hit(RATE_LIMITS.documentAnalysis, userId);
   if (!limit.allowed) return tooManyRequests(limit);
@@ -30,10 +32,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     ({ documentType } = await request.json());
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
   if (typeof documentType !== "string" || !documentType || documentType.length > 200) {
-    return NextResponse.json({ error: "Type de pièce invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidDocumentType }, { status: 400 });
   }
 
   try {
@@ -45,15 +47,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
     if (res.status === 503) {
       return NextResponse.json(
-        { error: "La vérification automatique des pièces n’est pas encore ouverte." },
+        { error: m.errors.precheckClosed },
         { status: 503 },
       );
     }
-    if (res.status === 404) return NextResponse.json({ error: "Pièce introuvable." }, { status: 404 });
-    if (!res.ok) return NextResponse.json({ error: "La vérification a échoué." }, { status: 502 });
+    if (res.status === 404) return NextResponse.json({ error: m.errors.documentNotFound }, { status: 404 });
+    if (!res.ok) return NextResponse.json({ error: m.errors.checkFailed }, { status: 502 });
     return NextResponse.json(await res.json());
   } catch (error) {
     console.error("[documents] analysis failed", error);
-    return NextResponse.json({ error: "La vérification a échoué." }, { status: 502 });
+    return NextResponse.json({ error: m.errors.checkFailed }, { status: 502 });
   }
 }

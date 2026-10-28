@@ -8,6 +8,7 @@ import { getPackBySlug } from "../../(app)/packs/packsData";
 import { hasPackAccess } from "../../lib/entitlements";
 import { CGV_VERSION } from "../../lib/legalInfo";
 import { isStripeConfigured, stripe } from "../../lib/stripe";
+import { getLang, getMessages } from "../../i18n/server";
 
 export const runtime = "nodejs";
 
@@ -20,23 +21,24 @@ async function publicOrigin(): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   let body: { slug?: string; waiveWithdrawal?: unknown };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   // The price always comes from the server-side catalogue — never from the
   // request — so a tampered payload cannot change what is charged.
   const pack = body.slug ? getPackBySlug(body.slug) : undefined;
   if (!pack) {
-    return NextResponse.json({ error: "Pack inconnu." }, { status: 404 });
+    return NextResponse.json({ error: m.errors.unknownPack }, { status: 404 });
   }
 
   // Enforced here, not only by the disabled button: without the buyer's
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Cochez la case de demande d’accès immédiat pour poursuivre le paiement.",
+          m.errors.checkoutConsentRequired,
       },
       { status: 400 },
     );
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
   // server without Stripe keys.
   if (!stripe || !isStripeConfigured()) {
     return NextResponse.json(
-      { error: "Le paiement n’est pas configuré sur ce serveur." },
+      { error: m.errors.paymentNotConfigured },
       { status: 503 },
     );
   }
@@ -69,9 +71,14 @@ export async function POST(request: Request) {
   // forged Host must not be able to send buyers back to another site.
   const origin = await publicOrigin();
 
+  const lang = await getLang();
+
   try {
     const checkout = await stripe.checkout.sessions.create({
       mode: "payment",
+      // Stripe's page in the visitor's language; it has no Arabic, so "auto"
+      // follows the browser there.
+      locale: lang === "ar" ? "auto" : lang,
       customer_email: session.user.email ?? undefined,
       line_items: [
         {
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[checkout] Stripe session creation failed", error);
     return NextResponse.json(
-      { error: "Impossible d’ouvrir le paiement. Réessayez plus tard." },
+      { error: m.errors.checkoutFailed },
       { status: 502 },
     );
   }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { AlertCircle, Loader2, LogIn } from "lucide-react";
 import { AuthBrand, authButtonClass, authCardClass, authInputClass } from "../AuthCard";
+import { useLanguage } from "../../context/LanguageContext";
 
 type Props = {
   googleEnabled: boolean;
@@ -16,6 +17,8 @@ type Props = {
 
 export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props) {
   const router = useRouter();
+  const { m } = useLanguage();
+  const t = m.auth.login;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +40,8 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
     if (result?.error) {
       setError(
         result.code === "rate_limited"
-          ? "Trop de tentatives de connexion. Réessayez dans 15 minutes."
-          : "E-mail ou mot de passe incorrect.",
+          ? t.tooManyAttempts
+          : t.wrongCredentials,
       );
       setIsSubmitting(false);
       return;
@@ -53,10 +56,8 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
       <AuthBrand />
 
       <div className={authCardClass}>
-        <h1 className="text-2xl font-bold text-gray-900">Connexion</h1>
-        <p className="text-gray-600 mt-1 text-sm">
-          Accédez à votre espace et suivez vos démarches.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
+        <p className="text-gray-600 mt-1 text-sm">{t.subtitle}</p>
 
         {notice && !error && (
           <div
@@ -83,7 +84,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Adresse e-mail
+              {m.auth.email}
             </label>
             <input
               id="email"
@@ -92,7 +93,8 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
+              placeholder={m.auth.emailPlaceholder}
+              dir="ltr"
               className={authInputClass}
             />
           </div>
@@ -103,13 +105,13 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Mot de passe
+                {m.auth.password}
               </label>
               <Link
                 href="/mot-de-passe-oublie"
                 className="text-xs text-brand-600 hover:text-brand-700 font-medium"
               >
-                Mot de passe oublié ?
+                {t.forgot}
               </Link>
             </div>
             <input
@@ -120,6 +122,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              dir="ltr"
               className={authInputClass}
             />
           </div>
@@ -132,9 +135,9 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-4 h-4 rtl:-scale-x-100" />
             )}
-            {isSubmitting ? "Connexion…" : "Se connecter"}
+            {isSubmitting ? t.submitting : t.submit}
           </button>
         </form>
 
@@ -143,7 +146,7 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
             <div className="flex items-center gap-3 my-6">
               <div className="h-px flex-1 bg-gray-200" />
               <span className="text-xs text-gray-400 uppercase tracking-wide">
-                ou
+                {m.common.or}
               </span>
               <div className="h-px flex-1 bg-gray-200" />
             </div>
@@ -154,25 +157,24 @@ export default function LoginForm({ googleEnabled, callbackUrl, notice }: Props)
               className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 transition"
             >
               <GoogleMark />
-              Continuer avec Google
+              {m.auth.google}
             </button>
           </>
         )}
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Pas encore de compte ?{" "}
+          {t.noAccount}{" "}
           <Link
             href="/register"
             className="text-brand-600 hover:text-brand-700 font-medium"
           >
-            Créer un compte
+            {t.createAccount}
           </Link>
         </p>
       </div>
 
       <p className="mt-6 text-center text-sm text-gray-500 px-4">
-        💡 Vous pouvez créer un compte même si vous ne parlez pas bien français.
-        IA-DAF vous accompagne étape par étape.
+        💡 {t.tip}
       </p>
     </div>
   );

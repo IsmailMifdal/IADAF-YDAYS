@@ -22,22 +22,20 @@ import {
 } from "../../components/ui/primitives";
 import type { Tone } from "../../components/ui/tokens";
 import type { Folder, FolderStatus } from "../../lib/demarches";
+import { localizedPack, getPackBySlug } from "../packs/packsData";
+import { useLanguage } from "../../context/LanguageContext";
+import { fmt, type Messages } from "../../i18n";
 
-const STATUS: Record<FolderStatus, { label: string; tone: Tone; bar: string }> = {
-  EN_ATTENTE: { label: "En préparation", tone: "neutral", bar: "bg-gray-400" },
-  EN_COURS: { label: "En cours", tone: "info", bar: "bg-brand-600" },
-  TERMINEE: { label: "Terminé", tone: "success", bar: "bg-emerald-600" },
-  ANNULEE: { label: "Annulé", tone: "neutral", bar: "bg-gray-300" },
+const STATUS: Record<FolderStatus, { tone: Tone; bar: string }> = {
+  EN_ATTENTE: { tone: "neutral", bar: "bg-gray-400" },
+  EN_COURS: { tone: "info", bar: "bg-brand-600" },
+  TERMINEE: { tone: "success", bar: "bg-emerald-600" },
+  ANNULEE: { tone: "neutral", bar: "bg-gray-300" },
 };
 
 type Filter = "ALL" | FolderStatus;
 
-const FILTERS: Array<{ value: Filter; label: string }> = [
-  { value: "ALL", label: "Tous" },
-  { value: "EN_ATTENTE", label: STATUS.EN_ATTENTE.label },
-  { value: "EN_COURS", label: STATUS.EN_COURS.label },
-  { value: "TERMINEE", label: STATUS.TERMINEE.label },
-];
+const FILTERS: Filter[] = ["ALL", "EN_ATTENTE", "EN_COURS", "TERMINEE"];
 
 function isOverdue(folder: Folder, today: string): boolean {
   return (
@@ -49,6 +47,8 @@ function isOverdue(folder: Folder, today: string): boolean {
 }
 
 export default function FoldersView({ folders }: { folders: Folder[] }) {
+  const { m } = useLanguage();
+  const t = m.folders;
   const [filter, setFilter] = useState<Filter>("ALL");
 
   const filtered = useMemo(
@@ -70,9 +70,9 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
     return (
       <EmptyState
         icon={<FolderOpen className="h-6 w-6" />}
-        title="Vous n’avez pas encore de dossier"
-        description="Un dossier est créé pour chaque pack que vous achetez : il réunit la liste des pièces et le suivi de votre démarche."
-        action={<ButtonLink href="/nosPacks">Découvrir les packs</ButtonLink>}
+        title={t.emptyTitle}
+        description={t.emptyText}
+        action={<ButtonLink href="/nosPacks">{m.dashboard.discoverPacks}</ButtonLink>}
       />
     );
   }
@@ -80,17 +80,17 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
   return (
     <div className="space-y-8">
       <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total" value={stats.total} icon={<FolderOpen className="h-5 w-5" />} tone="neutral" />
-        <StatCard label="En cours" value={stats.inProgress} icon={<Clock3 className="h-5 w-5" />} tone="info" />
-        <StatCard label="En retard" value={stats.overdue} icon={<AlertTriangle className="h-5 w-5" />} tone="warning" />
-        <StatCard label="Terminés" value={stats.done} icon={<CheckCircle2 className="h-5 w-5" />} tone="success" />
+        <StatCard label={t.total} value={stats.total} icon={<FolderOpen className="h-5 w-5" />} tone="neutral" />
+        <StatCard label={t.status.EN_COURS} value={stats.inProgress} icon={<Clock3 className="h-5 w-5" />} tone="info" />
+        <StatCard label={t.overdue} value={stats.overdue} icon={<AlertTriangle className="h-5 w-5" />} tone="warning" />
+        <StatCard label={t.done} value={stats.done} icon={<CheckCircle2 className="h-5 w-5" />} tone="success" />
       </div>
 
       <section>
-        <SectionTitle title="Vos dossiers" description="Filtrez par état d’avancement." />
+        <SectionTitle title={t.yours} description={t.filterText} />
 
         <div className="mb-5 flex flex-wrap gap-2">
-          {FILTERS.map(({ value, label }) => {
+          {FILTERS.map((value) => {
             const isActive = filter === value;
             return (
               <button
@@ -104,7 +104,7 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
                     : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
-                {label}
+                {value === "ALL" ? t.all : t.status[value]}
               </button>
             );
           })}
@@ -113,18 +113,18 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
         {filtered.length === 0 ? (
           <EmptyState
             icon={<Search className="h-6 w-6" />}
-            title="Aucun dossier dans cet état"
-            description="Changez de filtre pour voir vos autres dossiers."
+            title={t.noneTitle}
+            description={t.noneText}
             action={
               <Button variant="secondary" onClick={() => setFilter("ALL")}>
-                Voir tous les dossiers
+                {t.seeAll}
               </Button>
             }
           />
         ) : (
           <div className="stagger grid grid-cols-1 gap-5 lg:grid-cols-2">
             {filtered.map((folder) => (
-              <FolderCard key={folder.id} folder={folder} />
+              <FolderCard key={folder.id} folder={folder} m={m} />
             ))}
           </div>
         )}
@@ -133,8 +133,13 @@ export default function FoldersView({ folders }: { folders: Folder[] }) {
   );
 }
 
-function FolderCard({ folder }: { folder: Folder }) {
+function FolderCard({ folder, m }: { folder: Folder; m: Messages }) {
+  const t = m.folders;
   const status = STATUS[folder.statut];
+  // Titre enregistré en français par le service : celui du pack, traduit,
+  // quand le dossier en vient.
+  const pack = folder.packSlug ? getPackBySlug(folder.packSlug) : undefined;
+  const title = pack ? localizedPack(m, pack).title : folder.titre;
   const progress = Math.round(folder.progression ?? 0);
   const total = folder.etapes?.length ?? 0;
   const done = folder.etapes?.filter((e) => e.completee).length ?? 0;
@@ -143,17 +148,17 @@ function FolderCard({ folder }: { folder: Folder }) {
     <Card interactive className="p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900">{folder.titre}</h3>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
           {folder.organismeConcerne && (
-            <p className="mt-0.5 text-sm text-gray-500">{folder.organismeConcerne}</p>
+            <p className="mt-0.5 text-sm text-gray-500" lang="fr">{folder.organismeConcerne}</p>
           )}
         </div>
-        <Badge tone={status.tone}>{status.label}</Badge>
+        <Badge tone={status.tone}>{t.status[folder.statut]}</Badge>
       </div>
 
       <div className="mt-5">
         <div className="mb-1.5 flex items-center justify-between text-xs text-gray-500">
-          <span>{total > 0 ? `${done}/${total} pièces réunies` : "Progression"}</span>
+          <span>{total > 0 ? fmt(t.gathered, { done, total }) : t.progress}</span>
           <span className="font-medium text-gray-700">{progress}%</span>
         </div>
         <div
@@ -162,7 +167,7 @@ function FolderCard({ folder }: { folder: Folder }) {
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={`Progression du dossier ${folder.titre}`}
+          aria-label={fmt(t.progressOf, { title })}
         >
           <div className={`h-full rounded-full transition-all ${status.bar}`} style={{ width: `${progress}%` }} />
         </div>
@@ -173,8 +178,8 @@ function FolderCard({ folder }: { folder: Folder }) {
           href={`/packs/${folder.packSlug}`}
           className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
         >
-          Ouvrir l’espace du pack
-          <ArrowRight className="h-4 w-4" />
+          {t.openPack}
+          <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
         </Link>
       )}
     </Card>

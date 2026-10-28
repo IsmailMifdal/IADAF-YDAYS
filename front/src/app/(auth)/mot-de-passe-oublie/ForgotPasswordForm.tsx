@@ -5,8 +5,11 @@ import Link from "next/link";
 import { Loader2, Mail } from "lucide-react";
 
 import { AuthCard, AuthMessage, authButtonClass, authInputClass } from "../AuthCard";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function ForgotPasswordForm() {
+  const { m } = useLanguage();
+  const t = m.auth.forgot;
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
@@ -25,12 +28,12 @@ export default function ForgotPasswordForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Impossible d’envoyer l’e-mail. Réessayez.");
+        setError(data.error ?? t.failed);
         return;
       }
       setSent(data.message);
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
     } finally {
       setIsSubmitting(false);
     }
@@ -38,21 +41,20 @@ export default function ForgotPasswordForm() {
 
   return (
     <AuthCard
-      title="Mot de passe oublié"
-      subtitle="Indiquez l’adresse de votre compte : nous vous envoyons un lien pour en choisir un nouveau."
+      title={t.title}
+      subtitle={t.subtitle}
     >
       {error && <AuthMessage tone="error">{error}</AuthMessage>}
 
       {sent ? (
         <AuthMessage tone="success">
-          {sent} Pensez à vérifier vos courriers indésirables. Le lien est
-          valable 30 minutes.
+          {sent} {t.checkSpam}
         </AuthMessage>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Adresse e-mail
+              {m.auth.email}
             </label>
             <input
               id="email"
@@ -61,21 +63,22 @@ export default function ForgotPasswordForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
+              placeholder={m.auth.emailPlaceholder}
+              dir="ltr"
               className={authInputClass}
             />
           </div>
 
           <button type="submit" disabled={isSubmitting} className={authButtonClass}>
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-            {isSubmitting ? "Envoi…" : "Recevoir le lien"}
+            {isSubmitting ? t.submitting : t.submit}
           </button>
         </form>
       )}
 
       <p className="mt-6 text-center text-sm text-gray-600">
         <Link href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
-          Retour à la connexion
+          {m.auth.backToLogin}
         </Link>
       </p>
     </AuthCard>

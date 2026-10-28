@@ -100,7 +100,7 @@ const FIRST_WELCOME_MESSAGES: Record<LangCode, string> = {
 };
 
 export default function AccueilChat() {
-  const { lang, t } = useLanguage();
+  const { lang, m } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -133,7 +133,7 @@ export default function AccueilChat() {
   // conversation itself.
   const shownMessages: ChatMessage[] = [
     { role: "ai", content: FIRST_WELCOME_MESSAGES[lang] },
-    ...(emailAsked ? [{ role: "ai" as const, content: t("chat.emailAsk") }] : []),
+    ...(emailAsked ? [{ role: "ai" as const, content: m.chat.emailAsk }] : []),
     ...messages,
   ];
 
@@ -173,12 +173,12 @@ export default function AccueilChat() {
   const skipEmail = () => {
     setWaitingForEmail(false);
     setInputValue("");
-    setMessages((prev) => [...prev, { role: "ai", content: t("chat.emailSkipped") }]);
+    setMessages((prev) => [...prev, { role: "ai", content: m.chat.emailSkipped }]);
   };
 
-  /** Sends `message`, the answer filling a new bubble as it arrives; `errorKey` if none came. */
+  /** Sends `message`, the answer filling a new bubble as it arrives; `errorText` if none came. */
   const streamAnswer = useCallback(
-    async (message: string, errorKey: string) => {
+    async (message: string, errorText: string) => {
       setMessages((prev) => [...prev, { role: "ai", content: "" }]);
       const showAnswer = (content: string) =>
         setMessages((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], content }]);
@@ -190,13 +190,13 @@ export default function AccueilChat() {
         setConversationId(res.conversation_id);
       } catch (error) {
         if (error instanceof ChatStreamError && error.partial) {
-          showAnswer(`${error.partial}\n\n_${t("chat.interrupted")}_`);
+          showAnswer(`${error.partial}\n\n_${m.chat.interrupted}_`);
         } else {
-          showAnswer(t(isRateLimited(error) ? "chat.rateLimited" : errorKey));
+          showAnswer(isRateLimited(error) ? m.chat.rateLimited : errorText);
         }
       }
     },
-    [conversationId, lang, t],
+    [conversationId, lang, m],
   );
 
   const sendMessage = useCallback(
@@ -218,7 +218,7 @@ export default function AccueilChat() {
             ...prev,
             {
               role: "ai",
-              content: t(saved ? "chat.emailSuccess" : "chat.emailError"),
+              content: saved ? m.chat.emailSuccess : m.chat.emailError,
             },
           ]);
         } else {
@@ -226,7 +226,7 @@ export default function AccueilChat() {
             ...prev,
             {
               role: "ai",
-              content: t("chat.emailInvalid"),
+              content: m.chat.emailInvalid,
             },
           ]);
         }
@@ -243,7 +243,7 @@ export default function AccueilChat() {
         try {
           await streamAnswer(
             `${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}\n\nC'est son dernier message. Réponds BRIÈVEMENT à sa question en 1 phrase, puis enchaîne naturellement en l'invitant à découvrir nos packs pour aller plus loin. 1 emoji max, 2-3 lignes max.`,
-            "chat.fallbackEnd",
+            m.chat.fallbackEnd,
           );
         } finally {
           setIsLoading(false);
@@ -254,12 +254,12 @@ export default function AccueilChat() {
       // Normal message — send to AI
       setIsLoading(true);
       try {
-        await streamAnswer(`${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`, "chat.error");
+        await streamAnswer(`${SYSTEM_CONTEXTS[lang]}\n\nQuestion de l'utilisateur : ${trimmed}`, m.chat.error);
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, chatEnded, waitingForEmail, emailConsent, userMessageCount, streamAnswer, lang, t],
+    [isLoading, chatEnded, waitingForEmail, emailConsent, userMessageCount, streamAnswer, lang, m],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -276,9 +276,9 @@ export default function AccueilChat() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          title="Ouvrir le chat"
-          aria-label="Ouvrir le chat"
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-glow ring-1 ring-inset ring-white/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
+          title={m.chat.open}
+          aria-label={m.chat.open}
+          className="fixed bottom-6 end-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-glow ring-1 ring-inset ring-white/20 transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
         >
           <MessageSquare className="w-6 h-6" />
         </button>
@@ -286,7 +286,7 @@ export default function AccueilChat() {
 
       {/* Chat window */}
       {isOpen && (
-        <div className="animate-fade-up fixed inset-x-3 bottom-3 z-50 flex h-[min(560px,calc(100dvh-1.5rem))] flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[400px]">
+        <div className="animate-fade-up fixed inset-x-3 bottom-3 z-50 flex h-[min(560px,calc(100dvh-1.5rem))] flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:end-6 sm:w-[400px]">
           {/* Header */}
           <div className="bg-gradient-to-br from-brand-600 to-indigo-600 text-white px-5 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
@@ -294,8 +294,8 @@ export default function AccueilChat() {
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">{t("chat.assistant")}</h3>
-                <p className="text-brand-200 text-xs">{t("chat.online")}</p>
+                <h3 className="font-semibold text-sm">{m.chat.assistant}</h3>
+                <p className="text-brand-200 text-xs">{m.chat.online}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -303,8 +303,8 @@ export default function AccueilChat() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                title="Fermer le chat"
-                aria-label="Fermer le chat"
+                title={m.chat.close}
+                aria-label={m.chat.close}
                 className="p-1.5 rounded-lg hover:bg-white/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <X className="w-5 h-5" />
@@ -324,15 +324,15 @@ export default function AccueilChat() {
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
-                <div className={`max-w-[80%] ${msg.role === "user" ? "text-right" : ""}`}>
+                <div className={`max-w-[80%] ${msg.role === "user" ? "text-end" : ""}`}>
                   {msg.role === "ai" ? (
-                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-tl-md px-4 py-3 text-[13.5px] text-gray-700 leading-relaxed shadow-xs">
+                    <div dir="auto" className="bg-white border border-gray-200/80 rounded-2xl rounded-ss-md px-4 py-3 text-[13.5px] text-gray-700 leading-relaxed shadow-xs">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-tr-md px-4 py-2.5 text-[13.5px] shadow-sm">
+                    <div dir="auto" className="bg-brand-600 text-white rounded-2xl rounded-se-md px-4 py-2.5 text-[13.5px] shadow-sm">
                       {msg.content}
                     </div>
                   )}
@@ -348,7 +348,7 @@ export default function AccueilChat() {
                 </div>
                 <div className="bg-white border border-gray-200/80 rounded-2xl px-4 py-3 flex items-center gap-2 shadow-xs">
                   <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
-                  <span className="text-xs text-gray-500">{t("chat.loading")}</span>
+                  <span className="text-xs text-gray-500">{m.chat.loading}</span>
                 </div>
               </div>
             )}
@@ -363,7 +363,7 @@ export default function AccueilChat() {
                 href="/nosPacks"
                 className="block w-full rounded-xl bg-brand-600 py-3 text-center text-sm font-medium text-white transition hover:bg-brand-700"
               >
-                {t("chat.discoverPacks")}
+                {m.chat.discoverPacks}
               </Link>
             </div>
           )}
@@ -376,14 +376,14 @@ export default function AccueilChat() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-xs text-brand-600">
                       <Mail className="w-3.5 h-3.5" />
-                      <span>{t("chat.emailPrompt")}</span>
+                      <span>{m.chat.emailPrompt}</span>
                     </div>
                     <button
                       type="button"
                       onClick={skipEmail}
                       className="rounded-xl px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
                     >
-                      {t("chat.emailSkip")}
+                      {m.chat.emailSkip}
                     </button>
                   </div>
                   <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-500">
@@ -393,7 +393,7 @@ export default function AccueilChat() {
                       onChange={(e) => setEmailConsent(e.target.checked)}
                       className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-600"
                     />
-                    <span>{t("chat.emailConsent")}</span>
+                    <span>{m.chat.emailConsent}</span>
                   </label>
                 </div>
               )}
@@ -405,11 +405,11 @@ export default function AccueilChat() {
                   onKeyDown={handleKeyDown}
                   placeholder={
                     waitingForEmail
-                      ? t("chat.emailPlaceholder")
-                      : t("chat.placeholder")
+                      ? m.chat.emailPlaceholder
+                      : m.chat.placeholder
                   }
                   disabled={isLoading}
-                  dir="auto"
+                  dir={waitingForEmail ? "ltr" : "auto"}
                   className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm transition focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:opacity-50"
                 />
                 <button
@@ -420,8 +420,8 @@ export default function AccueilChat() {
                     (waitingForEmail && !emailConsent)
                   }
                   onClick={() => sendMessage(inputValue)}
-                  title="Envoyer"
-                  aria-label="Envoyer"
+                  title={m.common.send}
+                  aria-label={m.common.send}
                   className="bg-brand-600 hover:bg-brand-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-2.5 rounded-xl shadow-sm transition"
                 >
                   <Send className="w-4 h-4" />

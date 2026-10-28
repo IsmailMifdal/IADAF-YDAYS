@@ -28,27 +28,20 @@ import HeaderPage from "../../../components/ui/PageHeader";
 import { api, ChatStreamError } from "../../../lib/api";
 import { useToast } from "../../../components/ui/Toast";
 import { useLanguage } from "../../../context/LanguageContext";
+import { fmt, type Messages } from "../../../i18n";
+import { precheckMessage } from "../../../lib/precheckMessages";
 import LanguageSelector from "../../../components/ui/LanguageSelector";
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_SIZE = MAX_DOCUMENT_BYTES;
 
-function formatSize(bytes: number) {
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+function formatSize(bytes: number, t: Messages["workspace"]) {
+  return fmt(t.sizeMb, { size: (bytes / (1024 * 1024)).toFixed(2) });
 }
 
-function validateFile(file: File) {
-  const isValidType = ALLOWED_TYPES.includes(file.type);
-  const isValidSize = file.size <= MAX_SIZE;
-
-  if (!isValidType) {
-    return "Type de fichier non supporté. Utilisez PDF, JPG ou PNG.";
-  }
-
-  if (!isValidSize) {
-    return "Fichier trop volumineux. Taille maximale : 10MB.";
-  }
-
+function validateFile(file: File, t: Messages["workspace"]) {
+  if (!ALLOWED_TYPES.includes(file.type)) return t.badType;
+  if (file.size > MAX_SIZE) return t.tooLarge;
   return null;
 }
 
@@ -72,6 +65,8 @@ const CHECK_MARK: Record<CheckStatus, string> = {
  * is (see /api/precheck/disputes).
  */
 function PrecheckResult({ analysis }: { analysis: DocumentAnalysis }) {
+  const { m, lang } = useLanguage();
+  const t = m.workspace;
   const [reported, setReported] = useState<Record<string, "sending" | "sent" | "failed">>({});
 
   const report = async (check: DocumentAnalysis["checks"][number]) => {
@@ -85,14 +80,14 @@ function PrecheckResult({ analysis }: { analysis: DocumentAnalysis }) {
   };
 
   return (
-    <ul className="mt-1.5 mb-1 ml-14 space-y-0.5 text-xs" aria-label="Pré-vérification automatique">
+    <ul className="mt-1.5 mb-1 ms-14 space-y-0.5 text-xs" aria-label={t.precheckLabel}>
       {analysis.checks.map((check) => (
         <li key={check.id} className={`flex flex-wrap gap-x-1.5 ${CHECK_STYLE[check.status]}`}>
           <span aria-hidden className="font-semibold">{CHECK_MARK[check.status]}</span>
-          <span>{check.message}</span>
+          <span>{precheckMessage(m, lang, check)}</span>
           {check.status !== "unknown" &&
             (reported[check.id] === "sent" ? (
-              <span className="text-gray-500">— merci, c’est signalé</span>
+              <span className="text-gray-500">{t.reported}</span>
             ) : (
               <button
                 type="button"
@@ -100,7 +95,7 @@ function PrecheckResult({ analysis }: { analysis: DocumentAnalysis }) {
                 onClick={() => report(check)}
                 className="text-gray-500 underline decoration-dotted hover:text-gray-700 disabled:opacity-50"
               >
-                {reported[check.id] === "failed" ? "réessayer le signalement" : "résultat faux ?"}
+                {reported[check.id] === "failed" ? t.reportRetry : t.reportWrong}
               </button>
             ))}
         </li>
@@ -114,8 +109,15 @@ type ChatMessage = {
   content: string;
 };
 
-/** A pack with its paid content, handed over by the server once access is verified. */
-export type PackWithContent = PackData & { requiredDocuments: string[] };
+/**
+ * A pack with its paid content, handed over by the server once access is
+ * verified: the pieces to file (French names, the keys they are stored under)
+ * and their labels in the visitor's language.
+ */
+export type PackWithContent = PackData & {
+  requiredDocuments: string[];
+  documentLabels: Record<string, string>;
+};
 
 /**
  * Interactive workspace for a pack the user owns.
@@ -132,8 +134,10 @@ export default function PackWorkspace({
   /** Pieces already filed, or null when the document service was unreachable. */
   initialDocuments: StoredDocument[] | null;
 }) {
-  const { lang, t } = useLanguage();
+  const { lang, m } = useLanguage();
+  const t = m.workspace;
   const { toast } = useToast();
+  const labelOf = (name: string) => pack.documentLabels[name] ?? name;
 
   // Filed on the server as soon as they are chosen: nothing is kept only in
   // the browser, where a reload would lose it.
@@ -174,8 +178,11 @@ export default function PackWorkspace({
   const dropInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fait défiler la liste des messages, pas la page : scrollIntoView amenait
+  // aussi la fenêtre en bas, sous le titre du pack, dès l'accueil de l'assistant.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const list = messagesEndRef.current?.parentElement;
+    if (list) list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Envoie un message de bienvenue contextuel au pack choisi, à l'ouverture
@@ -184,7 +191,9 @@ export default function PackWorkspace({
     // Une réponse arrivée après un changement de langue est ignorée.
     let cancelled = false;
 
-    const docsList = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
+    const docsList = pack.requiredDocuments
+      .map((d) => `- ${pack.documentLabels[d] ?? d}`)
+      .join("\n");
 
     const langPrompts: Record<string, string> = {
       fr: `CONTEXTE OBLIGATOIRE : L'utilisateur a choisi le pack "${pack.title}" — ${pack.shortDescription}
@@ -248,11 +257,10 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       })
       .catch(() => {
         if (cancelled) return;
-        const fallbackDocs = pack.requiredDocuments.map((d) => `- ${d}`).join("\n");
         setMessages([
           {
             role: "ai",
-            content: `Bienvenue ! 🎉 Je suis là pour t'accompagner dans ta démarche **${pack.title}**.\n\n📋 **Documents à préparer :**\n${fallbackDocs}\n\nN'hésite pas à me poser tes questions, je suis là pour t'aider ! 💬`,
+            content: fmt(t.fallbackWelcome, { title: pack.title, docs: docsList }),
           },
         ]);
       });
@@ -260,7 +268,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     return () => {
       cancelled = true;
     };
-  }, [pack, lang]);
+  }, [pack, lang, t]);
 
   const uploadedCount = documents.length;
 
@@ -340,13 +348,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       const parts = [res.analysis];
       if (res.missing_info?.length) {
         parts.push(
-          "\n**Points à compléter :**\n" +
+          `\n**${t.toComplete}**\n` +
             res.missing_info.map((item) => `- ${item}`).join("\n"),
         );
       }
       if (res.recommendations?.length) {
         parts.push(
-          "\n**Recommandations :**\n" +
+          `\n**${t.recommendations}**\n` +
             res.recommendations.map((item) => `- ${item}`).join("\n"),
         );
       }
@@ -355,13 +363,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
         ...prev,
         { role: "ai", content: parts.join("\n") },
       ]);
-      toast("Analyse de votre dossier terminée.");
+      toast(t.analysisDone);
     } catch {
-      toast("L’analyse a échoué. Réessayez dans un instant.", "danger");
+      toast(t.analysisFailed, "danger");
     } finally {
       setIsAnalyzing(false);
     }
-  }, [pack, isAnalyzing, documents, bySlot, extraDocuments, lang, toast]);
+  }, [pack, isAnalyzing, documents, bySlot, extraDocuments, lang, toast, t]);
 
   const handleSendMessage = useCallback(async () => {
     const trimmed = chatInput.trim();
@@ -389,16 +397,16 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     } catch (error) {
       showAnswer(
         error instanceof ChatStreamError && error.partial
-          ? `${error.partial}\n\n_${t("chat.interrupted")}_`
-          : t("pack.chat.error"),
+          ? `${error.partial}\n\n_${m.chat.interrupted}_`
+          : m.packChat.error,
       );
     } finally {
       setIsLoading(false);
     }
-  }, [chatInput, conversationId, isBusy, pack, lang, t]);
+  }, [chatInput, conversationId, isBusy, pack, lang, m]);
 
   const uploadDocument = async (documentType: string, file: File) => {
-    const validationError = validateFile(file);
+    const validationError = validateFile(file, t);
     if (validationError) {
       setErrorMessage(validationError);
       return;
@@ -414,13 +422,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       const res = await fetch("/api/documents", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErrorMessage(data.error ?? "Le dépôt a échoué. Réessayez.");
+        setErrorMessage(data.error ?? m.errors.uploadFailed);
         return;
       }
       setDocuments((prev) => [...prev.filter((d) => d.documentType !== documentType), data]);
-      toast("Pièce déposée.");
+      toast(t.filed);
     } catch {
-      setErrorMessage("Une erreur réseau est survenue. Réessayez.");
+      setErrorMessage(m.common.networkError);
     } finally {
       setBusySlot(null);
     }
@@ -434,13 +442,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
       const res = await fetch(`/api/documents/${document.id}?${query}`, { method: "DELETE" });
       // 404: already gone — the outcome the user asked for.
       if (!res.ok && res.status !== 404) {
-        setErrorMessage("La suppression a échoué. Réessayez.");
+        setErrorMessage(m.errors.deleteFailed);
         return;
       }
       setDocuments((prev) => prev.filter((d) => d.id !== document.id));
-      toast("Pièce retirée.");
+      toast(t.removed);
     } catch {
-      setErrorMessage("Une erreur réseau est survenue. Réessayez.");
+      setErrorMessage(m.common.networkError);
     } finally {
       setBusySlot(null);
     }
@@ -453,7 +461,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
   const addDroppedFiles = async (fileList: File[]) => {
     // One at a time: the spinner, the toasts and the rate limit stay readable.
     for (const file of fileList) {
-      const name = file.name.slice(0, 200 - EXTRA_DOCUMENT_PREFIX.length) || "fichier";
+      const name = file.name.slice(0, 200 - EXTRA_DOCUMENT_PREFIX.length) || "file";
       await uploadDocument(`${EXTRA_DOCUMENT_PREFIX}${name}`, file);
     }
   };
@@ -494,22 +502,16 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Vos documents
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Ajoutez les pièces demandées pour votre démarche.
-                  </p>
+                  <h3 className="text-lg font-semibold text-gray-900">{t.yourDocuments}</h3>
+                  <p className="text-sm text-gray-500">{t.yourDocumentsText}</p>
                 </div>
               </div>
 
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600">
-                    Progression
-                  </span>
+                  <span className="text-sm font-medium text-gray-600">{m.folders.progress}</span>
                   <span className="text-sm font-semibold text-brand-700">
-                    {filledDocs}/{totalDocs} documents
+                    {fmt(t.documentsCount, { done: filledDocs, total: totalDocs })}
                   </span>
                 </div>
                 <div
@@ -518,10 +520,10 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   aria-valuenow={filledDocs}
                   aria-valuemin={0}
                   aria-valuemax={totalDocs}
-                  aria-label="Documents déposés"
+                  aria-label={t.filedLabel}
                 >
                   <div
-                    className="h-full bg-gradient-to-r from-brand-500 to-indigo-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-brand-500 to-indigo-600 rounded-full transition-all duration-500 rtl:bg-gradient-to-l"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -560,22 +562,28 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
 
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 text-sm truncate">
-                          {document}
+                          {labelOf(document)}
                         </p>
+                        {/* Le nom français : celui des sites et courriers de l'administration. */}
+                        {labelOf(document) !== document && (
+                          <p className="text-[11px] text-gray-400 truncate" lang="fr" dir="ltr">
+                            {document}
+                          </p>
+                        )}
                         {file ? (
                           <p className="text-xs text-emerald-600 truncate">
-                            {file.originalFilename} · {formatSize(file.sizeBytes)} ·{" "}
+                            {file.originalFilename} · {formatSize(file.sizeBytes, t)} ·{" "}
                             <a
                               href={`/api/documents/${file.id}`}
                               onClick={(event) => event.stopPropagation()}
                               className="underline hover:text-emerald-700"
                             >
-                              Télécharger
+                              {t.download}
                             </a>
                           </p>
                         ) : (
                           <p className="text-xs text-gray-400">
-                            PDF, JPG, PNG · max 10MB
+                            {t.formats}
                           </p>
                         )}
                       </div>
@@ -589,13 +597,13 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                             removeDocument(document);
                           }}
                           className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
-                          aria-label="Retirer le fichier"
+                          aria-label={t.removeFile}
                         >
                           <X className="w-4 h-4" />
                         </button>
                       ) : (
                         <span className="shrink-0 text-xs font-medium bg-brand-600 group-hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition">
-                          Parcourir
+                          {t.browse}
                         </span>
                       )}
 
@@ -638,7 +646,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
               >
                 <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1.5" />
                 <p className="text-sm text-gray-500">
-                  Glissez d’autres fichiers ici ou cliquez pour ajouter
+                  {t.dropzone}
                 </p>
                 <input
                   ref={dropInputRef}
@@ -669,14 +677,14 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                         {file.originalFilename}
                       </a>
                       <span className="text-xs text-gray-400 shrink-0">
-                        {formatSize(file.sizeBytes)}
+                        {formatSize(file.sizeBytes, t)}
                       </span>
                       <button
                         type="button"
                         disabled={busySlot === file.documentType}
                         onClick={() => void removeStoredDocument(file)}
                         className="text-gray-400 hover:text-red-500 transition"
-                        aria-label="Retirer le fichier"
+                        aria-label={t.removeFile}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -687,14 +695,12 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
 
               {initialDocuments === null && (
                 <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  Vos pièces déjà déposées n’ont pas pu être chargées. Rechargez
-                  la page dans un instant avant d’en déposer de nouvelles.
+                  {t.loadError}
                 </p>
               )}
 
               <p className="mt-4 text-xs text-gray-400">
-                Vos pièces sont chiffrées et conservées {DOCUMENT_RETENTION_DAYS} jours au
-                plus. Vous pouvez les retirer à tout moment.
+                {fmt(t.retention, { days: DOCUMENT_RETENTION_DAYS })}
               </p>
 
               {errorMessage && (
@@ -714,33 +720,29 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Vérification en cours…
+                    {t.checking}
                   </>
                 ) : (
                   <>
                     {allUploaded && <Check className="h-5 w-5" />}
-                    Vérifier mon dossier
+                    {t.check}
                   </>
                 )}
               </button>
 
               {precheckUnavailable && (
                 <p className="mt-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                  La vérification automatique des pièces n’est pas encore ouverte :
-                  l’assistant contrôle pour l’instant la complétude de votre dossier.
+                  {t.precheckClosed}
                 </p>
               )}
               {Object.keys(analyses).length > 0 && (
                 <p className="mt-3 text-xs text-gray-500">
-                  Pré-vérification indicative, sous chaque pièce : elle ne garantit pas
-                  l’acceptation de votre dossier, seule l’administration en décide.
+                  {t.precheckDisclaimer}
                 </p>
               )}
 
               <p className="mt-2 text-center text-xs text-gray-400">
-                {uploadedCount === 0
-                  ? "Déposez au moins une pièce pour lancer la vérification."
-                  : "L’assistant vérifie que votre dossier est complet."}
+                {uploadedCount === 0 ? t.checkNeedsOne : t.checkExplains}
               </p>
             </section>
 
@@ -753,16 +755,16 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                   </div>
                   <div>
                     <h3 className="font-semibold text-2xl text-gray-900 leading-tight">
-                      {t("pack.chat.assistant")}
+                      {m.packChat.assistant}
                     </h3>
-                    <p className="text-emerald-600 text-sm">{t("pack.chat.online")}</p>
+                    <p className="text-emerald-600 text-sm">{m.packChat.online}</p>
                   </div>
-                  <div className="ml-auto">
+                  <div className="ms-auto">
                     <LanguageSelector />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                <div className="flex-1 overflow-y-auto space-y-4 pe-1">
                   {messages.map((message, index) => message.content === "" ? null : (
                     <div
                       key={`${message.role}-${index}`}
@@ -777,9 +779,9 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                           <span className="text-xs font-bold">U</span>
                         </div>
                       )}
-                      <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : ""}`}>
+                      <div className={`max-w-[85%] ${message.role === "user" ? "text-end" : ""}`}>
                         {message.role === "ai" ? (
-                          <div dir="auto" className="bg-white border border-gray-200/80 rounded-xl rounded-tl-md px-4 py-3 shadow-xs prose prose-sm max-w-none
+                          <div dir="auto" className="bg-white border border-gray-200/80 rounded-xl rounded-ss-md px-4 py-3 shadow-xs prose prose-sm max-w-none
                             prose-headings:text-brand-800 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-headings:text-sm
                             prose-h2:border-b prose-h2:border-brand-100 prose-h2:pb-1
                             prose-p:text-gray-700 prose-p:leading-relaxed prose-p:text-sm
@@ -793,7 +795,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                             </ReactMarkdown>
                           </div>
                         ) : (
-                          <div dir="auto" className="bg-brand-600 text-white rounded-xl rounded-tr-md px-4 py-2.5 shadow-sm text-sm">
+                          <div dir="auto" className="bg-brand-600 text-white rounded-xl rounded-se-md px-4 py-2.5 shadow-sm text-sm">
                             {message.content}
                           </div>
                         )}
@@ -816,7 +818,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                       </div>
                       <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm text-gray-500 flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
-                        <span className="text-sm">{t("pack.chat.loading")}</span>
+                        <span className="text-sm">{m.packChat.loading}</span>
                       </div>
                     </div>
                   )}
@@ -835,7 +837,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                         handleSendMessage();
                       }
                     }}
-                    placeholder={t("pack.chat.placeholder")}
+                    placeholder={m.packChat.placeholder}
                     disabled={isBusy}
                     dir="auto"
                     className="flex-1 bg-transparent outline-none px-2 py-2 text-gray-700 placeholder:text-gray-400 disabled:opacity-50"
@@ -844,10 +846,10 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
                     type="button"
                     onClick={handleSendMessage}
                     disabled={isBusy || chatInput.trim().length === 0}
-                    aria-label="Envoyer"
+                    aria-label={m.common.send}
                     className="h-10 w-10 rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center shadow-sm transition disabled:opacity-50"
                   >
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                   </button>
                 </div>
               </div>

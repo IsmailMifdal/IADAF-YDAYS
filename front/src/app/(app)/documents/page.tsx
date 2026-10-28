@@ -15,9 +15,14 @@ import { listDocuments, type StoredDocument } from "../../lib/documents";
 import { DOCUMENT_RETENTION_DAYS } from "../../lib/documentTypes";
 import { listUnlockedPacks } from "../../lib/entitlements";
 import { getRequiredDocuments } from "../packs/packContent";
-import { getPackBySlug } from "../packs/packsData";
+import { getPackBySlug, localizedPack } from "../packs/packsData";
+import { fmt, type Messages } from "../../i18n";
+import { documentLabel } from "../../i18n/documents";
+import { getLang, getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Mes documents" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).documents.title };
+}
 
 type PackDocuments = {
   slug: string;
@@ -26,10 +31,10 @@ type PackDocuments = {
   filed: StoredDocument[] | null;
 };
 
-function formatSize(bytes: number): string {
+function formatSize(bytes: number, t: Messages["documents"]): string {
   return bytes < 1024 * 1024
-    ? `${Math.max(1, Math.round(bytes / 1024))} Ko`
-    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+    ? fmt(t.sizeKb, { size: Math.max(1, Math.round(bytes / 1024)) })
+    : fmt(t.sizeMb, { size: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 /**
@@ -37,14 +42,16 @@ function formatSize(bytes: number): string {
  * each pack's workspace, next to the list of pieces that pack requires.
  */
 export default async function DocumentsPage() {
-  const session = await auth();
+  const [session, m, lang] = await Promise.all([auth(), getMessages(), getLang()]);
+  const t = m.documents;
   const userId = session?.user?.id;
 
   const packs: PackDocuments[] = [];
   if (userId) {
     for (const slug of await listUnlockedPacks(userId)) {
-      const pack = getPackBySlug(slug);
-      if (!pack) continue;
+      const found = getPackBySlug(slug);
+      if (!found) continue;
+      const pack = localizedPack(m, found);
       const filed = await listDocuments(userId, slug).catch((error) => {
         console.error(`[documents] could not list documents of ${slug}`, error);
         return null;
@@ -56,23 +63,21 @@ export default async function DocumentsPage() {
   return (
     <div>
       <PageHeader
-        title="Mes documents"
-        subtitle="Les pièces que vous avez déposées, pack par pack."
+        title={t.title}
+        subtitle={t.subtitle}
       />
       <PageContainer>
         {packs.length === 0 ? (
           <EmptyState
             icon={<FolderOpen className="h-6 w-6" />}
-            title="Aucun pack pour le moment"
-            description="Les pièces se déposent dans l’espace d’un pack, à côté de la liste de celles que la démarche demande."
-            action={<ButtonLink href="/nosPacks">Découvrir les packs</ButtonLink>}
+            title={m.dashboard.noPackTitle}
+            description={t.emptyText}
+            action={<ButtonLink href="/nosPacks">{m.dashboard.discoverPacks}</ButtonLink>}
           />
         ) : (
           <div className="space-y-6">
             <p className="text-sm text-gray-500">
-              Vos pièces sont chiffrées et conservées {DOCUMENT_RETENTION_DAYS} jours au
-              plus. Leur dépôt ne vaut pas vérification : seule l’administration
-              décide de la conformité d’un dossier.
+              {fmt(t.retention, { days: DOCUMENT_RETENTION_DAYS })}
             </p>
 
             {packs.map((pack) => (
@@ -82,8 +87,8 @@ export default async function DocumentsPage() {
                     <h2 className="font-semibold text-gray-900">{pack.title}</h2>
                     {pack.filed && (
                       <p className="mt-0.5 text-sm text-gray-500">
-                        {pack.filed.length} pièce(s) déposée(s)
-                        {pack.required > 0 ? ` · ${pack.required} demandée(s)` : ""}
+                        {fmt(t.filed, { count: pack.filed.length })}
+                        {pack.required > 0 ? ` · ${fmt(t.required, { count: pack.required })}` : ""}
                       </p>
                     )}
                   </div>
@@ -91,19 +96,19 @@ export default async function DocumentsPage() {
                     href={`/packs/${pack.slug}`}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                   >
-                    Gérer dans l’espace du pack
-                    <ArrowRight className="h-4 w-4" />
+                    {t.manage}
+                    <ArrowRight className="h-4 w-4 rtl:-scale-x-100" />
                   </Link>
                 </div>
 
                 {pack.filed === null ? (
                   <div className="mt-4">
                     <Alert tone="warning">
-                      Les pièces de ce pack n’ont pas pu être chargées. Réessayez dans un instant.
+                      {t.loadError}
                     </Alert>
                   </div>
                 ) : pack.filed.length === 0 ? (
-                  <p className="mt-4 text-sm text-gray-400">Aucune pièce déposée.</p>
+                  <p className="mt-4 text-sm text-gray-400">{t.none}</p>
                 ) : (
                   <ul className="mt-4 divide-y divide-gray-100">
                     {pack.filed.map((document) => (
@@ -111,17 +116,17 @@ export default async function DocumentsPage() {
                         <FileText className="h-4 w-4 shrink-0 text-brand-500" />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-gray-800">
-                            {document.documentType}
+                            {documentLabel(lang, document.documentType)}
                           </span>
                           <span className="block truncate text-xs text-gray-400">
-                            {document.originalFilename} · {formatSize(document.sizeBytes)}
+                            {document.originalFilename} · {formatSize(document.sizeBytes, t)}
                           </span>
                         </span>
                         <a
                           href={`/api/documents/${document.id}`}
                           className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700"
                         >
-                          Télécharger
+                          {m.workspace.download}
                         </a>
                       </li>
                     ))}

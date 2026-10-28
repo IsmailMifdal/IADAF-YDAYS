@@ -15,6 +15,8 @@ import {
   inputClass,
   type Account,
 } from "../ui";
+import { useLanguage } from "../../../context/LanguageContext";
+import { fmt } from "../../../i18n";
 
 export default function ProfileSection({
   account,
@@ -24,6 +26,8 @@ export default function ProfileSection({
   onAccountChange: (account: Account) => void;
 }) {
   const { update: updateSession } = useSession();
+  const { lang, m } = useLanguage();
+  const t = m.settings.profile;
   const { toast } = useToast();
   const [name, setName] = useState(account.name ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +51,7 @@ export default function ProfileSection({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Impossible d’enregistrer les modifications.");
+        setError(data.error ?? m.errors.saveFailed);
         return;
       }
 
@@ -56,9 +60,9 @@ export default function ProfileSection({
       // sans imposer une reconnexion.
       await updateSession({ name: data.name });
       setSaved(true);
-      toast("Profil mis à jour.");
+      toast(t.updated);
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
     } finally {
       setIsSaving(false);
     }
@@ -67,8 +71,8 @@ export default function ProfileSection({
   return (
     <div className="space-y-6">
       <SectionCard
-        title="Profil"
-        description="Ces informations apparaissent dans votre espace personnel."
+        title={t.title}
+        description={t.description}
       >
         <div className="flex items-center gap-4 pb-6 mb-6 border-b border-gray-100">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 text-white flex items-center justify-center text-xl font-semibold shrink-0">
@@ -76,11 +80,11 @@ export default function ProfileSection({
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-gray-900 truncate">
-              {account.name ?? "Compte sans nom"}
+              {account.name ?? t.noName}
             </p>
-            <p className="text-sm text-gray-500 truncate">{account.email}</p>
+            <p className="text-sm text-gray-500 truncate" dir="ltr">{account.email}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Membre depuis le {formatDate(account.createdAt)}
+              {fmt(t.memberSince, { date: formatDate(account.createdAt, lang) })}
             </p>
           </div>
         </div>
@@ -88,10 +92,10 @@ export default function ProfileSection({
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && <Alert tone="error">{error}</Alert>}
           {saved && !isDirty && (
-            <Alert tone="success">Vos modifications ont été enregistrées.</Alert>
+            <Alert tone="success">{t.saved}</Alert>
           )}
 
-          <Field label="Nom complet" htmlFor="profile-name">
+          <Field label={m.auth.register.name} htmlFor="profile-name">
             <input
               id="profile-name"
               type="text"
@@ -103,43 +107,45 @@ export default function ProfileSection({
               minLength={2}
               maxLength={120}
               required
+              dir="auto"
               className={inputClass}
             />
           </Field>
 
           <Field
-            label="Adresse e-mail"
+            label={m.auth.email}
             htmlFor="profile-email"
-            hint="L’adresse sert d’identifiant de connexion et ne peut pas être modifiée ici."
+            hint={t.emailHint}
           >
             <input
               id="profile-email"
               type="email"
               value={account.email}
               disabled
+              dir="ltr"
               className={inputClass}
             />
           </Field>
 
-          <Field label="Méthode de connexion" htmlFor="profile-provider">
+          <Field label={t.method} htmlFor="profile-provider">
             <div
               id="profile-provider"
               className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {account.provider === "credentials"
-                ? "E-mail et mot de passe"
-                : `Compte ${account.provider}`}
+                ? t.methodPassword
+                : fmt(t.methodProvider, { provider: account.provider })}
             </div>
           </Field>
 
           <div className="pt-1">
             <SubmitButton
               isLoading={isSaving}
-              loadingLabel="Enregistrement…"
+              loadingLabel={m.auth.reset.submitting}
               disabled={!isDirty}
             >
-              Enregistrer
+              {m.common.save}
             </SubmitButton>
           </div>
         </form>

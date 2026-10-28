@@ -19,7 +19,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { useLanguage } from "../../context/LanguageContext";
+import type { Messages } from "../../i18n";
 import { BrandLogo } from "../brand/BrandMark";
+import LanguageSelector from "../ui/LanguageSelector";
 
 type SidebarProps = {
   /** Desktop : rail d'icônes plutôt que sidebar étendue. */
@@ -32,18 +35,18 @@ type SidebarProps = {
 };
 
 type MenuItem = {
-  label: string;
+  label: keyof Messages["nav"];
   href: string;
   icon: LucideIcon;
 };
 
 const menu: MenuItem[] = [
-  { label: "Accueil", href: "/", icon: Home },
-  { label: "Nos packs", href: "/nosPacks", icon: Package },
-  { label: "Démarches", href: "/procedures", icon: FileText },
-  { label: "Mes Dossiers", href: "/myFolders", icon: Folder },
-  { label: "Documents", href: "/documents", icon: Upload },
-  { label: "Tableau de bord", href: "/dashboard", icon: LayoutGrid },
+  { label: "home", href: "/", icon: Home },
+  { label: "packs", href: "/nosPacks", icon: Package },
+  { label: "procedures", href: "/procedures", icon: FileText },
+  { label: "folders", href: "/myFolders", icon: Folder },
+  { label: "documents", href: "/documents", icon: Upload },
+  { label: "dashboard", href: "/dashboard", icon: LayoutGrid },
 ];
 
 export default function Sidebar({
@@ -53,6 +56,7 @@ export default function Sidebar({
   onNavigate,
 }: SidebarProps) {
   const pathname = usePathname();
+  const { m } = useLanguage();
 
   // Le repli ne concerne que le desktop : sur mobile le tiroir affiche toujours
   // les libellés, sinon l'utilisateur ouvrirait un panneau plein écran d'icônes
@@ -63,11 +67,19 @@ export default function Sidebar({
   return (
     <aside
       id="sidebar-navigation"
-      aria-label="Navigation principale"
-      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-y-auto overflow-x-hidden bg-brand-700 text-white
+      aria-label={m.nav.label}
+      className={`fixed inset-y-0 start-0 z-40 flex w-64 flex-col overflow-y-auto overflow-x-hidden bg-brand-700 text-white
                   transition-transform duration-300 ease-out
-                  lg:w-[var(--sidebar-w)] lg:translate-x-0 lg:transition-[width]
-                  ${isDrawerOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+                  lg:w-[var(--sidebar-w)] lg:transition-[width]
+                  ${
+                    // Tiroir fermé : hors de l'écran, côté « début » — à gauche
+                    // en français, à droite en arabe. Seulement sous le format
+                    // ordinateur, où la barre est toujours visible (une classe
+                    // rtl: l'emportait sur lg:translate-x-0 et la cachait).
+                    isDrawerOpen
+                      ? "translate-x-0 shadow-2xl"
+                      : "max-lg:-translate-x-full max-lg:rtl:translate-x-full"
+                  }`}
     >
       {/* ── En-tête ─────────────────────────────────────────────── */}
       <div
@@ -89,18 +101,16 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onToggleCollapsed}
-          aria-label={
-            isCollapsed ? "Déplier la navigation" : "Replier la navigation"
-          }
+          aria-label={isCollapsed ? m.nav.expand : m.nav.collapse}
           aria-expanded={!isCollapsed}
           aria-controls="sidebar-navigation"
-          title={isCollapsed ? "Déplier" : "Replier"}
+          title={isCollapsed ? m.nav.expandShort : m.nav.collapseShort}
           className="hidden shrink-0 rounded-lg p-2 text-brand-100 transition hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:block"
         >
           {isCollapsed ? (
-            <PanelLeftOpen className="h-5 w-5" />
+            <PanelLeftOpen className="h-5 w-5 rtl:-scale-x-100" />
           ) : (
-            <PanelLeftClose className="h-5 w-5" />
+            <PanelLeftClose className="h-5 w-5 rtl:-scale-x-100" />
           )}
         </button>
 
@@ -108,7 +118,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onNavigate}
-          aria-label="Fermer le menu"
+          aria-label={m.nav.closeMenu}
           className="shrink-0 rounded-lg p-2 text-brand-100 transition hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 lg:hidden"
         >
           <X className="h-5 w-5" />
@@ -118,7 +128,7 @@ export default function Sidebar({
       {/* ── Navigation ──────────────────────────────────────────── */}
       <nav className="flex-1 space-y-1 p-3">
         <p className={`px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-brand-200 ${labelClass}`}>
-          Menu
+          {m.nav.menu}
         </p>
         {menu.map((item) => {
           const isActive = pathname === item.href;
@@ -129,7 +139,7 @@ export default function Sidebar({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              title={tooltipFor(item.label, isCollapsed)}
+              title={tooltipFor(m.nav[item.label], isCollapsed)}
               aria-current={isActive ? "page" : undefined}
               className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass} ${
                 isActive
@@ -138,18 +148,22 @@ export default function Sidebar({
               }`}
             >
               {isActive && (
-                <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-white" />
+                <span aria-hidden="true" className="absolute inset-y-2 start-0 w-1 rounded-e-full bg-white" />
               )}
               <Icon
                 className={`h-5 w-5 shrink-0 ${
                   isActive ? "text-white" : "text-brand-200 group-hover:text-white"
                 }`}
               />
-              <span className={`truncate ${labelClass}`}>{item.label}</span>
+              <span className={`truncate ${labelClass}`}>{m.nav[item.label]}</span>
             </Link>
           );
         })}
       </nav>
+
+      <div className="shrink-0 px-3 pb-2">
+        <LanguageSelector variant="sidebar" collapsed={isCollapsed} />
+      </div>
 
       <AccountPanel
         isCollapsed={isCollapsed}
@@ -187,6 +201,7 @@ function AccountPanel({
   rowClass: string;
 }) {
   const { data: session, status } = useSession();
+  const { m } = useLanguage();
 
   if (status === "loading") {
     return (
@@ -202,11 +217,11 @@ function AccountPanel({
         <Link
           href="/login"
           onClick={onNavigate}
-          title={tooltipFor("Se connecter", isCollapsed)}
+          title={tooltipFor(m.nav.signIn, isCollapsed)}
           className={`flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass}`}
         >
-          <LogIn className="h-5 w-5 shrink-0" />
-          <span className={labelClass}>Se connecter</span>
+          <LogIn className="h-5 w-5 shrink-0 rtl:-scale-x-100" />
+          <span className={labelClass}>{m.nav.signIn}</span>
         </Link>
       </div>
     );
@@ -218,7 +233,7 @@ function AccountPanel({
   return (
     <div className="mt-auto shrink-0 space-y-1 border-t border-brand-600 p-3">
       <div
-        title={tooltipFor(name ?? email ?? "Mon compte", isCollapsed)}
+        title={tooltipFor(name ?? email ?? m.nav.myAccount, isCollapsed)}
         className={`mb-2 flex items-center gap-3 rounded-xl bg-brand-600 p-2.5 ${rowClass}`}
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white ring-2 ring-brand-400/40">
@@ -226,30 +241,30 @@ function AccountPanel({
         </span>
         <span className={`min-w-0 ${labelClass}`}>
           <span className="block truncate text-sm font-semibold text-white">
-            {name ?? "Mon compte"}
+            {name ?? m.nav.myAccount}
           </span>
-          <span className="block truncate text-xs text-brand-200">{email}</span>
+          <span className="block truncate text-xs text-brand-200" dir="ltr">{email}</span>
         </span>
       </div>
 
       <Link
         href="/settings"
         onClick={onNavigate}
-        title={tooltipFor("Paramètres", isCollapsed)}
+        title={tooltipFor(m.nav.settings, isCollapsed)}
         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-brand-100 transition hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass}`}
       >
         <Settings className="h-5 w-5 shrink-0" />
-        <span className={labelClass}>Paramètres</span>
+        <span className={labelClass}>{m.nav.settings}</span>
       </Link>
 
       <button
         type="button"
         onClick={() => signOut({ redirectTo: "/" })}
-        title={tooltipFor("Déconnexion", isCollapsed)}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-brand-100 transition hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass}`}
+        title={tooltipFor(m.nav.signOut, isCollapsed)}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start text-sm font-medium text-brand-100 transition hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${rowClass}`}
       >
-        <LogOut className="h-5 w-5 shrink-0" />
-        <span className={labelClass}>Déconnexion</span>
+        <LogOut className="h-5 w-5 shrink-0 rtl:-scale-x-100" />
+        <span className={labelClass}>{m.nav.signOut}</span>
       </button>
     </div>
   );

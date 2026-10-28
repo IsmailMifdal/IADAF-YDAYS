@@ -13,8 +13,9 @@ import {
   inputClass,
   type Account,
 } from "../ui";
+import { useLanguage } from "../../../context/LanguageContext";
+import { fmt } from "../../../i18n";
 
-const STRENGTH_LABELS = ["Très faible", "Faible", "Moyen", "Bon", "Excellent"];
 const STRENGTH_COLORS = [
   "bg-gray-200",
   "bg-red-500",
@@ -24,6 +25,8 @@ const STRENGTH_COLORS = [
 ];
 
 export default function SecuritySection({ account }: { account: Account }) {
+  const { m } = useLanguage();
+  const t = m.settings.security;
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
@@ -37,13 +40,10 @@ export default function SecuritySection({ account }: { account: Account }) {
     return (
       <>
         <SectionCard
-          title="Sécurité"
-          description="Comment votre compte est protégé."
+          title={t.title}
+          description={t.description}
         >
-          <Alert tone="success">
-            Vous vous connectez via {account.provider}. Votre mot de passe est géré
-            par ce fournisseur — il n’y a rien à modifier ici.
-          </Alert>
+          <Alert tone="success">{fmt(t.external, { provider: account.provider })}</Alert>
         </SectionCard>
         <SessionsCard />
       </>
@@ -67,7 +67,7 @@ export default function SecuritySection({ account }: { account: Account }) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Impossible de modifier le mot de passe.");
+        setError(data.error ?? m.errors.passwordChangeFailed);
         return;
       }
 
@@ -77,7 +77,7 @@ export default function SecuritySection({ account }: { account: Account }) {
       // Every session has just been closed, this one included (server side).
       await signOut({ redirectTo: "/login?raison=mot-de-passe-modifie" });
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
     } finally {
       setIsSaving(false);
     }
@@ -86,19 +86,16 @@ export default function SecuritySection({ account }: { account: Account }) {
   return (
     <>
       <SectionCard
-        title="Mot de passe"
-        description="Choisissez un mot de passe que vous n’utilisez nulle part ailleurs."
+        title={m.auth.password}
+        description={t.passwordDescription}
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && <Alert tone="error">{error}</Alert>}
           {changed && (
-            <Alert tone="success">
-              Mot de passe modifié. Vos sessions sont fermées sur tous vos appareils :
-              reconnexion…
-            </Alert>
+            <Alert tone="success">{t.changed}</Alert>
           )}
   
-          <Field label="Mot de passe actuel" htmlFor="current-password">
+          <Field label={t.current} htmlFor="current-password">
             <input
               id="current-password"
               type={showPasswords ? "text" : "password"}
@@ -106,14 +103,15 @@ export default function SecuritySection({ account }: { account: Account }) {
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
+              dir="ltr"
               className={inputClass}
             />
           </Field>
   
           <Field
-            label="Nouveau mot de passe"
+            label={m.auth.reset.newPassword}
             htmlFor="new-password"
-            hint="8 caractères minimum, avec au moins une lettre et un chiffre."
+            hint={m.auth.passwordRule}
           >
             <div className="relative">
               <input
@@ -124,17 +122,14 @@ export default function SecuritySection({ account }: { account: Account }) {
                 minLength={8}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className={`${inputClass} pr-11`}
+                dir="ltr"
+                className={`${inputClass} pe-11`}
               />
               <button
                 type="button"
                 onClick={() => setShowPasswords((v) => !v)}
-                aria-label={
-                  showPasswords
-                    ? "Masquer les mots de passe"
-                    : "Afficher les mots de passe"
-                }
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                aria-label={showPasswords ? t.hide : t.show}
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
               >
                 {showPasswords ? (
                   <EyeOff className="w-4 h-4" />
@@ -158,7 +153,7 @@ export default function SecuritySection({ account }: { account: Account }) {
                 ))}
               </div>
               <p className="mt-1.5 text-xs text-gray-500">
-                Robustesse : {STRENGTH_LABELS[strength]}
+                {fmt(t.strength, { level: t.strengthLevels[strength] })}
               </p>
             </div>
           )}
@@ -166,10 +161,10 @@ export default function SecuritySection({ account }: { account: Account }) {
           <div className="pt-1">
             <SubmitButton
               isLoading={isSaving}
-              loadingLabel="Modification…"
+              loadingLabel={t.changing}
               disabled={!currentPassword || !newPassword}
             >
-              Modifier le mot de passe
+              {t.change}
             </SubmitButton>
           </div>
         </form>
@@ -181,6 +176,8 @@ export default function SecuritySection({ account }: { account: Account }) {
 
 /** "Sign out everywhere": a lost phone, a shared computer. */
 function SessionsCard() {
+  const { m } = useLanguage();
+  const t = m.settings.security;
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -190,12 +187,12 @@ function SessionsCard() {
     try {
       const res = await fetch("/api/account/sessions", { method: "DELETE" });
       if (!res.ok) {
-        setError("Impossible de fermer les sessions. Réessayez.");
+        setError(m.errors.sessionsCloseFailed);
         return;
       }
       await signOut({ redirectTo: "/login?raison=deconnexion-partout" });
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
     } finally {
       setIsClosing(false);
     }
@@ -203,8 +200,8 @@ function SessionsCard() {
 
   return (
     <SectionCard
-      title="Sessions"
-      description="Un téléphone perdu, un ordinateur partagé : fermez toutes les sessions ouvertes."
+      title={t.sessions}
+      description={t.sessionsDescription}
     >
       {error && <Alert tone="error">{error}</Alert>}
       <button
@@ -213,8 +210,8 @@ function SessionsCard() {
         disabled={isClosing}
         className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
       >
-        <LogOut className="h-4 w-4" />
-        {isClosing ? "Déconnexion…" : "Se déconnecter de tous les appareils"}
+        <LogOut className="h-4 w-4 rtl:-scale-x-100" />
+        {isClosing ? t.signingOut : t.signOutEverywhere}
       </button>
     </SectionCard>
   );

@@ -5,27 +5,23 @@ import { NextResponse } from "next/server";
 import { requestPasswordReset } from "../../../../lib/passwordReset";
 import { RATE_LIMITS, clientIp, hitAll, tooManyRequests } from "../../../../lib/rateLimit";
 import { passwordResetRequestSchema } from "../../../../lib/validation";
+import { getLang, getMessages, validationMessage } from "../../../../i18n/server";
 
 export const runtime = "nodejs";
 
-/** Same answer whatever happened: the endpoint must not reveal accounts. */
-const GENERIC = {
-  message:
-    "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d’être envoyé.",
-};
-
 export async function POST(request: Request) {
+  const m = await getMessages();
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = passwordResetRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides." },
+      { error: validationMessage(m, parsed.error.issues[0]?.message) },
       { status: 400 },
     );
   }
@@ -42,8 +38,11 @@ export async function POST(request: Request) {
   // leak of which addresses are registered. The standalone Node server keeps
   // running the promise after the response. Errors are logged, not surfaced,
   // for the same reason.
-  void requestPasswordReset(email).catch((error) => {
+  // The language is read now, while the request is live: the e-mail goes out
+  // after the response.
+  void requestPasswordReset(email, await getLang()).catch((error) => {
     console.error("[password-reset] request failed", error);
   });
-  return NextResponse.json(GENERIC);
+  // Same answer whatever happened: the endpoint must not reveal accounts.
+  return NextResponse.json({ message: m.auth.forgot.genericSent });
 }

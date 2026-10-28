@@ -11,17 +11,15 @@ import { SectionCard } from "../ui";
 import { useToast } from "../../../components/ui/Toast";
 
 export default function PreferencesSection() {
-  const { lang, setLang } = useLanguage();
+  const { lang, setLang, m } = useLanguage();
+  const t = m.settings.preferences;
   const { toast } = useToast();
 
   return (
-    <SectionCard
-      title="Langue d’affichage"
-      description="S’applique immédiatement à l’interface et à l’assistant IA. Votre choix est conservé sur cet appareil."
-    >
+    <SectionCard title={t.title} description={t.description}>
       <div
         role="radiogroup"
-        aria-label="Langue d’affichage"
+        aria-label={t.title}
         className="grid grid-cols-1 sm:grid-cols-2 gap-3"
       >
         {LANGUAGES.map((option) => {
@@ -35,19 +33,17 @@ export default function PreferencesSection() {
               aria-checked={isSelected}
               onClick={() => {
                 setLang(option.code as LangCode);
-                toast(`Langue : ${option.label}`);
+                toast(option.label);
               }}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-start transition ${
                 isSelected
                   ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
                   : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
               }`}
             >
-              <span className="text-xl leading-none" aria-hidden="true">
-                {option.flag}
-              </span>
               <span className="flex-1 min-w-0">
                 <span
+                  lang={option.code}
                   className={`block font-medium ${
                     isSelected ? "text-brand-900" : "text-gray-900"
                   }`}

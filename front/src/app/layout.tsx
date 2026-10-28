@@ -1,23 +1,22 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic, Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import { SessionProvider } from "next-auth/react";
 import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ToastProvider } from "./components/ui/Toast";
 import ServiceWorker from "./components/ServiceWorker";
-import { isLangCode, LANG_COOKIE } from "./context/languages";
+import { dirOf } from "./context/languages";
+import { getDictionary, getLang, getMessages } from "./i18n/server";
 
-export const metadata: Metadata = {
-  title: {
-    default: "IA-DAF — Assistant pour vos démarches administratives",
-    template: "%s — IA-DAF",
-  },
-  description:
-    "Assistant IA multilingue qui simplifie vos démarches administratives françaises : titre de séjour, CAF, CPAM, impôts et plus encore.",
-  // Installed on an iPhone home screen: full screen, under this name.
-  appleWebApp: { capable: true, title: "IA-DAF", statusBarStyle: "default" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const m = await getMessages();
+  return {
+    title: { default: m.meta.title, template: "%s — IA-DAF" },
+    description: m.meta.description,
+    // Installed on an iPhone home screen: full screen, under this name.
+    appleWebApp: { capable: true, title: "IA-DAF", statusBarStyle: "default" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#2563eb",
@@ -45,14 +44,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const stored = (await cookies()).get(LANG_COOKIE)?.value;
-  const initialLang = isLangCode(stored) ? stored : "fr";
+  const lang = await getLang();
 
   return (
-    <html lang={initialLang} className={`${latin.variable} ${arabic.variable}`}>
+    <html lang={lang} dir={dirOf(lang)} className={`${latin.variable} ${arabic.variable}`}>
       <body className="m-0 p-0 font-sans antialiased bg-gray-50 text-gray-900">
         <SessionProvider>
-          <LanguageProvider initialLang={initialLang}>
+          <LanguageProvider lang={lang} messages={getDictionary(lang)}>
             <ToastProvider>{children}</ToastProvider>
           </LanguageProvider>
         </SessionProvider>

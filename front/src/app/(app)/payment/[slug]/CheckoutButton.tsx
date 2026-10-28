@@ -4,12 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Loader2, Lock } from "lucide-react";
 
+import { useLanguage } from "../../../context/LanguageContext";
+
 type Props = {
   slug: string;
   stripeConfigured: boolean;
 };
 
 export default function CheckoutButton({ slug, stripeConfigured }: Props) {
+  const { m } = useLanguage();
+  const t = m.payment;
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   // Code de la consommation, art. L221-28 13° : without this express request
@@ -20,11 +24,10 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
   if (!stripeConfigured) {
     return (
       <div className="mt-8 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Le paiement n’est pas configuré sur ce serveur. Renseignez
-        <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs">
+        {m.errors.paymentNotConfigured}
+        <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs" dir="ltr">
           STRIPE_SECRET_KEY
         </code>
-        pour activer la commande.
       </div>
     );
   }
@@ -43,7 +46,7 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.url) {
-        setError(data.error ?? "Impossible d’ouvrir le paiement.");
+        setError(data.error ?? m.errors.checkoutFailed);
         setIsRedirecting(false);
         return;
       }
@@ -52,7 +55,7 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
       // our servers, which is what keeps PCI scope out of this codebase.
       window.location.href = data.url;
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
       setIsRedirecting(false);
     }
   }
@@ -77,12 +80,11 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
           className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
         />
         <span>
-          Je demande l’accès immédiat au pack et je reconnais perdre mon droit
-          de rétractation de 14 jours. J’accepte les{" "}
+          {t.waiver}{" "}
           <Link href="/cgv" target="_blank" className="text-brand-600 underline">
-            conditions générales de vente
+            {t.terms}
           </Link>
-          .
+          {t.waiverEnd}
         </span>
       </label>
 
@@ -97,11 +99,11 @@ export default function CheckoutButton({ slug, stripeConfigured }: Props) {
         ) : (
           <Lock className="w-4 h-4" />
         )}
-        {isRedirecting ? "Redirection…" : "Payer avec Stripe"}
+        {isRedirecting ? t.redirecting : t.pay}
       </button>
 
       <p className="mt-3 text-xs text-gray-500 text-center">
-        Vous serez redirigé vers la page de paiement sécurisée de Stripe.
+        {t.redirectNote}
       </p>
     </div>
   );

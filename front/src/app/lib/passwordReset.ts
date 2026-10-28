@@ -16,6 +16,9 @@ import bcrypt from "bcryptjs";
 import { pool, query, runDdlOnce } from "./db";
 import { sendMail } from "./mailer";
 import { ensureAuthSchema, findUserByEmail, forgetSessionCheck } from "./users";
+import { fmt } from "../i18n";
+import type { LangCode } from "../context/languages";
+import { getDictionary } from "../i18n/server";
 
 const RESET_TTL_MINUTES = 30;
 const BCRYPT_ROUNDS = 12;
@@ -55,7 +58,7 @@ function publicBaseUrl(): string {
  * Does nothing otherwise — the caller answers the same way in every case, so
  * the endpoint cannot be used to find out which addresses have an account.
  */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email: string, lang: LangCode = "fr"): Promise<void> {
   await ensureSchema();
 
   const user = await findUserByEmail(email);
@@ -77,21 +80,22 @@ export async function requestPasswordReset(email: string): Promise<void> {
   );
 
   const link = `${publicBaseUrl()}/reinitialiser-mot-de-passe?token=${token}`;
+  // In the language of the page the request came from.
+  const { email: t } = getDictionary(lang);
   await sendMail({
     to: user.email,
-    subject: "Réinitialisation de votre mot de passe IA-DAF",
+    subject: t.resetSubject,
     text: [
-      `Bonjour${user.name ? ` ${user.name}` : ""},`,
+      user.name ? fmt(t.helloName, { name: user.name }) : t.hello,
       "",
-      "Vous avez demandé à réinitialiser le mot de passe de votre compte IA-DAF.",
-      `Ce lien est valable ${RESET_TTL_MINUTES} minutes et ne fonctionne qu’une fois :`,
+      t.resetIntro,
+      fmt(t.resetValidity, { minutes: RESET_TTL_MINUTES }),
       "",
       link,
       "",
-      "Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail :",
-      "votre mot de passe actuel reste inchangé.",
+      t.resetIgnore,
       "",
-      "— L’équipe IA-DAF",
+      t.signature,
     ].join("\n"),
   });
 }

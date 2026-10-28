@@ -13,6 +13,7 @@ import { createHmac } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { createSchemaIfMissing, query, runDdlOnce } from "./db";
+import { getMessages } from "../i18n/server";
 
 export type RateLimitRule = {
   /** Namespaces the counter, so rules never share a bucket. */
@@ -148,9 +149,10 @@ export function clientIp(headers: Headers): string {
 }
 
 /** Standard 429 response with a Retry-After header. */
-export function tooManyRequests(result: RateLimitResult): NextResponse {
+export async function tooManyRequests(result: RateLimitResult): Promise<NextResponse> {
+  const m = await getMessages();
   return NextResponse.json(
-    { error: "Trop de requêtes. Réessayez dans quelques minutes." },
+    { error: m.errors.rateLimited },
     {
       status: 429,
       headers: { "Retry-After": String(result.retryAfterSeconds) },

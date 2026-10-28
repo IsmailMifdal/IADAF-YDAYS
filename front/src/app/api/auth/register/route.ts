@@ -5,8 +5,10 @@ import { NextResponse } from "next/server";
 import { RATE_LIMITS, clientIp, hit, tooManyRequests } from "../../../lib/rateLimit";
 import { createCredentialsUser } from "../../../lib/users";
 import { registerSchema } from "../../../lib/validation";
+import { getMessages, validationMessage } from "../../../i18n/server";
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   const limit = await hit(RATE_LIMITS.register, clientIp(request.headers));
   if (!limit.allowed) return tooManyRequests(limit);
 
@@ -14,13 +16,13 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides." },
+      { error: validationMessage(m, parsed.error.issues[0]?.message) },
       { status: 400 },
     );
   }
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
     // enumerate registered addresses.
     if (!user) {
       return NextResponse.json(
-        { error: "Impossible de créer ce compte. Essayez de vous connecter." },
+        { error: m.errors.registerFailed },
         { status: 409 },
       );
     }
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[register] account creation failed", error);
     return NextResponse.json(
-      { error: "Une erreur est survenue. Réessayez plus tard." },
+      { error: m.errors.genericError },
       { status: 500 },
     );
   }

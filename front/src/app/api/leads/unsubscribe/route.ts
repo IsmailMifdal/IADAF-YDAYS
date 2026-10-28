@@ -10,20 +10,22 @@ import { NextResponse } from "next/server";
 
 import { unsubscribeLead } from "../../../lib/leads";
 import { unsubscribeSchema } from "../../../lib/validation";
+import { getMessages } from "../../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = unsubscribeSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Lien de désinscription invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidUnsubscribeLink }, { status: 400 });
   }
 
   try {
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[leads] unsubscribe failed", error);
     return NextResponse.json(
-      { error: "La désinscription a échoué. Réessayez." },
+      { error: m.errors.unsubscribeFailed },
       { status: 500 },
     );
   }

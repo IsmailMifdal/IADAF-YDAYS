@@ -3,10 +3,13 @@
 import { useState } from "react";
 
 import { Alert, Button, ButtonLink, Card } from "../../components/ui/primitives";
+import { useLanguage } from "../../context/LanguageContext";
 
 type Status = "idle" | "pending" | "done" | "error";
 
 export default function UnsubscribeForm({ token }: { token: string }) {
+  const { m } = useLanguage();
+  const t = m.unsubscribe;
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
 
@@ -20,13 +23,13 @@ export default function UnsubscribeForm({ token }: { token: string }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "La désinscription a échoué. Réessayez.");
+        setError(data.error ?? m.errors.unsubscribeFailed);
         setStatus("error");
         return;
       }
       setStatus("done");
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
       setStatus("error");
     }
   }
@@ -34,12 +37,9 @@ export default function UnsubscribeForm({ token }: { token: string }) {
   if (!token) {
     return (
       <Card className="p-6 space-y-4">
-        <Alert tone="warning">
-          Ce lien de désinscription est incomplet. Utilisez le lien présent en
-          bas de l’e-mail reçu.
-        </Alert>
+        <Alert tone="warning">{t.incomplete}</Alert>
         <ButtonLink href="/" variant="secondary">
-          Retour à l’accueil
+          {t.backHome}
         </ButtonLink>
       </Card>
     );
@@ -48,12 +48,9 @@ export default function UnsubscribeForm({ token }: { token: string }) {
   if (status === "done") {
     return (
       <Card className="p-6 space-y-4">
-        <Alert tone="success">
-          C’est fait : votre adresse a été supprimée et vous ne recevrez plus
-          d’e-mails de notre part.
-        </Alert>
+        <Alert tone="success">{t.done}</Alert>
         <ButtonLink href="/" variant="secondary">
-          Retour à l’accueil
+          {t.backHome}
         </ButtonLink>
       </Card>
     );
@@ -61,17 +58,14 @@ export default function UnsubscribeForm({ token }: { token: string }) {
 
   return (
     <Card className="p-6 space-y-4">
-      <p className="text-sm text-gray-700">
-        Votre adresse e-mail sera définitivement supprimée de notre liste de
-        contacts.
-      </p>
+      <p className="text-sm text-gray-700">{t.explain}</p>
       {status === "error" && <Alert tone="danger">{error}</Alert>}
       <Button
         onClick={handleUnsubscribe}
         isLoading={status === "pending"}
-        loadingLabel="Désinscription…"
+        loadingLabel={t.pending}
       >
-        Me désinscrire
+        {t.submit}
       </Button>
     </Card>
   );

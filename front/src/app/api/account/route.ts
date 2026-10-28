@@ -5,19 +5,21 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
 import { deleteAccount, getAccount, updateAccountName } from "../../lib/users";
 import { deleteAccountSchema, updateProfileSchema } from "../../lib/validation";
+import { getMessages, validationMessage } from "../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const m = await getMessages();
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   try {
     const account = await getAccount(session.user.id);
     if (!account) {
-      return NextResponse.json({ error: "Compte introuvable." }, { status: 404 });
+      return NextResponse.json({ error: m.errors.accountNotFound }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -32,29 +34,30 @@ export async function GET() {
   } catch (error) {
     console.error("[account] lookup failed", error);
     return NextResponse.json(
-      { error: "Impossible de charger votre profil." },
+      { error: m.errors.profileLoadFailed },
       { status: 500 },
     );
   }
 }
 
 export async function PATCH(request: Request) {
+  const m = await getMessages();
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = updateProfileSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides." },
+      { error: validationMessage(m, parsed.error.issues[0]?.message) },
       { status: 400 },
     );
   }
@@ -65,29 +68,30 @@ export async function PATCH(request: Request) {
   } catch (error) {
     console.error("[account] rename failed", error);
     return NextResponse.json(
-      { error: "Impossible d’enregistrer les modifications." },
+      { error: m.errors.saveFailed },
       { status: 500 },
     );
   }
 }
 
 export async function DELETE(request: Request) {
+  const m = await getMessages();
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+    return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = deleteAccountSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides." },
+      { error: validationMessage(m, parsed.error.issues[0]?.message) },
       { status: 400 },
     );
   }
@@ -98,7 +102,7 @@ export async function DELETE(request: Request) {
     parsed.data.confirmEmail.toLowerCase() !== session.user.email?.toLowerCase()
   ) {
     return NextResponse.json(
-      { error: "L’adresse saisie ne correspond pas à votre compte." },
+      { error: m.errors.emailMismatch },
       { status: 400 },
     );
   }
@@ -110,7 +114,7 @@ export async function DELETE(request: Request) {
     console.error("[account] deletion failed", error);
     // The account row goes last (see deleteAccount), so retrying is safe.
     return NextResponse.json(
-      { error: "Impossible de supprimer le compte pour le moment. Réessayez dans un instant." },
+      { error: m.errors.accountDeleteFailed },
       { status: 500 },
     );
   }

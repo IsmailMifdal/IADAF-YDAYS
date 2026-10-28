@@ -13,7 +13,9 @@ import Link from "next/link";
 import { auth } from "../../../auth";
 import { listFolders, type Folder } from "../../lib/demarches";
 import { listPurchases, listUnlockedPacks } from "../../lib/entitlements";
-import { formatPrice, getPackBySlug, packs } from "../packs/packsData";
+import { formatPrice, getPackBySlug, localizedPack, packs } from "../packs/packsData";
+import { fmt } from "../../i18n";
+import { getLang, getMessages } from "../../i18n/server";
 import PageHeader from "../../components/ui/PageHeader";
 import {
   ButtonLink,
@@ -24,10 +26,13 @@ import {
   StatCard,
 } from "../../components/ui/primitives";
 
-export const metadata: Metadata = { title: "Tableau de bord" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).dashboard.title };
+}
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const [session, m, lang] = await Promise.all([auth(), getMessages(), getLang()]);
+  const t = m.dashboard;
 
   // La page est protégée par le proxy ; ce garde-fou évite juste de requêter
   // la base avec un identifiant absent.
@@ -59,8 +64,8 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        title={firstName ? `Bonjour ${firstName}` : "Tableau de bord"}
-        subtitle="Vue d’ensemble de vos packs, démarches et documents."
+        title={firstName ? fmt(t.hello, { name: firstName }) : t.title}
+        subtitle={t.subtitle}
       />
 
       <PageContainer>
@@ -68,30 +73,30 @@ export default async function DashboardPage() {
           <section>
             <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-5">
               <StatCard
-                label="Packs accessibles"
+                label={t.packsAvailable}
                 value={unlocked.length}
-                hint={`sur ${packs.length} disponibles`}
+                hint={fmt(t.packsOutOf, { count: packs.length })}
                 icon={<Package className="w-5 h-5" />}
                 tone="info"
               />
               <StatCard
-                label="Achats"
+                label={t.purchases}
                 value={purchases.length}
                 hint={
-                  totalSpent > 0 ? `${formatPrice(totalSpent)} au total` : "Aucun achat"
+                  totalSpent > 0 ? fmt(t.totalSpent, { amount: formatPrice(totalSpent, lang) }) : t.noPurchase
                 }
                 icon={<Receipt className="w-5 h-5" />}
                 tone="success"
               />
               <StatCard
-                label="Dossiers en cours"
+                label={t.openFolders}
                 value={openFolders ? openFolders.length : "—"}
                 hint={
                   !openFolders
-                    ? "Suivi momentanément indisponible"
+                    ? t.foldersUnavailable
                     : openFolders.length > 0
-                      ? `${averageProgress} % des pièces réunies en moyenne`
-                      : "Aucun dossier ouvert"
+                      ? fmt(t.averageProgress, { percent: averageProgress })
+                      : t.noFolder
                 }
                 icon={<FolderOpen className="w-5 h-5" />}
                 tone="neutral"
@@ -101,26 +106,29 @@ export default async function DashboardPage() {
 
           <section>
             <SectionTitle
-              title="Actions rapides"
-              description="Les points d’entrée les plus utilisés."
+              title={t.quickActions}
+              description={t.quickActionsText}
             />
             <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-5">
               <QuickAction
                 href="/chatIa"
-                title="Discuter avec l’IA"
-                description="Posez vos questions administratives à l’assistant."
+                title={t.chat}
+                description={t.chatText}
+                cta={m.common.access}
                 icon={<MessageSquare className="w-5 h-5" />}
               />
               <QuickAction
                 href="/documents"
-                title="Mes documents"
-                description="Retrouvez les pièces déposées dans vos packs."
+                title={t.documents}
+                description={t.documentsText}
+                cta={m.common.access}
                 icon={<Upload className="w-5 h-5" />}
               />
               <QuickAction
                 href="/procedures"
-                title="Explorer les démarches"
-                description="Trouvez la démarche adaptée à votre situation."
+                title={t.procedures}
+                description={t.proceduresText}
+                cta={m.common.access}
                 icon={<FileText className="w-5 h-5" />}
               />
             </div>
@@ -128,11 +136,11 @@ export default async function DashboardPage() {
 
           <section>
             <SectionTitle
-              title="Mes packs"
-              description="Les accompagnements auxquels vous avez accès."
+              title={t.myPacks}
+              description={t.myPacksText}
               action={
                 <ButtonLink href="/nosPacks" variant="secondary" size="sm">
-                  Voir le catalogue
+                  {t.catalog}
                 </ButtonLink>
               }
             />
@@ -140,17 +148,18 @@ export default async function DashboardPage() {
             {unlocked.length === 0 ? (
               <EmptyState
                 icon={<Package className="w-6 h-6" />}
-                title="Aucun pack pour le moment"
-                description="Choisissez un pack pour être accompagné pas à pas dans votre démarche."
+                title={t.noPackTitle}
+                description={t.noPackText}
                 action={
-                  <ButtonLink href="/nosPacks">Découvrir les packs</ButtonLink>
+                  <ButtonLink href="/nosPacks">{t.discoverPacks}</ButtonLink>
                 }
               />
             ) : (
               <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-5">
                 {unlocked.map((slug) => {
-                  const pack = getPackBySlug(slug);
-                  if (!pack) return null;
+                  const found = getPackBySlug(slug);
+                  if (!found) return null;
+                  const pack = localizedPack(m, found);
 
                   return (
                     <Link key={slug} href={`/packs/${slug}`} className="group">
@@ -164,7 +173,7 @@ export default async function DashboardPage() {
                               {pack.shortDescription}
                             </p>
                           </div>
-                          <ArrowRight className="w-4 h-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-brand-600" />
+                          <ArrowRight className="w-4 h-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-brand-600 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
                         </div>
                       </Card>
                     </Link>
@@ -184,11 +193,13 @@ function QuickAction({
   title,
   description,
   icon,
+  cta,
 }: {
   href: string;
   title: string;
   description: string;
   icon: React.ReactNode;
+  cta: string;
 }) {
   return (
     <Link href={href} className="group">
@@ -199,8 +210,8 @@ function QuickAction({
         <h3 className="font-semibold text-gray-900">{title}</h3>
         <p className="flex-1 text-sm text-gray-500">{description}</p>
         <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-600">
-          Accéder
-          <ArrowRight className="w-4 h-4 transition group-hover:translate-x-0.5" />
+          {cta}
+          <ArrowRight className="w-4 h-4 transition group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
         </span>
       </Card>
     </Link>

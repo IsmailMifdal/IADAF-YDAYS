@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { GATEWAY_URL, backendAuthHeaders } from "../../../lib/aiService";
 import { RATE_LIMITS, hit, tooManyRequests } from "../../../lib/rateLimit";
+import { getMessages } from "../../../i18n/server";
 
 export const runtime = "nodejs";
 
@@ -21,9 +22,10 @@ const STATUSES = new Set(["ok", "warning", "error"]);
 const CHECK_ID = /^[a-z_]{1,30}$/;
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: m.errors.authRequired }, { status: 401 });
 
   const limit = await hit(RATE_LIMITS.precheckDispute, userId);
   if (!limit.allowed) return tooManyRequests(limit);
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
   const { category, checkId, status } = body;
   if (
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     typeof checkId !== "string" || !CHECK_ID.test(checkId) ||
     typeof status !== "string" || !STATUSES.has(status)
   ) {
-    return NextResponse.json({ error: "Signalement invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidDispute }, { status: 400 });
   }
 
   try {
@@ -54,6 +56,6 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("[precheck] dispute not recorded", error);
-    return NextResponse.json({ error: "Signalement non enregistré." }, { status: 502 });
+    return NextResponse.json({ error: m.errors.disputeNotSaved }, { status: 502 });
   }
 }

@@ -1,3 +1,6 @@
+import { intlLocale, type LangCode } from "../../context/languages";
+import type { Messages } from "../../i18n";
+
 export type PackColor = "blue" | "green" | "orange" | "violet" | "yellow";
 
 export type PackIconKey =
@@ -40,9 +43,9 @@ export type PackData = {
  */
 export const ALL_ACCESS_SLUG = "pack-complet";
 
-/** Render a cent amount as a French euro price (30€, 12,50€). */
-export function formatPrice(priceCents: number): string {
-  return new Intl.NumberFormat("fr-FR", {
+/** Render a cent amount as a euro price in the visitor's format (30 €, €30). */
+export function formatPrice(priceCents: number, lang: LangCode = "fr"): string {
+  return new Intl.NumberFormat(intlLocale(lang), {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: priceCents % 100 === 0 ? 0 : 2,
@@ -125,4 +128,22 @@ export const packs: PackData[] = [
 
 export function getPackBySlug(slug: string) {
   return packs.find((pack) => pack.slug === slug);
+}
+
+type PackText = { title: string; shortDescription: string; features: readonly string[] };
+
+/**
+ * The pack with its texts in the visitor's language. The French fields above
+ * stay the reference (Stripe, server logs); the dictionary carries the
+ * translations, keyed by slug.
+ */
+export function localizedPack(m: Messages, pack: PackData): PackData {
+  const text = (m.packs.catalog as Record<string, PackText>)[pack.slug];
+  if (!text) return pack;
+  return {
+    ...pack,
+    title: text.title,
+    shortDescription: text.shortDescription,
+    description: [...text.features],
+  };
 }

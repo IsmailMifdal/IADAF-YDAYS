@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 
+import { useLanguage } from "../../context/LanguageContext";
 import { BrandLogo } from "../brand/BrandMark";
+import LanguageSelector from "../ui/LanguageSelector";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
 import {
@@ -24,6 +26,7 @@ export default function AppShell({
   const [isCollapsed, setIsCollapsed] = useState(initialState === "collapsed");
   /** Mobile : tiroir ouvert par-dessus le contenu. */
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { m } = useLanguage();
 
   const toggleCollapsed = useCallback(() => {
     setIsCollapsed((previous) => {
@@ -92,17 +95,17 @@ export default function AppShell({
         }`}
       />
 
-      <div className="flex min-h-screen flex-col transition-[padding] duration-300 ease-out lg:pl-[var(--sidebar-w)]">
+      <div className="flex min-h-screen flex-col transition-[padding] duration-300 ease-out lg:ps-[var(--sidebar-w)]">
         {/* Barre mobile : porte l'ouverture du tiroir sans recouvrir le contenu,
             contrairement à un bouton flottant. */}
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-brand-800/40 bg-brand-700 px-4 text-white lg:hidden">
           <button
             type="button"
             onClick={() => setIsDrawerOpen(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={m.nav.openMenu}
             aria-expanded={isDrawerOpen}
             aria-controls="sidebar-navigation"
-            className="-ml-1 rounded-lg p-2 transition hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            className="-ms-1 rounded-lg p-2 transition hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -110,6 +113,10 @@ export default function AppShell({
           <Link href="/" className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
             <BrandLogo size="sm" tagline={false} onDark />
           </Link>
+
+          <div className="ms-auto">
+            <LanguageSelector variant="compact" />
+          </div>
         </header>
 
         <main className="flex-1">{children}</main>

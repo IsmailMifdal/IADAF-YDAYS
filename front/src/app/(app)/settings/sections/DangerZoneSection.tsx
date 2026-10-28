@@ -11,8 +11,12 @@ import {
   inputClass,
   type Account,
 } from "../ui";
+import { useLanguage } from "../../../context/LanguageContext";
+import { fmt } from "../../../i18n";
 
 export default function DangerZoneSection({ account }: { account: Account }) {
+  const { m } = useLanguage();
+  const t = m.settings.danger;
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,7 @@ export default function DangerZoneSection({ account }: { account: Account }) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Impossible de supprimer le compte.");
+        setError(data.error ?? m.errors.accountDeleteFailed);
         setIsDeleting(false);
         return;
       }
@@ -42,7 +46,7 @@ export default function DangerZoneSection({ account }: { account: Account }) {
       // Le compte n'existe plus : la session doit disparaître avec lui.
       await signOut({ redirectTo: "/" });
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
       setIsDeleting(false);
     }
   }
@@ -50,17 +54,15 @@ export default function DangerZoneSection({ account }: { account: Account }) {
   return (
     <SectionCard
       tone="danger"
-      title="Supprimer le compte"
-      description="Cette action est définitive et ne peut pas être annulée."
+      title={t.title}
+      description={t.description}
     >
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        <p className="font-medium">Ce qui sera supprimé :</p>
+        <p className="font-medium">{t.whatTitle}</p>
         <ul className="mt-2 space-y-1 list-disc list-inside text-red-700">
-          <li>Votre compte et vos informations personnelles</li>
-          <li>Vos accès aux packs achetés, sans remboursement</li>
-          <li>Votre historique de démarches et vos documents</li>
-          <li>Vos conversations avec l’assistant IA</li>
-          <li>Votre inscription à nos e-mails, si vous en aviez une</li>
+          {t.what.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       </div>
 
@@ -71,7 +73,7 @@ export default function DangerZoneSection({ account }: { account: Account }) {
             onClick={() => setIsConfirming(true)}
             className="rounded-xl border border-red-300 bg-white px-5 py-2.5 font-medium text-red-700 hover:bg-red-50 transition"
           >
-            Supprimer mon compte
+            {t.start}
           </button>
         </div>
       ) : (
@@ -79,9 +81,9 @@ export default function DangerZoneSection({ account }: { account: Account }) {
           {error && <Alert tone="error">{error}</Alert>}
 
           <Field
-            label="Confirmez en saisissant votre adresse e-mail"
+            label={t.confirmLabel}
             htmlFor="confirm-email"
-            hint={`Saisissez « ${account.email} » pour confirmer.`}
+            hint={fmt(t.confirmHint, { email: account.email })}
           >
             <input
               id="confirm-email"
@@ -90,6 +92,7 @@ export default function DangerZoneSection({ account }: { account: Account }) {
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
               placeholder={account.email}
+              dir="ltr"
               className={inputClass}
             />
           </Field>
@@ -99,11 +102,11 @@ export default function DangerZoneSection({ account }: { account: Account }) {
               type="button"
               tone="danger"
               isLoading={isDeleting}
-              loadingLabel="Suppression…"
+              loadingLabel={t.deleting}
               disabled={!emailMatches}
               onClick={handleDelete}
             >
-              Supprimer définitivement
+              {t.confirm}
             </SubmitButton>
 
             <button
@@ -116,7 +119,7 @@ export default function DangerZoneSection({ account }: { account: Account }) {
               disabled={isDeleting}
               className="rounded-xl px-5 py-2.5 font-medium text-gray-600 hover:bg-gray-100 transition disabled:opacity-50"
             >
-              Annuler
+              {m.common.cancel}
             </button>
           </div>
         </div>

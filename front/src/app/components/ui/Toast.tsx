@@ -20,6 +20,7 @@ import {
 import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
 
 import { RADIUS, TONE_STYLES, cx, type Tone } from "./tokens";
+import { useLanguage } from "../../context/LanguageContext";
 
 type Toast = {
   id: number;
@@ -68,7 +69,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0"
+        className="pointer-events-none fixed bottom-4 end-4 z-[60] flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0"
       >
         {toasts.map((item) => (
           <ToastItem key={item.id} toast={item} onDismiss={dismiss} />
@@ -86,6 +87,7 @@ function ToastItem({
   onDismiss: (id: number) => void;
 }) {
   const Icon = ICONS[toast.tone];
+  const { m } = useLanguage();
 
   useEffect(() => {
     const timer = window.setTimeout(() => onDismiss(toast.id), DISMISS_AFTER_MS);
@@ -106,8 +108,8 @@ function ToastItem({
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        aria-label="Fermer la notification"
-        className="-mr-1 -mt-0.5 rounded p-1 opacity-60 transition hover:opacity-100"
+        aria-label={m.common.closeNotification}
+        className="-me-1 -mt-0.5 rounded p-1 opacity-60 transition hover:opacity-100"
       >
         <X className="h-3.5 w-3.5" />
       </button>

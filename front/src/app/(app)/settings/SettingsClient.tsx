@@ -9,22 +9,26 @@ import PageHeader from "../../components/ui/PageHeader";
 import { Alert, type Account } from "./ui";
 import { Card, Skeleton } from "../../components/ui/primitives";
 import type { SectionId } from "./navigation";
+import { useLanguage } from "../../context/LanguageContext";
+import type { Messages } from "../../i18n";
 import ProfileSection from "./sections/ProfileSection";
 import PreferencesSection from "./sections/PreferencesSection";
 import SecuritySection from "./sections/SecuritySection";
 import PurchasesSection from "./sections/PurchasesSection";
 import DangerZoneSection from "./sections/DangerZoneSection";
 
-const SECTIONS: { id: SectionId; label: string; icon: LucideIcon }[] = [
-  { id: "profil", label: "Profil", icon: User },
-  { id: "preferences", label: "Préférences", icon: Globe },
-  { id: "securite", label: "Sécurité", icon: Lock },
-  { id: "achats", label: "Mes achats", icon: Receipt },
+type NavLabel = keyof Messages["settings"]["nav"];
+
+const SECTIONS: { id: SectionId; label: NavLabel; icon: LucideIcon }[] = [
+  { id: "profil", label: "profile", icon: User },
+  { id: "preferences", label: "preferences", icon: Globe },
+  { id: "securite", label: "security", icon: Lock },
+  { id: "achats", label: "purchases", icon: Receipt },
 ];
 
-const DANGER_SECTION: { id: SectionId; label: string; icon: LucideIcon } = {
+const DANGER_SECTION: { id: SectionId; label: NavLabel; icon: LucideIcon } = {
   id: "danger",
-  label: "Supprimer le compte",
+  label: "danger",
   icon: Trash2,
 };
 
@@ -34,6 +38,7 @@ export default function SettingsClient({
   initialSection: SectionId;
 }) {
   const router = useRouter();
+  const { m } = useLanguage();
   const [section, setSection] = useState<SectionId>(initialSection);
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,18 +51,20 @@ export default function SettingsClient({
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
-          setError(data.error ?? "Impossible de charger votre profil.");
+          setError(data.error ?? m.errors.profileLoadFailed);
           return;
         }
         setAccount(data as Account);
       })
       .catch(() => {
-        if (!cancelled) setError("Une erreur réseau est survenue.");
+        if (!cancelled) setError(m.common.networkError);
       });
 
     return () => {
       cancelled = true;
     };
+    // Chargé une fois : un changement de langue ne recharge pas le profil.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // L'onglet actif vit dans l'URL : la page reste partageable et le bouton
@@ -73,8 +80,8 @@ export default function SettingsClient({
   return (
     <div>
       <PageHeader
-        title="Paramètres"
-        subtitle="Gérez votre compte, vos préférences et vos achats."
+        title={m.settings.title}
+        subtitle={m.settings.subtitle}
       />
 
       <div className="bg-gray-50 min-h-screen px-4 md:px-8 py-8">
@@ -132,9 +139,11 @@ function SectionNav({
   current: SectionId;
   onSelect: (section: SectionId) => void;
 }) {
+  const { m } = useLanguage();
+
   return (
     <nav
-      aria-label="Sections des paramètres"
+      aria-label={m.settings.navLabel}
       // Onglets latéraux sur grand écran, bande défilante sur mobile.
       className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible bg-white lg:bg-transparent border lg:border-0 border-gray-200 rounded-2xl p-1.5 lg:p-0"
     >
@@ -142,7 +151,7 @@ function SectionNav({
         <NavButton
           key={item.id}
           id={item.id}
-          label={item.label}
+          label={m.settings.nav[item.label]}
           icon={item.icon}
           isActive={current === item.id}
           onSelect={onSelect}
@@ -156,7 +165,7 @@ function SectionNav({
 
       <NavButton
         id={DANGER_SECTION.id}
-        label={DANGER_SECTION.label}
+        label={m.settings.nav[DANGER_SECTION.label]}
         icon={DANGER_SECTION.icon}
         isActive={current === DANGER_SECTION.id}
         onSelect={onSelect}
@@ -195,7 +204,7 @@ function NavButton({
       type="button"
       onClick={() => onSelect(id)}
       aria-current={isActive ? "page" : undefined}
-      className={`flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm text-left transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
+      className={`flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm text-start transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.97] motion-reduce:active:scale-100 ${
         isActive ? activeClass : idleClass
       }`}
     >

@@ -6,9 +6,12 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { AlertCircle, Loader2, UserPlus } from "lucide-react";
 import { AuthBrand, authButtonClass, authCardClass, authInputClass } from "../AuthCard";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { m } = useLanguage();
+  const t = m.auth.register;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +32,7 @@ export default function RegisterForm() {
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        setError(payload.error ?? "Impossible de créer le compte.");
+        setError(payload.error ?? t.failed);
         setIsSubmitting(false);
         return;
       }
@@ -50,7 +53,7 @@ export default function RegisterForm() {
       router.push("/");
       router.refresh();
     } catch {
-      setError("Une erreur réseau est survenue. Réessayez.");
+      setError(m.common.networkError);
       setIsSubmitting(false);
     }
   }
@@ -60,10 +63,8 @@ export default function RegisterForm() {
       <AuthBrand />
 
       <div className={authCardClass}>
-        <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>
-        <p className="text-gray-600 mt-1 text-sm">
-          Gratuit — commencez vos démarches en quelques minutes.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
+        <p className="text-gray-600 mt-1 text-sm">{t.subtitle}</p>
 
         {error && (
           <div
@@ -81,7 +82,7 @@ export default function RegisterForm() {
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Nom complet
+              {t.name}
             </label>
             <input
               id="name"
@@ -91,7 +92,8 @@ export default function RegisterForm() {
               minLength={2}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Amina Diallo"
+              placeholder={t.namePlaceholder}
+              dir="auto"
               className={authInputClass}
             />
           </div>
@@ -101,7 +103,7 @@ export default function RegisterForm() {
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Adresse e-mail
+              {m.auth.email}
             </label>
             <input
               id="email"
@@ -110,7 +112,8 @@ export default function RegisterForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.com"
+              placeholder={m.auth.emailPlaceholder}
+              dir="ltr"
               className={authInputClass}
             />
           </div>
@@ -120,7 +123,7 @@ export default function RegisterForm() {
               htmlFor="password"
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Mot de passe
+              {m.auth.password}
             </label>
             <input
               id="password"
@@ -131,10 +134,11 @@ export default function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              dir="ltr"
               className={authInputClass}
             />
             <p className="mt-1.5 text-xs text-gray-500">
-              8 caractères minimum, avec au moins une lettre et un chiffre.
+              {m.auth.passwordRule}
             </p>
           </div>
 
@@ -148,17 +152,17 @@ export default function RegisterForm() {
             ) : (
               <UserPlus className="w-4 h-4" />
             )}
-            {isSubmitting ? "Création…" : "Créer mon compte"}
+            {isSubmitting ? t.submitting : t.submit}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Déjà un compte ?{" "}
+          {t.haveAccount}{" "}
           <Link
             href="/login"
             className="text-brand-600 hover:text-brand-700 font-medium"
           >
-            Se connecter
+            {t.signIn}
           </Link>
         </p>
       </div>

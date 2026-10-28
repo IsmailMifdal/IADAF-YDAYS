@@ -5,10 +5,12 @@ import { NextResponse } from "next/server";
 import { saveLead } from "../../lib/leads";
 import { RATE_LIMITS, clientIp, hit, tooManyRequests } from "../../lib/rateLimit";
 import { leadSchema } from "../../lib/validation";
+import { getMessages } from "../../i18n/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const m = await getMessages();
   const limit = await hit(RATE_LIMITS.leads, clientIp(request.headers));
   if (!limit.allowed) return tooManyRequests(limit);
 
@@ -16,12 +18,12 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidBody }, { status: 400 });
   }
 
   const parsed = leadSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides." }, { status: 400 });
+    return NextResponse.json({ error: m.errors.invalidData }, { status: 400 });
   }
 
   try {
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[leads] save failed", error);
     return NextResponse.json(
-      { error: "Impossible d’enregistrer l’adresse." },
+      { error: m.errors.leadSaveFailed },
       { status: 500 },
     );
   }

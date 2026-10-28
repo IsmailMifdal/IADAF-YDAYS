@@ -4,8 +4,11 @@ import Link from "next/link";
 import LegalLayout from "../../components/legal/LegalLayout";
 import { DOCUMENT_RETENTION_DAYS } from "../../lib/documentTypes";
 import { LEGAL_INFO, orPlaceholder } from "../../lib/legalInfo";
+import { getMessages } from "../../i18n/server";
 
-export const metadata: Metadata = { title: "Politique de confidentialité" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).legal.privacy };
+}
 
 /**
  * Keep this page in step with the code: each row describes a processing that
