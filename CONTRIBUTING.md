@@ -90,15 +90,19 @@ assistant. A bug or a missing test? Fix it before pushing.
 
 ## 7. Review and merge
 
-- **Reviewers**: the lead of your team, then Ismail. Bot reviewers (Copilot, Codex)
-  will help once enabled; they comment, never approve.
+- **Two reviews per PR**:
+  1. **A teammate** reviews the code: the team lead, or a team member when the lead
+     is the author (cross-review).
+  2. **Ismail approves**: the final go, after the teammate's review.
 
-  | Team | Lead |
-  |---|---|
-  | Backend | @benoit-bremaud |
-  | Front web | @SoulSkunk |
-  | Mobile | @vitalikevin |
-  | AI | @Sqwado |
+  Bot reviewers (Copilot, Codex) will help once enabled; they comment, never approve.
+
+  | Team | Lead | Cross-review |
+  |---|---|---|
+  | Backend | @benoit-bremaud | @benoit-bremaud ⇄ @CorentinBL |
+  | Front web | @SoulSkunk | within the team |
+  | Mobile | @vitalikevin | Ismail alone until a second member joins |
+  | AI | @Sqwado | @Sqwado ⇄ @UgoAmeslantt |
 
 - **Every comment gets a reply** in its thread: fixed, deferred (with an issue) or
   disputed (with the argument).
@@ -107,8 +111,8 @@ assistant. A bug or a missing test? Fix it before pushing.
 - **Merge** by Ismail, squashed, once CI is green, comments are handled and both
   reviewers approved. Then delete your branch.
 
-> **Why?** The team lead knows the code best; Ismail keeps `main` consistent across
-> teams. Squashing gives one commit per feature: the history stays readable and easy
+> **Why?** Nobody reviews their own code, and a teammate knows it best; Ismail keeps
+> `main` consistent across teams. Squashing gives one commit per feature: the history stays readable and easy
 > to revert.
 
 ## 8. Security
