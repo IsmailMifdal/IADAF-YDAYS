@@ -57,6 +57,40 @@ docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"
 
 ---
 
+## Flyway: `Migration checksum mismatch for migration version 1`
+
+`demarches-service`, `document-service` or `analytics-service` stops at startup
+with this error on a database created before issue #42. Their V1 migration no
+longer runs
+`CREATE SCHEMA` (schemas are created by `docker/postgres/provision.sql`), so
+its checksum changed; the resulting schema is identical.
+
+Local data you do not need: start from a fresh volume.
+
+```bash
+docker compose down -v && docker compose up -d --build
+```
+
+Data to keep: run `flyway repair`, which only realigns the stored checksum
+(no SQL is replayed), with the stack running, then restart the services.
+Passwords are the `*_DB_PASSWORD` values of your `.env` (defaults shown):
+
+```bash
+while read -r service schema password; do
+  docker run --rm --network iadaf-ydays_iadaf-network \
+    -v "$PWD/$service/src/main/resources/db/migration:/flyway/sql:ro" \
+    flyway/flyway:11 -url=jdbc:postgresql://postgres:5432/iadaf_db \
+    -user="iadaf_$schema" -password="$password" -schemas="$schema" repair
+done <<'EOF'
+demarches-service demarches dev-demarches-db
+document-service documents dev-documents-db
+analytics-service analytics dev-analytics-db
+EOF
+docker restart iadaf-demarches iadaf-document iadaf-analytics
+```
+
+---
+
 ## Erreur : « Port 8080 already in use »
 
 ```bash
