@@ -167,16 +167,18 @@ l'équipe concernée.
 
 - Un tableau **GitHub Projects** pour tout le projet : À faire, En cours, En relecture,
   Terminé.
-- Une étiquette par équipe ou pôle : `equipe:web-usager`, `equipe:web-plateforme`,
-  `equipe:mobile` (et `transverse` pour le reste).
+- Une étiquette par équipe : `equipe:backend`, `equipe:front-web`, `equipe:mobile`,
+  `equipe:ia`, `equipe:devops`, `equipe:marketing` ;
+  le champ « Équipe » du Project reprend la même liste.
 - Une issue par fonctionnalité ou par bug, créée avec les modèles du dépôt
   ([.github/ISSUE_TEMPLATE](../../.github/ISSUE_TEMPLATE)).
 
 ### Les règles de code
 
 - **Une fonctionnalité = une issue = une branche = une PR.** Branche nommée
-  `equipe/court-descriptif` (par exemple `web-usager/rappels-email`,
-  `mobile/connexion`).
+  `<type>/<numéro-issue>-<descriptif>` (par exemple `feat/12-rappels-email`,
+  `fix/1-flyway-create-schema`), commits au format Conventional Commits : voir
+  [CONTRIBUTING.md](../../CONTRIBUTING.md).
 - **Des PR petites** : une PR relisible en 20 minutes. Une grosse fonctionnalité se
   découpe en plusieurs PR.
 - **Avant de fusionner** : la CI est verte et le référent de l'équipe (ou le

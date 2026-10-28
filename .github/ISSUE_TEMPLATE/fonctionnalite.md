@@ -14,6 +14,10 @@ expire dans 2 mois veut être prévenue pour ne pas laisser passer la date. » -
 
 <!-- Ce que l'utilisateur pourra faire une fois la fonctionnalité en ligne. -->
 
+## Ce qu'on ne livre pas
+
+<!-- Ce qui est volontairement hors de cette issue (pour plus tard, ou ailleurs). -->
+
 ## Critères d'acceptation
 
 - [ ] 
@@ -21,7 +25,8 @@ expire dans 2 mois veut être prévenue pour ne pas laisser passer la date. » -
 
 ## Équipe
 
-<!-- Ajoutez l'étiquette de l'équipe : equipe:web-usager, equipe:web-plateforme, equipe:mobile ou transverse. -->
+<!-- Ajoutez l'étiquette de l'équipe : equipe:backend, equipe:front-web, equipe:mobile, equipe:ia, equipe:devops ou equipe:marketing. -->
+<!-- Titre de l'issue : <type>(<périmètre>): <sujet>, par exemple feat(mobile): connexion par jeton. -->
 
 ## Maquette
 

@@ -4,7 +4,7 @@
 
 Issue : #
 
-Équipe : <!-- web-usager / web-plateforme / mobile / transverse -->
+Équipe : <!-- backend / front-web / mobile / ia / devops / marketing -->
 
 ## Comment le vérifier
 
