@@ -1,0 +1,21 @@
+# Seuils d'acceptation — machine RTX 5080 Laptop 16 GB / objectif YDAYS
+quality:
+  min_score: 0.90
+  # Si le gold n'est pas encore à 100 Q, le script reporte "incomplete" mais
+  # calcule quand même le score sur les items présents.
+  target_count: 100
+
+performance:
+  # Latence totale chat (prompt court, sans cold start)
+  p95_latency_ms: 15000
+  p50_latency_ms: 8000
+  # Au moins 1 requête réussie par slot parallèle Strata (--parallel 2)
+  min_success_per_parallel_slot: 1.0
+  concurrent_levels: [1, 2, 4]
+  timeout_seconds: 90
+
+coherence:
+  runs_per_question: 5
+  # Similarité cosinus moyenne entre embeddings des réponses (MiniLM)
+  min_mean_similarity: 0.75
+  temperature: 0.1

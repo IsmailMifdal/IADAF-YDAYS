@@ -1,0 +1,37 @@
+# QLoRA config — fits RTX 5080 Laptop 16 GB VRAM + 64 GB RAM
+base_model: Qwen/Qwen2.5-7B-Instruct
+# After merge+quantize, load via Strata --model-path
+output_name: iadaf-qwen2.5-7b-instruct
+
+max_seq_length: 2048
+load_in_4bit: true
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  logging_steps: 10
+  save_steps: 200
+  seed: 42
+  bf16: true
+  optim: adamw_8bit
+
+export:
+  gguf_quant: Q4_K_M
+  chat_template: qwen

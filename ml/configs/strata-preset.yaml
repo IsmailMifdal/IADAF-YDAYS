@@ -1,0 +1,22 @@
+# Mirror of ml/serving/strata-iadaf.* — portable defaults
+name: iadaf-local
+family: qwen
+model: iq3_xxs
+# After QLoRA export, set model_path for custom GGUF (CLI mode)
+model_path: null
+context: 32k
+kv: q4_0
+parallel: 2
+vision: off
+tune: quick
+access: local
+port: 8080
+api_key_env: STRATA_API_KEY
+# Discovery (no username hardcoded):
+#   1) `strata` on PATH
+#   2) STRATA_HOME
+#   3) %USERPROFILE%\Strata or $HOME/Strata + strata-*.json
+notes: |
+  16 GB VRAM: parallel=2 with 32k + kv q4_0 is tight but usable.
+  If OOM, drop to parallel=1 or context=16k.
+  Isolation multi-utilisateur = JWT IADAF, pas un modèle par user.

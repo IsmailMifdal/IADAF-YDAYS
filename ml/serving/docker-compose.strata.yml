@@ -1,0 +1,25 @@
+# Documentation-only overlay.
+# Strata on a Windows laptop GPU is more reliable as a host process
+# (see strata-iadaf.ps1). This file documents how ai-service reaches it.
+
+# Usage idea (do NOT expect GPU passthrough on Docker Desktop Windows easily):
+#   1) Start Strata on the host: .\ml\serving\strata-iadaf.ps1
+#   2) In IADAF-YDAYS/.env set:
+#        USE_OPENAI=true
+#        OPENAI_BASE_URL=http://host.docker.internal:11434/v1
+#        OPENAI_API_KEY=<STRATA_API_KEY>
+#        OPENAI_MODEL=<id from /v1/models>
+#   3) docker compose up -d ai-service
+
+services:
+  # Placeholder so `docker compose -f docker-compose.yml -f ml/serving/docker-compose.strata.yml config`
+  # documents the dependency. No container is started for Strata here.
+  ai-service:
+    environment:
+      USE_OPENAI: "true"
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://host.docker.internal:11434/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-${STRATA_API_KEY:-iadaf-dev-local-key}}
+      OPENAI_MODEL: ${OPENAI_MODEL:-qwen3.8-flash-next}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

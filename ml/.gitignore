@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Datasets régénérables (download.py + build_*.py)
+datasets/raw/**
+!datasets/raw/.gitkeep
+datasets/processed/**
+!datasets/processed/.gitkeep
+
+# Artefacts locaux hors artifacts/ (au cas où)
+*.parquet
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# Env locaux (les *.example restent trackés)
+*.env
+!*.env.example
