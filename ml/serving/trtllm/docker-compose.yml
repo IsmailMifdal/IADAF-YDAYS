@@ -1,0 +1,28 @@
+# TensorRT-LLM serve for IADAF merged HF weights.
+# Requires NVIDIA Container Toolkit. Adjust image tag to a TRT-LLM release
+# compatible with your GPU (RTX 5080 / Blackwell → check NGC release notes).
+#
+# Usage (from repo root):
+#   docker compose -f ml/serving/trtllm/docker-compose.yml up --build
+#
+# Then point ai-service:
+#   OPENAI_BASE_URL=http://127.0.0.1:8000/v1
+
+services:
+  trtllm-iadaf:
+    image: nvcr.io/nvidia/tensorrt-llm/release:latest
+    gpus: all
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-iadaf-dev-local-key}
+      - DTYPE=${DTYPE:-fp8}
+      - MAX_SEQ_LEN=${MAX_SEQ_LEN:-8192}
+      - MAX_BATCH=${MAX_BATCH:-4}
+    volumes:
+      - ../../artifacts/merged:/models/merged:ro
+      - ../../artifacts/trtllm:/models/trtllm
+      - ./entrypoint.sh:/workspace/entrypoint.sh:ro
+    working_dir: /workspace
+    command: ["bash", "/workspace/entrypoint.sh"]
+    restart: unless-stopped

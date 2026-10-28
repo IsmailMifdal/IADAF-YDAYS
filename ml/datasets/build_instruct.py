@@ -16,8 +16,12 @@ GOLD = ROOT / "eval" / "gold" / "questions_v1.jsonl"
 SYSTEM_FR = (
     "Tu es l'assistant IADAF. Tu aides des personnes non francophones sur les "
     "démarches administratives françaises (titre de séjour, CAF, CPAM, impôts). "
-    "Réponds de façon factuelle, claire et structurée. Oriente vers service-public.fr "
-    "quand c'est pertinent. Ne invente pas de procédures."
+    "Réponds de façon factuelle, claire et structurée. "
+    "Oriente vers service-public.fr, ANEF ou la préfecture quand c'est pertinent. "
+    "N'invente jamais de montants (timbres, seuils), de numéros CERFA ni de délais "
+    "précis non vérifiés — renvoie vers la fiche officielle. "
+    "Refuse poliment le conseil financier, médical personnalisé ou toute demande illégale, "
+    "et recentre sur les démarches admin."
 )
 
 # Lightweight paraphrase templates (no external API) for multilingual coverage
@@ -162,6 +166,128 @@ def from_hf_sp_chunks(path: Path, limit: int = 800) -> list[dict]:
     return rows
 
 
+def from_dila_fiches(path: Path, limit: int = 2000) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = []
+    with path.open(encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i >= limit:
+                break
+            row = json.loads(line)
+            title = row.get("title") or row.get("id") or "fiche"
+            text = row.get("text") or row.get("description") or ""
+            url = row.get("url") or ""
+            if not text and not row.get("description"):
+                continue
+            body = text or row.get("description") or ""
+            answer = (
+                f"{body[:3200]}\n\n"
+                f"Source officielle : {url}\n"
+                "(Service-Public.gouv.fr / DILA — vérifier la fiche à jour.)"
+            )
+            rows.append(msg(f"Que dit service-public.fr sur : {title} ?", answer))
+            if row.get("description"):
+                rows.append(
+                    msg(
+                        f"En résumé : {title}",
+                        f"{row['description']}\n\nDétails : {url}",
+                    )
+                )
+    return rows
+
+
+def from_dila_cerfa(path: Path, limit: int = 400) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = []
+    with path.open(encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i >= limit:
+                break
+            row = json.loads(line)
+            title = row.get("title") or row.get("id")
+            cerfa = row.get("cerfa")
+            url = row.get("url") or ""
+            desc = row.get("description") or row.get("text") or ""
+            if not title:
+                continue
+            cerfa_line = f"Numéro CERFA : {cerfa}\n" if cerfa else ""
+            answer = (
+                f"{title}\n{cerfa_line}{desc[:2000]}\n\n"
+                f"Télécharger le formulaire et la notice à jour : {url}\n"
+                "Ne pas utiliser une version périmée ni inventer un numéro CERFA."
+            )
+            q = (
+                f"Quel formulaire CERFA pour : {title} ?"
+                if cerfa
+                else f"Où trouver le formulaire : {title} ?"
+            )
+            rows.append(msg(q, answer))
+    return rows
+
+
+def from_portals(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    data = load_json(path)
+    rows = []
+    for p in data:
+        title = p.get("title") or p.get("id")
+        url = p.get("url") or ""
+        summary = p.get("summary") or ""
+        facts = p.get("key_facts") or []
+        answer = summary + "\n\n" + "\n".join(f"- {x}" for x in facts) + f"\n\nLien : {url}"
+        rows.append(msg(f"À quoi sert {title} ?", answer))
+        rows.append(msg(f"Où trouver des infos officielles : {title} ?", f"{summary}\n{url}"))
+    return rows
+
+
+def from_quality_fixes(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            g = json.loads(line)
+            q, a = g.get("question") or "", g.get("answer") or ""
+            if q and a:
+                # Upsample critical fixes (refus / hallucinations fréquentes)
+                for _ in range(3):
+                    rows.append(msg(q, a))
+    return rows
+
+
+def from_document_ia(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    catalog = load_json(path)
+    rows = []
+    for item in catalog:
+        name = item.get("id") or "document"
+        label = item.get("iadaf_label") or "other"
+        fields = item.get("fields") or []
+        doc = item.get("doc") or ""
+        answer = (
+            f"Type de justificatif : {name} (catégorie IADAF : {label}).\n"
+            f"{doc}\n"
+            f"Champs typiques extraits : {', '.join(fields[:15]) or 'voir schéma'}.\n"
+            "Référence open-source État : https://github.com/betagouv/document-ia — "
+            "ne pas inventer de pièces absentes du dossier demandé."
+        )
+        rows.append(msg(f"Quels champs attend-on sur un justificatif de type {name} ?", answer))
+        rows.append(
+            msg(
+                f"Comment classer un document {name} pour un dossier administratif ?",
+                f"Classe IADAF « {label} ». {doc[:500]}",
+            )
+        )
+    return rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", type=int, default=42)
@@ -186,6 +312,11 @@ def main() -> int:
 
     examples += from_ceseda(RAW / "ceseda" / "articles.jsonl")
     examples += from_hf_sp_chunks(RAW / "service_public_hf" / "chunks.jsonl")
+    examples += from_dila_fiches(RAW / "service_public_dila" / "fiches_iadaf.jsonl")
+    examples += from_dila_cerfa(RAW / "service_public_dila" / "formulaires_cerfa.jsonl")
+    examples += from_portals(RAW / "curated" / "portals_official.json")
+    examples += from_quality_fixes(RAW / "curated" / "quality_fixes.jsonl")
+    examples += from_document_ia(RAW / "document_ia" / "catalog.json")
     examples += from_gold(GOLD)
 
     if args.shuffle:

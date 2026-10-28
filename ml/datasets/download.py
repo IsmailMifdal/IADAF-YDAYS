@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import sys
 import urllib.error
@@ -26,6 +27,41 @@ CESEDA_PARQUET = (
 )
 # AgentPublic shards vary; list via hub API then download first text-friendly files.
 SP_REPO = "AgentPublic/service-public"
+
+# Flux XML officiel DILA (Licence Ouverte) — fiches + CERFA
+DILA_SP_ZIP = (
+    "https://lecomarquage.service-public.gouv.fr/vdd/3.5/part/zip/vosdroits-latest.zip"
+)
+DILA_SP_META = (
+    "https://www.data.gouv.fr/datasets/"
+    "fiches-pratiques-et-ressources-de-service-public-gouv-fr-particuliers"
+)
+
+# Schémas document-ia (MIT) — catalogue des types de justificatifs
+DOC_IA_INIT = (
+    "https://raw.githubusercontent.com/betagouv/document-ia/develop/"
+    "document-ia-schemas/src/document_ia_schemas/__init__.py"
+)
+DOC_IA_TYPES = (
+    "cni",
+    "passeport",
+    "permis_conduire",
+    "carte_grise",
+    "quittance_loyer",
+    "facture_energie",
+    "attestation_hebergement",
+    "attestation_contrat_energie",
+    "avis_imposition",
+    "bulletin_salaire",
+    "taxe_fonciere",
+    "visale_certificate",
+)
+DOC_IA_RAW = (
+    "https://raw.githubusercontent.com/betagouv/document-ia/develop/"
+    "document-ia-schemas/src/document_ia_schemas/{name}.py"
+)
+
+CURATED = Path(__file__).resolve().parent / "curated"
 
 
 def copy_local_kb() -> None:
@@ -173,6 +209,114 @@ def download_sp_via_urllib(max_sp_rows: int | None) -> None:
     print(f"OK  service-public → {out_sp} ({written} rows)")
 
 
+def download_dila_service_public(force: bool = False) -> None:
+    """Download + parse official Service-Public particuliers XML dump."""
+    dila_dir = RAW / "service_public_dila"
+    dila_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = dila_dir / "vosdroits-latest.zip"
+    meta = {
+        "url": DILA_SP_ZIP,
+        "dataset_page": DILA_SP_META,
+        "attribution": "Service-Public.gouv.fr / DILA",
+        "license": "Licence Ouverte 2.0",
+    }
+    (dila_dir / "SOURCE.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    if force or not zip_path.is_file() or zip_path.stat().st_size < 1_000_000:
+        print(f"Downloading DILA Service-Public XML (~24 Mo) …\n  {DILA_SP_ZIP}")
+        try:
+            _http_get(DILA_SP_ZIP, zip_path)
+        except Exception as exc:  # noqa: BLE001
+            print(f"FAIL DILA zip: {exc}", file=sys.stderr)
+            return
+    else:
+        print(f"OK  DILA zip déjà présent → {zip_path}")
+
+    # Parse into filtered JSONL
+    try:
+        from parse_service_public_xml import parse_zip
+    except ImportError:
+        # Same directory import when run as script
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from parse_service_public_xml import parse_zip
+
+    fiches, formulaires = parse_zip(zip_path)
+    out_f = dila_dir / "fiches_iadaf.jsonl"
+    out_r = dila_dir / "formulaires_cerfa.jsonl"
+    with out_f.open("w", encoding="utf-8") as f:
+        for row in fiches:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    with out_r.open("w", encoding="utf-8") as f:
+        for row in formulaires:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"OK  DILA fiches IADAF → {out_f} ({len(fiches)})")
+    print(f"OK  DILA CERFA/formulaires → {out_r} ({len(formulaires)})")
+
+
+def download_document_ia_catalog() -> None:
+    """Fetch beta.gouv document-ia schema module headers as a JSON catalog."""
+    dest_dir = RAW / "document_ia"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    catalog: list[dict] = []
+    for name in DOC_IA_TYPES:
+        url = DOC_IA_RAW.format(name=name)
+        local = dest_dir / f"{name}.py"
+        try:
+            _http_get(url, local)
+            text = local.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  SKIP document-ia {name}: {exc}", file=sys.stderr)
+            continue
+        # Extract class docstring / Field descriptions lightly
+        doc_m = re.search(r'"""(.*?)"""', text, re.S)
+        docstring = " ".join((doc_m.group(1) if doc_m else "").split())[:800]
+        fields = re.findall(r"^    ([a-zA-Z_][a-zA-Z0-9_]*)\s*:", text, re.M)
+        fields = [f for f in fields if f not in {"model_config", "Config"}][:40]
+        label_map = {
+            "cni": "identity",
+            "passeport": "identity",
+            "permis_conduire": "identity",
+            "carte_grise": "other",
+            "quittance_loyer": "address",
+            "facture_energie": "address",
+            "attestation_hebergement": "address",
+            "attestation_contrat_energie": "address",
+            "avis_imposition": "other",
+            "bulletin_salaire": "other",
+            "taxe_fonciere": "other",
+            "visale_certificate": "other",
+        }
+        catalog.append(
+            {
+                "id": name,
+                "iadaf_label": label_map.get(name, "other"),
+                "fields": fields,
+                "doc": docstring,
+                "url": url,
+                "license": "MIT",
+                "project": "https://github.com/betagouv/document-ia",
+            }
+        )
+        print(f"OK  document-ia schema → {name} ({len(fields)} fields)")
+
+    out = dest_dir / "catalog.json"
+    out.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"OK  document-ia catalog → {out} ({len(catalog)} types)")
+
+
+def copy_curated() -> None:
+    dest = RAW / "curated"
+    dest.mkdir(parents=True, exist_ok=True)
+    if not CURATED.is_dir():
+        print(f"WARN: curated introuvable: {CURATED}", file=sys.stderr)
+        return
+    for src in CURATED.iterdir():
+        if src.is_file():
+            shutil.copy2(src, dest / src.name)
+            print(f"OK  curated → {dest / src.name}")
+
+
 def download_hf(max_sp_rows: int | None) -> None:
     used_datasets = False
     try:
@@ -243,7 +387,10 @@ def download_hf(max_sp_rows: int | None) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--skip-hf", action="store_true", help="Ne télécharge que la KB locale")
+    parser.add_argument("--skip-hf", action="store_true", help="Saute HuggingFace (CESEDA / AgentPublic)")
+    parser.add_argument("--skip-dila", action="store_true", help="Saute le flux XML DILA")
+    parser.add_argument("--skip-document-ia", action="store_true", help="Saute document-ia")
+    parser.add_argument("--force-dila", action="store_true", help="Re-télécharge le zip DILA")
     parser.add_argument(
         "--max-sp-rows",
         type=int,
@@ -253,6 +400,17 @@ def main() -> int:
     args = parser.parse_args()
     RAW.mkdir(parents=True, exist_ok=True)
     copy_local_kb()
+    copy_curated()
+    if not args.skip_document_ia:
+        try:
+            download_document_ia_catalog()
+        except Exception as exc:  # noqa: BLE001
+            print(f"FAIL document-ia: {exc}", file=sys.stderr)
+    if not args.skip_dila:
+        try:
+            download_dila_service_public(force=args.force_dila)
+        except Exception as exc:  # noqa: BLE001
+            print(f"FAIL DILA: {exc}", file=sys.stderr)
     if not args.skip_hf:
         download_hf(args.max_sp_rows)
     print("Done.")

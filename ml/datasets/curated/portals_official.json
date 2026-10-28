@@ -1,0 +1,99 @@
+[
+  {
+    "id": "anef",
+    "title": "ANEF — Administration des étrangers en France",
+    "url": "https://administration-etrangers-en-france.interieur.gouv.fr/",
+    "summary": "Portail officiel pour déposer en ligne les demandes de titre de séjour, renouvellements et certains changements de statut. Remplace progressivement les dépôts papier en préfecture selon le motif.",
+    "key_facts": [
+      "Créer un compte FranceConnect ou compte ANEF selon la démarche.",
+      "Préparer les pièces scannées (passeport, domicile, motif) avant de démarrer.",
+      "Après dépôt, conserver le récépissé / attestation de dépôt pour le droit au séjour pendant l'instruction.",
+      "Si la démarche n'est pas encore ouverte en ligne pour votre motif, suivre le site de la préfecture."
+    ],
+    "use_for": ["titre-sejour", "renouvellement", "changement-statut"]
+  },
+  {
+    "id": "ofii",
+    "title": "OFII — Office français de l'immigration et de l'intégration",
+    "url": "https://www.ofii.fr/",
+    "summary": "Organisme public d'accueil et d'intégration des primo-arrivants : validation VLS-TS, visite médicale, parcours d'intégration, livrets d'accueil multilingues.",
+    "key_facts": [
+      "Valider le VLS-TS sur le site OFII dans les 3 mois suivant l'arrivée (si concerné).",
+      "L'OFII n'est en général pas le guichet de renouvellement de titre (préfecture / ANEF).",
+      "Des livrets d'accueil traduits décrivent les premières démarches (banque, santé, logement)."
+    ],
+    "use_for": ["arrivee", "vls-ts", "integration"]
+  },
+  {
+    "id": "ceseda-legifrance",
+    "title": "CESEDA — Code de l'entrée et du séjour (Légifrance)",
+    "url": "https://www.legifrance.gouv.fr/codes/id/LEGITEXT000006070158/",
+    "summary": "Texte consolidé du code régissant l'entrée, le séjour, l'asile et l'éloignement. Référence juridique ; pour l'usager, croiser avec service-public.fr et ANEF.",
+    "key_facts": [
+      "Source officielle pour les règles de droit au séjour et d'asile.",
+      "Ne pas citer d'articles de mémoire : renvoyer vers Légifrance ou une fiche service-public.",
+      "Les procédures concrètes (pièces, téléservices) sont sur service-public.fr / ANEF / préfecture."
+    ],
+    "use_for": ["droit", "asile", "titre-sejour"]
+  },
+  {
+    "id": "service-public-demarches",
+    "title": "Service-Public — Démarches et outils (CERFA)",
+    "url": "https://www.service-public.gouv.fr/particuliers/vosdroits/demarches-et-outils",
+    "summary": "Répertoire officiel des formulaires CERFA, notices et téléservices pour les particuliers.",
+    "key_facts": [
+      "Télécharger toujours le CERFA et sa notice depuis service-public.fr (version à jour).",
+      "Ne pas inventer de numéros CERFA ni de montants de timbres : vérifier la fiche du jour.",
+      "Les notices expliquent le remplissage champ par champ."
+    ],
+    "use_for": ["cerfa", "formulaires"]
+  },
+  {
+    "id": "gisti",
+    "title": "GISTI — Fiches pratiques (complément associatif)",
+    "url": "https://www.gisti.org/spip.php?rubrique42",
+    "summary": "Fiches associatives détaillant souvent les pièces admises en préfecture et des règles par nationalité. Source secondaire : toujours croiser avec les sites officiels.",
+    "key_facts": [
+      "Utile en complément quand une préfecture a des pratiques locales.",
+      "Ne pas recopier les fiches GISTI en entier (droits d'auteur) ; orienter l'usager vers le site.",
+      "En cas de conflit, privilégier service-public.fr, ANEF et la préfecture."
+    ],
+    "use_for": ["complement", "titre-sejour"]
+  },
+  {
+    "id": "cimade",
+    "title": "La Cimade — Guides d'accès aux droits",
+    "url": "https://www.lacimade.org/publication/",
+    "summary": "Guides juridiques vulgarisés sur l'accès aux droits sociaux et la constitution de dossiers. Source associative complémentaire.",
+    "key_facts": [
+      "Aide précieuse en cas de blocage de rendez-vous ou de dossier complexe.",
+      "Orienter vers les publications / permanences sans recopier le contenu protégé.",
+      "Les décisions administratives restent celles des autorités (préfecture, OFPRA, etc.)."
+    ],
+    "use_for": ["complement", "droits-sociaux"]
+  },
+  {
+    "id": "document-ia",
+    "title": "Document IA (beta.gouv) — schémas de justificatifs",
+    "url": "https://github.com/betagouv/document-ia",
+    "summary": "Schémas open-source de l'État pour l'extraction / validation de justificatifs (CNI, passeport, quittance, RIB, avis d'imposition, etc.).",
+    "key_facts": [
+      "Types couverts typiques : CNI, passeport, quittance de loyer, facture énergie, avis d'imposition, bulletin de salaire, attestation d'hébergement.",
+      "Sert de référence pour classer un justificatif (identité / domicile / ressources), pas pour inventer des règles de séjour.",
+      "Licence MIT — réutilisable dans IADAF pour le pré-contrôle documentaire."
+    ],
+    "use_for": ["documents", "validation"]
+  },
+  {
+    "id": "albert-api",
+    "title": "Albert API (doc) — IA documentaire État",
+    "url": "https://github.com/betagouv/doc.albert-api",
+    "summary": "Documentation et outils d'IA développés par l'administration pour le traitement documentaire.",
+    "key_facts": [
+      "Référence d'architecture pour l'extraction de champs sur pièces administratives.",
+      "Complète document-ia pour le pipeline OCR / LLM d'État.",
+      "Ne remplace pas le conseil juridique ni les sites officiels usagers."
+    ],
+    "use_for": ["documents", "architecture"]
+  }
+]

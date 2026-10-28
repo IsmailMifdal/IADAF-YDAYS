@@ -80,17 +80,17 @@ def main() -> int:
 
     print(
         f"""
-Next — convert with llama.cpp (install separately):
+Next — convert with llama.cpp (source + Windows binaries):
 
-  python convert_hf_to_gguf.py {args.merged} --outfile {gguf_path.with_suffix('').as_posix()}-f16.gguf
-  ./llama-quantize {gguf_path.with_suffix('').as_posix()}-f16.gguf {gguf_path} {quant}
+  # tokenizer must include vocab.json + merges.txt (saved from base Qwen)
+  python convert_hf_to_gguf.py {args.merged} --outfile {gguf_path.with_suffix('').as_posix()}-f16.gguf --outtype f16
+  C:\\llama.cpp\\bin\\llama-quantize.exe {gguf_path.with_suffix('').as_posix()}-f16.gguf {gguf_path} {quant}
 
-Then serve with Strata:
+Serve the specialized 7B with llama-server (not Strata MoE):
 
-  .\\ml\\serving\\strata-iadaf.ps1 -ModelPath "{gguf_path}"
+  .\\ml\\serving\\llama-iadaf.ps1 -ModelPath "{gguf_path}"
 
-If Strata rejects a custom 7B GGUF, fall back to llama-server OpenAI-compatible
-on the same port pattern and keep OPENAI_BASE_URL pointed at it.
+Point IADAF / eval at http://127.0.0.1:8080/v1 (same OPENAI_* env as Strata).
 """
     )
     return 0

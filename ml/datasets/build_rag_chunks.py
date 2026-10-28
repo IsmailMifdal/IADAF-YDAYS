@@ -116,16 +116,72 @@ def from_kb_demarches(path: Path) -> list[dict]:
     return chunks
 
 
+def from_dila_jsonl(path: Path, limit: int = 1500, tag: str = "dila") -> list[dict]:
+    if not path.is_file():
+        return []
+    chunks = []
+    with path.open(encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if i >= limit:
+                break
+            row = json.loads(line)
+            title = row.get("title") or row.get("id") or tag
+            text = row.get("text") or row.get("description") or ""
+            if not text:
+                continue
+            for j, part in enumerate(chunk_text(str(text), size=900)):
+                chunks.append(
+                    {
+                        "id": stable_id(tag, f"{row.get('id')}-{j}-{part[:40]}"),
+                        "title": str(title)[:200],
+                        "text": part,
+                        "source": "service-public-dila",
+                        "url": row.get("url"),
+                        "tags": ["service-public", "dila", tag, row.get("subject") or ""],
+                    }
+                )
+    return chunks
+
+
+def from_portals(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    chunks = []
+    for p in data:
+        title = p.get("title") or p.get("id")
+        body = (p.get("summary") or "") + "\n" + "\n".join(p.get("key_facts") or [])
+        chunks.append(
+            {
+                "id": stable_id("portal", str(p.get("id") or title)),
+                "title": title,
+                "text": body,
+                "source": "portals_official",
+                "url": p.get("url"),
+                "tags": ["portail"] + list(p.get("use_for") or []),
+            }
+        )
+    return chunks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ceseda-limit", type=int, default=500)
     parser.add_argument("--sp-limit", type=int, default=2000)
+    parser.add_argument("--dila-limit", type=int, default=1500)
     args = parser.parse_args()
 
     chunks: list[dict] = []
     chunks += from_kb_demarches(RAW / "kb_iadaf" / "demarches.json")
     chunks += from_ceseda(RAW / "ceseda" / "articles.jsonl", args.ceseda_limit)
     chunks += from_hf_sp(RAW / "service_public_hf" / "chunks.jsonl", args.sp_limit)
+    chunks += from_dila_jsonl(
+        RAW / "service_public_dila" / "fiches_iadaf.jsonl", args.dila_limit, "fiche"
+    )
+    chunks += from_dila_jsonl(
+        RAW / "service_public_dila" / "formulaires_cerfa.jsonl", 400, "cerfa"
+    )
+    chunks += from_portals(RAW / "curated" / "portals_official.json")
 
     # Dedupe by id
     seen: set[str] = set()
