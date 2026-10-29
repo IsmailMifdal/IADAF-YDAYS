@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""QLoRA fine-tune of Qwen2.5-7B-Instruct for IADAF (RTX 5080 16 GB).
+"""QLoRA fine-tune for IADAF chat (v2: Qwen3-8B on RTX 5080 16 GB).
 
-Prefers Unsloth when installed; falls back to vanilla transformers+peft+trl.
+Config: ml/configs/model.yaml (v1 snapshot: model_v1.yaml).
+Prefers Unsloth when installed; falls back to transformers+peft+trl.
 """
 
 from __future__ import annotations
@@ -202,6 +203,10 @@ def train_transformers(cfg: dict, data_path: Path, out_dir: Path) -> None:
         trust_remote_code=True,
     )
     model = prepare_model_for_kbit_training(model)
+    if cfg.get("gradient_checkpointing", True):
+        model.gradient_checkpointing_enable()
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
     lora = cfg["lora"]
     model = get_peft_model(
         model,

@@ -1,0 +1,42 @@
+# IADAF v2 — documents (vision) QLoRA sur RTX 5080 16 Go
+# Chargé à la demande : ne pas cohabiter en BF16 avec le chat 8B.
+base_model: Qwen/Qwen3-VL-4B-Instruct
+output_name: iadaf-qwen3-vl-4b
+version: v2
+role: documents
+
+max_seq_length: 1024
+# Borne pixels pour tenir en ~12–15 Go avec batch 1
+max_pixels: 589824   # ~768*768
+load_in_4bit: true
+gradient_checkpointing: true
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  epochs: 2
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  logging_steps: 5
+  save_steps: 100
+  seed: 42
+  bf16: true
+  optim: adamw_8bit
+
+export:
+  # VL : servir via transformers/vLLM quantifié, pas GGUF classique
+  format: peft_adapter

@@ -1,13 +1,30 @@
-﻿# QLoRA train + export hints — RTX 5080 Laptop 16 GB
+﻿# IADAF v2 — QLoRA chat Qwen3-8B (RTX 5080 16 GB)
+param(
+    [string]$Config = "",
+    [switch]$SkipExport,
+    [switch]$V1,
+    [switch]$V3
+)
+
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
-# Anaconda + PyTorch often ship two OpenMP runtimes → OMP Error #15 abort
 $env:KMP_DUPLICATE_LIB_OK = "TRUE"
 $env:OMP_NUM_THREADS = "1"
 
-Write-Host "== IADAF ML train ==" -ForegroundColor Cyan
-Write-Host "KMP_DUPLICATE_LIB_OK=$env:KMP_DUPLICATE_LIB_OK (Anaconda OpenMP workaround)"
+if ($V3) {
+    & "$PSScriptRoot\run_train_v3.ps1" -Config $Config -SkipExport:$SkipExport
+    exit $LASTEXITCODE
+}
+
+if (-not $Config) {
+    if ($V1) { $Config = "$Root\configs\model_v1.yaml" }
+    else { $Config = "$Root\configs\model.yaml" }
+}
+
+Write-Host "== IADAF ML train chat (v2 Qwen3-8B) ==" -ForegroundColor Cyan
+Write-Host "Config: $Config"
+Write-Host "KMP_DUPLICATE_LIB_OK=$env:KMP_DUPLICATE_LIB_OK"
 
 if (-not (Test-Path "$Root\datasets\processed\instruct_train.jsonl")) {
     Write-Host "Building instruct dataset…"
@@ -17,28 +34,31 @@ if (-not (Test-Path "$Root\datasets\processed\instruct_train.jsonl")) {
     if ($LASTEXITCODE -ne 0) { throw "build_instruct.py failed" }
 }
 
-# Stop Strata first if it still holds the GPU (user responsibility) — warn only
-Write-Host "Assure-toi que Strata est arrêté (libère la VRAM) avant le train." -ForegroundColor Yellow
+Write-Host "Arrête llama-server / Strata / VL avant le train (libère la VRAM)." -ForegroundColor Yellow
+
+$outLora = if ($V1) { "$Root\artifacts\lora_v1" } else { "$Root\artifacts\lora" }
+$outMerged = if ($V1) { "$Root\artifacts\merged_v1" } else { "$Root\artifacts\merged" }
 
 python "$Root\training\train_qlora.py" `
-    --config "$Root\configs\model.yaml" `
+    --config $Config `
     --data "$Root\datasets\processed\instruct_train.jsonl" `
-    --out "$Root\artifacts\lora"
+    --out $outLora
 if ($LASTEXITCODE -ne 0) {
-    throw "train_qlora.py a échoué (code $LASTEXITCODE). Pas d'export."
+    throw "train_qlora.py a échoué (code $LASTEXITCODE)."
 }
 
-if (-not (Test-Path "$Root\artifacts\lora")) {
-    throw "Adapter manquant après train: $Root\artifacts\lora"
+if ($SkipExport) {
+    Write-Host "Skip export (--SkipExport)." -ForegroundColor Yellow
+    exit 0
 }
 
 python "$Root\training\export_gguf.py" `
-    --config "$Root\configs\model.yaml" `
-    --adapter "$Root\artifacts\lora" `
-    --merged "$Root\artifacts\merged" `
+    --config $Config `
+    --adapter $outLora `
+    --merged $outMerged `
     --gguf-dir "$Root\artifacts\gguf"
 if ($LASTEXITCODE -ne 0) {
     throw "export_gguf.py a échoué (code $LASTEXITCODE)"
 }
 
-Write-Host "Done. See export_gguf output for llama.cpp / Strata steps." -ForegroundColor Green
+Write-Host "Done. Quantize GGUF puis .\ml\serving\llama-iadaf.ps1" -ForegroundColor Green

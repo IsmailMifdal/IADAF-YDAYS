@@ -44,12 +44,22 @@ def _pdf_text(content: bytes) -> Optional[str]:
         return None
 
 
-async def analyze(content: bytes, content_type: str, document_type: str,
-                  today: Optional[date] = None) -> Analysis:
+async def analyze(
+    content: bytes,
+    content_type: str,
+    document_type: str,
+    today: Optional[date] = None,
+    *,
+    filename: Optional[str] = None,
+    allowed_labels: Optional[list[str]] = None,
+) -> Analysis:
     today = today or date.today()
     kind = rules.category(document_type)
     checks: list[Check] = []
     text: Optional[str] = None
+
+    checks += rules.file_format_checks(filename)
+    checks += rules.chemin_label_checks(document_type, allowed_labels)
 
     if content_type == "application/pdf":
         text = _pdf_text(content)
@@ -74,7 +84,7 @@ async def analyze(content: bytes, content_type: str, document_type: str,
             checks.append(Check("lighting", "warning", "Image trop sombre : reprenez la photo à la lumière du jour."))
         elif measured.overexposed:
             checks.append(Check("lighting", "warning", "Image surexposée ou avec reflet : évitez le flash."))
-        if len(checks) == 1:
+        if len(checks) <= 3:
             checks.append(Check("quality", "ok", "Netteté, lumière et résolution correctes."))
 
     if text is None:
@@ -93,5 +103,8 @@ async def analyze(content: bytes, content_type: str, document_type: str,
         checks += rules.address_checks(dates, today)
     elif kind == "bank":
         checks += rules.bank_checks(text)
+
+    checks += rules.type_coherence_checks(document_type, text)
+    checks += rules.siret_checks(text)
 
     return Analysis(kind, _overall(checks), checks, text_read=True)

@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "datasets" / "raw"
 OUT = ROOT / "datasets" / "processed" / "instruct_train.jsonl"
 GOLD = ROOT / "eval" / "gold" / "questions_v1.jsonl"
+GOLD_DOCS = ROOT / "eval" / "gold" / "documents_v2.jsonl"
 
 SYSTEM_FR = (
     "Tu es l'assistant IADAF. Tu aides des personnes non francophones sur les "
@@ -261,6 +262,41 @@ def from_quality_fixes(path: Path) -> list[dict]:
     return rows
 
 
+def from_dossier_state(path: Path) -> list[dict]:
+    """v2 — chat enrichi par l'état du dossier (pièces OK/KO/manquantes)."""
+    if not path.is_file():
+        return []
+    rows = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            g = json.loads(line)
+            q, a = g.get("question") or "", g.get("answer") or ""
+            if q and a:
+                for _ in range(2):
+                    rows.append(msg(q, a))
+    return rows
+
+
+def from_gold_docs(path: Path) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            g = json.loads(line)
+            q = g.get("question") or ""
+            a = g.get("expected_answer") or ""
+            if q and a:
+                rows.append(msg(q, a))
+    return rows
+
+
 def from_document_ia(path: Path) -> list[dict]:
     if not path.is_file():
         return []
@@ -316,8 +352,10 @@ def main() -> int:
     examples += from_dila_cerfa(RAW / "service_public_dila" / "formulaires_cerfa.jsonl")
     examples += from_portals(RAW / "curated" / "portals_official.json")
     examples += from_quality_fixes(RAW / "curated" / "quality_fixes.jsonl")
+    examples += from_dossier_state(RAW / "curated" / "dossier_state.jsonl")
     examples += from_document_ia(RAW / "document_ia" / "catalog.json")
     examples += from_gold(GOLD)
+    examples += from_gold_docs(GOLD_DOCS)
 
     if args.shuffle:
         random.shuffle(examples)

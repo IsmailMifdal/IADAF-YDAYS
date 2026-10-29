@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "chemins": [
+    {
+      "chemin_id": "sejour_anef",
+      "pack_slug": "titre-sejour",
+      "title": "Titre de séjour",
+      "organism": "Préfecture / ANEF",
+      "portal_url": "https://administration-etrangers-en-france.interieur.gouv.fr/",
+      "steps": [
+        "Identifier le motif de séjour",
+        "Réunir les pièces",
+        "Pré-vérifier les pièces",
+        "Déposer sur ANEF / préfecture",
+        "Suivre la demande"
+      ],
+      "required_documents": [
+        "Passeport",
+        "Visa",
+        "Carte d'identité",
+        "Justificatif de domicile",
+        "Justificatif de ressources",
+        "Assurance maladie",
+        "Acte de naissance"
+      ],
+      "prefill_fields": [
+        "nom",
+        "prenom",
+        "date_naissance",
+        "nationalite",
+        "adresse",
+        "numero_etranger"
+      ]
+    },
+    {
+      "chemin_id": "sante_ameli",
+      "pack_slug": "assurance-maladie",
+      "title": "Assurance maladie",
+      "organism": "CPAM / Ameli",
+      "portal_url": "https://www.ameli.fr/",
+      "steps": [
+        "Vérifier le droit à l'affiliation",
+        "Réunir identité + domicile + RIB",
+        "Déposer / créer le compte Ameli",
+        "Suivre la carte Vitale"
+      ],
+      "required_documents": [
+        "Carte d'identité / passeport",
+        "Visa ou titre de séjour",
+        "Acte de naissance traduit",
+        "Justificatif de domicile",
+        "RIB",
+        "Contrat de travail ou certificat de scolarité"
+      ],
+      "prefill_fields": ["nom", "prenom", "nir", "adresse", "iban_masked"]
+    },
+    {
+      "chemin_id": "logement_caf",
+      "pack_slug": "aide-logement",
+      "title": "Aide au logement",
+      "organism": "CAF",
+      "portal_url": "https://www.caf.fr/",
+      "steps": [
+        "Vérifier l'éligibilité APL/ALS/ALF",
+        "Réunir bail + RIB + identité",
+        "Déposer la demande CAF",
+        "Suivre le dossier"
+      ],
+      "required_documents": [
+        "Contrat de location",
+        "Attestation de loyer",
+        "RIB",
+        "Pièce d'identité",
+        "Justificatif de revenus",
+        "Numéro de sécurité sociale"
+      ],
+      "prefill_fields": ["nom", "prenom", "adresse_logement", "loyer", "iban_masked", "nir"]
+    },
+    {
+      "chemin_id": "impots_dgfip",
+      "pack_slug": "impots",
+      "title": "Déclaration d'impôts",
+      "organism": "DGFiP",
+      "portal_url": "https://www.impots.gouv.fr/",
+      "steps": [
+        "Récupérer le numéro fiscal",
+        "Réunir revenus et RIB",
+        "Déclarer en ligne",
+        "Conserver l'avis"
+      ],
+      "required_documents": [
+        "Numéro fiscal",
+        "Relevé de revenus",
+        "RIB",
+        "Situation familiale",
+        "Justificatif de domicile"
+      ],
+      "prefill_fields": ["nom", "prenom", "numero_fiscal", "adresse", "iban_masked"]
+    },
+    {
+      "chemin_id": "permis_ants",
+      "pack_slug": "permis-conduire",
+      "title": "Permis de conduire",
+      "organism": "ANTS",
+      "portal_url": "https://ants.gouv.fr/",
+      "steps": [
+        "Créer / ouvrir le compte ANTS",
+        "Réunir identité + photo + justificatif",
+        "Déposer la demande",
+        "Suivre le titre"
+      ],
+      "required_documents": [
+        "Pièce d'identité",
+        "Justificatif de domicile",
+        "Photo d'identité",
+        "Attestation ASSR / Joconde si demandé"
+      ],
+      "prefill_fields": ["nom", "prenom", "date_naissance", "adresse", "numero_permis"]
+    },
+    {
+      "chemin_id": "carte_grise_ants",
+      "pack_slug": "carte-grise",
+      "title": "Carte grise / certificat d'immatriculation",
+      "organism": "ANTS",
+      "portal_url": "https://ants.gouv.fr/",
+      "steps": [
+        "Identifier le type de démarche SIV",
+        "Réunir pièce identité + contrôle technique si besoin",
+        "Payer le certificat en ligne",
+        "Recevoir le titre"
+      ],
+      "required_documents": [
+        "Pièce d'identité",
+        "Justificatif de domicile",
+        "Certificat de cession / facture",
+        "Contrôle technique si applicable",
+        "Ancien certificat d'immatriculation"
+      ],
+      "prefill_fields": ["nom", "prenom", "adresse", "immatriculation", "vin"]
+    }
+  ]
+}

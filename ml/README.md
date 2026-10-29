@@ -1,157 +1,230 @@
-# ML IADAF — entraînement, serving, évaluation
+# ML IADAF — v3 (chemins Public + Pro)
 
-Dossier prêt à l’emploi pour spécialiser un LLM sur les démarches administratives
-françaises et le brancher sur [`ai-service`](../ai-service) via une API
+Spécialisation LLM alignée sur [`docs/VISION-PRODUIT.md`](../docs/VISION-PRODUIT.md) :
+plusieurs **chemins** de démarches (particuliers élargis + préparation Pro),
+lecture de pièces, branchée sur [`ai-service`](../ai-service) via API
 OpenAI-compatible.
 
-## Matériel cible (référence)
+v2 (Qwen3-8B chat + VL-4B) reste la baseline technique ; v3 élargit **données,
+tâches et bancs d’éval**, pas forcément la taille des modèles (contrainte 16 Go).
 
-| Ressource | Valeur typique |
-|-----------|----------------|
-| GPU | NVIDIA 16 Go VRAM (ex. RTX 5080 Laptop) |
-| RAM | 64 Go |
-| OS | Windows / Linux |
-
-## Architecture
-
-```
-Utilisateurs → Front → Gateway → ai-service (RAG Chroma)
-                                      ↓
-                         OpenAI-compatible :8080|/8000/v1
-                    (llama.cpp GGUF  |  TensorRT-LLM FP8  |  Strata)
-```
-
-- **Un modèle partagé** ; le cloisonnement multi-utilisateur reste le JWT IADAF.
-- Spécialisation = **QLoRA** sur `Qwen2.5-7B-Instruct` + **RAG** enrichi.
-
-## Flux rapide
-
-```bash
-# 0) Dépendances eval
-pip install -r ml/requirements-eval.txt
-
-# 1) Datasets (DILA XML + HF + document-ia + curated)
-python ml/datasets/download.py
-python ml/datasets/build_instruct.py
-python ml/datasets/build_rag_chunks.py
-python ml/datasets/build_doc_labels.py
-
-# 2) Entraînement QLoRA (GPU)
-#   pip install torch --index-url https://download.pytorch.org/whl/cu128
-pip install -r ml/requirements-train.txt
-# PowerShell: .\ml\training\run_train.ps1
-
-# 3a) Serving GGUF (simple, déjà validé)
-.\ml\serving\llama-iadaf.ps1
-
-# 3b) Serving TensorRT-LLM FP8 (perf multi-users)
-#    merge LoRA → engine FP8 → API :8000  — voir ml/serving/trtllm/README.md
-.\ml\serving\trtllm\serve-trtllm.ps1
-
-# 4) Brancher ai-service
-# OPENAI_BASE_URL=http://127.0.0.1:8080/v1   # llama.cpp
-# OPENAI_BASE_URL=http://127.0.0.1:8000/v1   # TRT-LLM
-# OPENAI_API_KEY=iadaf-dev-local-key
-
-# 5) Éval
-python ml/eval/run_quality.py
-python ml/eval/run_perf.py
-python ml/eval/run_coherence.py
-```
-
-## Serving — choix
-
-| Voie | Quand | Script |
-|------|-------|--------|
-| **llama.cpp GGUF Q4_K_M** | Défaut Windows, simple | `ml/serving/llama-iadaf.ps1` |
-| **TensorRT-LLM FP8** | Throughput multi-users / context long | `ml/serving/trtllm/` |
-| **Strata** | MoE iq2_xs déjà installé (baseline) | `ml/serving/strata-iadaf.ps1` |
-
-### TensorRT-LLM (pas un tweak Strata)
-
-1. Garder le QLoRA PyTorch.
-2. `merge` → build engine FP8 → `trtllm-serve`.
-3. Pointer `OPENAI_BASE_URL` vers `:8000/v1`.
-4. Rejouer `run_perf` / `run_quality` / `run_coherence`.
-
-Gain attendu ≈ **+20–100 % throughput** ; latence IADAF souvent déjà OK (~1–2 s).
-
-### Alternative GGUF sans refonte
-
-Monter `-Parallel`, baisser `-CtxSize` si OOM, max TGP — gain limité, zéro migration.
-
-## Datasets
-
-Voir [`datasets/SOURCES.md`](datasets/SOURCES.md).
-
-Sources intégrées côté pipeline : **flux XML DILA** (fiches + CERFA), HF
-AgentPublic/CESEDA, **document-ia** (schémas justificatifs), portails officiels
-(ANEF, OFII, Légifrance) en curated, corrections qualité (refus / anti-hallucination).
-GISTI / Cimade : **orientation uniquement** (pas de copie intégrale).
-
-Aucune pièce utilisateur réelle n’entre dans l’entraînement (contrainte AIPD).
-
-## Objectifs d’évaluation (YDAYS)
-
-| Banc | Seuil | Script |
-|------|-------|--------|
-| Qualité (100 Q de référence) | ≥ 90 % | `eval/run_quality.py` |
-| Perf p95 (prompt court) | &lt; 15 s | `eval/run_perf.py` |
-| Cohérence (5 runs / Q) | similarité ≥ seuil | `eval/run_coherence.py` |
-
-Seuils : [`eval/thresholds.yaml`](eval/thresholds.yaml).
-
-## Hors scope v1
-
-- Fine-tune du MoE Qwen3.8-Flash-Next
-- Entraînement sur documents usagers réels
-- Remplacement complet des règles documentaires par un modèle vision
-
-## Roadmap v2 — documents + aide renforcée
-
-Objectif : guider l’usager **et** lire les pièces, sans abandonner les règles
-déterministes ni les contraintes AIPD. Famille cible : **Qwen3** (plus Qwen2.5).
-
-### Matériel figé (train + run)
+## Matériel figé (train + run)
 
 | Ressource | Cible |
 |-----------|--------|
 | GPU | **NVIDIA RTX 5080 Laptop, 16 Go VRAM** |
 | RAM | 64 Go |
-| Contrainte | Tout le pipeline v2 (QLoRA + serving) doit tenir sur **cette seule carte** |
+| Règle | **Un seul gros poids GPU à la fois** (chat **ou** VL) |
 
-Pas de dépendance à un GPU ≥ 24 Go ni à un train distant pour la v2 de référence.
+## Architecture v3
 
-### Architecture cible (2 rôles, Qwen3)
+| Rôle | Modèle (cible) | Config | Artefact |
+|------|----------------|--------|----------|
+| Chat / chemins | `Qwen/Qwen3-8B` (héritage v2) | `configs/model.yaml` | `artifacts/lora` → GGUF |
+| Documents / pièces | `Qwen/Qwen3-VL-4B-Instruct` | `configs/model_vl.yaml` | `artifacts/lora_vl` |
+| (Option) routeur de chemin | petit classifieur ou tête SFT | à ajouter | tags `chemin_id` |
 
-| Rôle | Modèle | Train (QLoRA 4-bit) | Run |
-|------|--------|---------------------|-----|
-| Chat / démarches | **`Qwen3-8B-Instruct`** | ~10–14 Go ; seq ≤ 2k, batch 1–2 + grad accum, checkpointing | GGUF Q4_K_M / FP8 ; contexte et `-Parallel` maîtrisés |
-| Documents | **`Qwen3-VL-4B-Instruct`** (cible) ; `Qwen3-VL-8B` seulement si budget pixels + seq très serrés | ~12–15 Go ; batch 1, images bornées (`max_pixels`), FlashAttn | Quantifié ; **chargé à la demande** (pas en parallèle BF16 avec le chat) |
+Les règles `ai-service` (dates, IBAN, MRZ, qualité, complétude dossier) restent le
+filet : le VL **extrait**, le code **valide**, le chat **oriente** vers un chemin.
 
-Sur 16 Go : **un seul gros poids GPU à la fois** — LLM texte pour le chat, swap / process séparé pour le VL à l’analyse de pièce. OCR cloud (ex. Mistral) = **secours**, pas le cœur.
+Baselines conservées :
 
-Les règles (`ai-service` : dates, IBAN, MRZ, qualité image) restent le filet
-de sécurité : le VL **extrait**, le code **valide** (évite les faux « conforme »).
+- v1 : `configs/model_v1.yaml` (`Qwen2.5-7B-Instruct`)
+- v2 : mêmes configs modèles ; jeux de données / gold plus étroits (séjour, santé, CAF, impôts)
 
-Hors budget 5080 16 Go en v2 : dense 14B+ en QLoRA confortable, VL-8B multi-images haute rés., MoE Flash-Next fine-tuné.
+## Objectifs produit → objectifs ML
 
-### Flux produit v2
+| Besoin vision | Capacité ML v3 |
+|---------------|----------------|
+| Chemins Public élargis (permis, carte grise, …) | SFT + RAG sur fiches DILA / ANTS / CERFA |
+| Tous particuliers FR (pas seulement non-FR) | Q/R admin grand public + ton clair |
+| Multilingue FR/EN/AR/ES | Paires instruct traduites / glossaires officiels |
+| Pré-vérif pièces | VL synth + schémas justificatifs (identité, adresse, bancaire, permis, véhicule…) |
+| État de dossier / checklist | JSON `dossier_state` enrichi par `chemin_id` |
+| Préparation Pro (accompagnant) | SFT « synthèse pour conseiller », multi-dossiers, refus du conseil juridique |
+| Aide automatisée | Anti-hallu, citations sources, refus hors périmètre |
 
-1. Dépôt pièce → VL (lecture) → règles (validation) → message clair à l’usager.
-2. Chat enrichi par l’**état du dossier** (pièces OK / KO / manquantes) + RAG.
-3. OCR tiers optionnel si le VL est indisponible ou trop coûteux.
+## Flux produit v3
 
-### Datasets v2 (prêts à l’usage, toujours synthétiques / ouverts)
+```
+Question → (option) routeur chemin → Chat + RAG
+        → État dossier (checklist)
+        → Dépôt pièce → VL (lecture) → règles (validation)
+        → Message usager / (Pro) synthèse accompagnant
+```
 
-Compléter [`datasets/SOURCES.md`](datasets/SOURCES.md) :
+1. Un **chemin** = étapes + pièces + règles + textes (réutilisable Public / Pro).
+2. Chat enrichi par l’**état du dossier** + RAG (sources officielles à jour).
+3. OCR cloud = secours optionnel ; pas de pièces usagers réelles en train (AIPD).
 
-| Piste | Contenu | Usage |
-|-------|---------|--------|
-| Démarches (déjà v1) | DILA XML, AgentPublic, CESEDA, curated ANEF/OFII | SFT + RAG à jour |
-| Documents synthétiques | Images fictives (passeport/MRZ, RIB, facture, scans flous/sombres) + schémas document-ia | SFT VL (type + champs JSON) |
-| Multilingue | Mêmes Q/R en FR / EN / AR / ES | Alignement produit IADAF |
-| Gold qualité élargi | Refus, anti-hallu, pièce manquante / expirée | Bancs eval v2 |
+## Commandes — datasets
 
-**Toujours interdit** : pièces réelles usagers ; copie intégrale GISTI / Cimade
-(liens + orientation seulement).
+```powershell
+cd IADAF-YDAYS
+# v2 (déjà en place)
+python ml/datasets/download.py
+python ml/datasets/build_instruct.py
+python ml/datasets/build_rag_chunks.py
+python ml/datasets/build_doc_labels.py
+python ml/datasets/build_vl_synth.py
+
+# v3 — téléchargement CPU only
+python ml/datasets/download_v3.py
+python ml/datasets/download_v3_qualite.py   # P0 Qualité Max (yssf-io, etc.)
+
+# SFT grounded v3 (n'écrase pas instruct_train.jsonl v2)
+python ml/datasets/build_grounded_sft_v3.py
+# → ml/datasets/processed/instruct_train_v3.jsonl (~16k+ avec safety)
+
+# Index RAG local (CPU) pour eval
+python ml/datasets/build_rag_index_v3.py
+# → ml/artifacts/rag_v3/
+```
+
+Eval qualité **avec RAG** (serveur chat local up) :
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:8080/v1"
+$env:OPENAI_API_KEY  = "iadaf-dev-local-key"
+python ml/eval/run_quality.py --with-rag
+# → ml/artifacts/eval_quality_rag.json
+```
+
+Sources, rapports et prompts Gemini :
+[`datasets/SOURCES.md`](datasets/SOURCES.md) ·
+[`datasets/RAPPORT-DEEPRESEARCH-V3.md`](datasets/RAPPORT-DEEPRESEARCH-V3.md) ·
+[`datasets/GEMINI-DEEPRESEARCH-V3.md`](datasets/GEMINI-DEEPRESEARCH-V3.md) ·
+**post-échec v2 (qualité max)** → [`datasets/GEMINI-DEEPRESEARCH-V3-QUALITE.md`](datasets/GEMINI-DEEPRESEARCH-V3-QUALITE.md).
+
+## Résultats v2 (mesurés — RTX 5080 Laptop)
+
+### Chat Qwen3-8B → GGUF Q4_K_M
+
+QLoRA ~5 h (800 steps, loss ≈ 0,67) → `artifacts/lora` → `merged` →
+`gguf/iadaf-qwen3-8b-Q4_K_M.gguf` (~4,7 Go).
+
+| Banc | 1er run (post-chat) | Relance (post-VL*) | Seuil | Verdict |
+|------|---------------------|--------------------|-------|---------|
+| Qualité | 67 % (67/100) | **62 %** (62/100) | ≥ 90 % | **KO** |
+| Docs | 50 % (4/8) | **50 %** (4/8) | ≥ 85 % | **KO** |
+| Perf p95 (c=1) | ≈ 1,4 s | **≈ 1,1 s** | &lt; 15 s | **OK** |
+| Cohérence mean | 0,89 | **0,875** (q004 KO → success=False) | ≥ 0,75 mean | **partiel** |
+
+\*Le GGUF chat n’a **pas** changé après le VL : écart qualité 67→62 = variance
+échantillonnage / scoring keywords, pas un effet du LoRA VL.
+
+Rapports : `ml/artifacts/eval_{quality,docs,perf,coherence}.json`.
+
+### VL Qwen3-VL-4B (prototype)
+
+- Adapter : `artifacts/lora_vl` (~34 s, 8 steps, 29 ex., loss ≈ 3,15).
+- **Fallback texte + chemin image** — pas de train multimodal pixels.
+- N’améliore pas `run_docs` / `run_quality` (ces bancs appellent le chat GGUF).
+
+### Priorité suivante (v3 Qualité Max + skills)
+
+Voir [`datasets/RAPPORT-DEEPRESEARCH-V3-QUALITE.md`](datasets/RAPPORT-DEEPRESEARCH-V3-QUALITE.md)
+et le registre chemins [`../chemins/registry.json`](../chemins/registry.json) :
+
+1. **RAG-First** + SFT grounded (`[Source: URL]`) — verdict = `run_quality.py --with-rag`.
+2. Corpus SFT v3 enrichi (gold ×40, glossaire, hard-negatives, safety, dossier_state, skills).
+3. **Hit@3 RAG** go/no-go : `python ml/eval/run_rag_hit.py`.
+4. **Skills runtime** (`ai-service`) : `qa` / `checklist` / `precheck` / `prefill` / `refuse` + `dossier_state`.
+5. Faits volatils → RAG/code ; VL extrait (`ml/serving/vl_extract.py`) ; règles valident.
+6. Banc skills déterministe : `python ml/eval/run_skills.py`.
+
+## Commandes — train chat
+
+```powershell
+cd C:\Autre\Ynov\M2_info\Projets\Ydays\IADAF-YDAYS
+$env:KMP_DUPLICATE_LIB_OK = "TRUE"
+# Arrêter llama-server / Strata / VL avant
+
+# v3 grounded (recommandé pour ≥90 % avec RAG)
+.\ml\training\run_train_v3.ps1
+# ou : .\ml\training\run_train.ps1 -V3
+
+# Baseline v2 / v1
+.\ml\training\run_train.ps1
+.\ml\training\run_train.ps1 -V1
+```
+
+Serving chat GGUF :
+
+```powershell
+.\ml\serving\llama-iadaf.ps1 -ModelPath "C:\Autre\Ynov\M2_info\Projets\Ydays\IADAF-YDAYS\ml\artifacts\gguf\iadaf-qwen3-8b-Q4_K_M.gguf"
+# Après export v3 : pointer le GGUF produit sous artifacts/gguf/
+```
+
+Eval post-train (serveur up) :
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:8080/v1"
+$env:OPENAI_API_KEY  = "iadaf-dev-local-key"
+$env:KMP_DUPLICATE_LIB_OK = "TRUE"
+python ml/eval/run_rag_hit.py
+python ml/eval/run_quality.py --with-rag
+python ml/eval/run_skills.py
+```
+
+TensorRT-LLM FP8 (option perf) : `ml/serving/trtllm/README.md`.
+
+## Commandes — train VL + test
+
+**Prérequis** : arrêter le serveur chat (un seul gros modèle sur 16 Go).
+
+```powershell
+cd C:\Autre\Ynov\M2_info\Projets\Ydays\IADAF-YDAYS
+$env:KMP_DUPLICATE_LIB_OK = "TRUE"
+
+# Dataset images synthétiques (si pas déjà fait)
+python ml/datasets/build_vl_synth.py
+
+# QLoRA Qwen3-VL-4B → ml/artifacts/lora_vl
+.\ml\training\run_train_vl.ps1
+```
+
+Après le VL, pour retester le **chat** (pas le VL) : relancer `llama-iadaf.ps1`
+puis :
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:8080/v1"
+$env:OPENAI_API_KEY  = "iadaf-dev-local-key"
+
+python ml/eval/run_quality.py
+python ml/eval/run_docs.py
+python ml/eval/run_perf.py
+python ml/eval/run_coherence.py
+```
+
+Smoke test manuel chat (serveur up) : questions gold dans
+`ml/eval/gold/questions_v1.jsonl` et `documents_v2.jsonl`.
+
+> Le VL n’est pas encore exposé via `llama-iadaf.ps1` (GGUF texte). L’adapter
+> `artifacts/lora_vl` se charge en process séparé (transformers / script dédié) ;
+> `run_docs` évalue surtout le **chat** sur l’état de dossier.
+
+## Datasets
+
+Voir [`datasets/SOURCES.md`](datasets/SOURCES.md).
+
+- Synthétique / ouvert uniquement (AIPD) : **pas** de pièces usagers réelles.
+- GISTI / Cimade = **liens** seulement, pas de copie intégrale.
+- v3 ajoute des domaines Public élargis + corpus Pro (URSSAF, création, ton conseiller) **sous licences ouvertes**.
+
+## Seuils YDAYS
+
+| Banc | Seuil | Script |
+|------|-------|--------|
+| Qualité (gold démarches) | ≥ 90 % | `eval/run_quality.py` |
+| Docs / dossier | ≥ 85 % | `eval/run_docs.py` |
+| Perf p95 | &lt; 15 s | `eval/run_perf.py` |
+| Cohérence | similarité ≥ seuil | `eval/run_coherence.py` |
+
+Cibles v3 (quand les gold existent) : ≥ 100 Q multi-chemins ; gold docs par type de pièce
+des nouveaux chemins ; quelques scénarios « accompagnant Pro ».
+
+## Hors scope sur 16 Go
+
+Dense 14B+ QLoRA confortable, VL-8B multi-images haute rés., fine-tune MoE,
+entraînement simultané chat + VL.

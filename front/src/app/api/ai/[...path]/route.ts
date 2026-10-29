@@ -18,7 +18,17 @@ const FORWARDED_HEADERS = ["content-type", "accept", "accept-language"];
  * erasure endpoint in particular must never be reachable through here, since
  * this proxy signs a token for any signed-in user.
  */
-const PUBLIC_PATHS = new Set(["chat", "chat/stream", "translate", "analyze-document", "health"]);
+const PUBLIC_PATHS = new Set([
+  "chat",
+  "chat/stream",
+  "translate",
+  "analyze-document",
+  "health",
+  "dossier-state",
+  "prefill",
+  "chemins",
+  "skills/run",
+]);
 
 async function proxy(
   req: NextRequest,

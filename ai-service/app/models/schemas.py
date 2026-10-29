@@ -1,6 +1,6 @@
 """Pydantic request / response schemas for the AI service."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,14 @@ class ChatRequest(BaseModel):
     language: str = Field(
         "FR", pattern=LANGUAGE_PATTERN, description="Response language code (FR, EN, AR, ES)"
     )
+    chemin_id: Optional[str] = Field(None, max_length=64, description="Active procedure path id")
+    pack_slug: Optional[str] = Field(None, max_length=64, description="Pack slug if in workspace")
+    provided_documents: Optional[List[str]] = Field(
+        None, description="Document labels already uploaded"
+    )
+    skill: Optional[str] = Field(
+        None, description="Force skill: qa|checklist|precheck|prefill|refuse"
+    )
 
 
 class ChatResponse(BaseModel):
@@ -36,6 +44,8 @@ class ChatResponse(BaseModel):
     response: str
     conversation_id: str
     sources: List[str] = []
+    skill: Optional[str] = None
+    dossier_state: Optional[Dict[str, Any]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +84,12 @@ class DocumentAnalysisRequest(BaseModel):
         ..., min_length=1, max_length=100, description="Type of document (e.g. 'titre_sejour')"
     )
     language: str = Field("FR", pattern=LANGUAGE_PATTERN, description="Language of the response")
+    pack_slug: Optional[str] = Field(None, max_length=64)
+    chemin_id: Optional[str] = Field(None, max_length=64)
+    provided_documents: Optional[List[str]] = None
+    missing_documents: Optional[List[str]] = None
+    piece_statuses: Optional[Dict[str, str]] = None
+    extracted_fields: Optional[Dict[str, Any]] = None
 
 
 class DocumentAnalysisResponse(BaseModel):
@@ -82,6 +98,39 @@ class DocumentAnalysisResponse(BaseModel):
     analysis: str
     missing_info: List[str] = []
     recommendations: List[str] = []
+    dossier_state: Optional[Dict[str, Any]] = None
+    deterministic: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Skills / dossier
+# ---------------------------------------------------------------------------
+
+
+class DossierStateRequest(BaseModel):
+    chemin_id: Optional[str] = Field(None, max_length=64)
+    pack_slug: Optional[str] = Field(None, max_length=64)
+    provided_documents: Optional[List[str]] = None
+    piece_statuses: Optional[Dict[str, str]] = None
+    extracted_fields: Optional[Dict[str, Any]] = None
+    anomalies: Optional[List[str]] = None
+
+
+class PrefillRequest(BaseModel):
+    chemin_id: Optional[str] = Field(None, max_length=64)
+    pack_slug: Optional[str] = Field(None, max_length=64)
+    extracted_fields: Optional[Dict[str, Any]] = None
+
+
+class SkillRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=MAX_CHAT_MESSAGE)
+    skill: Optional[str] = None
+    chemin_id: Optional[str] = None
+    pack_slug: Optional[str] = None
+    provided_documents: Optional[List[str]] = None
+    piece_statuses: Optional[Dict[str, str]] = None
+    extracted_fields: Optional[Dict[str, Any]] = None
+    language: str = Field("FR", pattern=LANGUAGE_PATTERN)
 
 
 # ---------------------------------------------------------------------------

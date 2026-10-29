@@ -11,6 +11,7 @@ from app.models import database
 from app.models.database import Conversation, Message
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
+from app.skills.service import run_skill
 
 STREAM_ERROR_MESSAGE = (
     "La réponse a été interrompue par une erreur. Veuillez réessayer ; "
@@ -28,6 +29,11 @@ class ChatService:
         conversation_id: Optional[str],
         language: str = "FR",
         user_id: Optional[str] = None,
+        *,
+        chemin_id: Optional[str] = None,
+        pack_slug: Optional[str] = None,
+        provided_documents: Optional[List[str]] = None,
+        skill: Optional[str] = None,
     ) -> Dict[str, object]:
         """Process a user message and return the assistant response.
 
@@ -44,20 +50,38 @@ class ChatService:
         """
         conversation = await self._start_turn(session, message, conversation_id, language, user_id)
 
-        # Generate answer via RAG
-        result = await rag_service.aquery(question=message, language=language)
-        answer: str = result["answer"]
-        sources: List[str] = result.get("sources", [])
+        skill_result = run_skill(
+            message,
+            skill=skill,  # type: ignore[arg-type]
+            chemin_id=chemin_id,
+            pack_slug=pack_slug,
+            provided_documents=provided_documents,
+        )
+        sources: List[str] = []
+        if skill_result.get("needs_llm"):
+            question = message
+            state_block = skill_result.get("prompt_state")
+            if state_block:
+                question = f"{state_block}\n\nQuestion: {message}"
+            result = await rag_service.aquery(question=question, language=language)
+            answer = result["answer"]
+            sources = result.get("sources", [])
+        else:
+            answer = skill_result.get("response") or ""
 
         self._add_answer(session, conversation, answer)
         await session.commit()
 
-        logger.debug(f"Chat — conversation={conversation.id} sources={sources}")
+        logger.debug(
+            f"Chat — conversation={conversation.id} skill={skill_result.get('skill')} sources={sources}"
+        )
 
         return {
             "response": answer,
             "conversation_id": conversation.id,
             "sources": sources,
+            "skill": skill_result.get("skill"),
+            "dossier_state": skill_result.get("dossier_state"),
         }
 
     async def chat_stream(
@@ -66,6 +90,11 @@ class ChatService:
         conversation_id: Optional[str],
         language: str = "FR",
         user_id: Optional[str] = None,
+        *,
+        chemin_id: Optional[str] = None,
+        pack_slug: Optional[str] = None,
+        provided_documents: Optional[List[str]] = None,
+        skill: Optional[str] = None,
     ) -> AsyncIterator[Tuple[str, Dict[str, object]]]:
         """Same as :meth:`chat`, the answer streamed as it is generated.
 
@@ -85,9 +114,32 @@ class ChatService:
             await session.commit()
             yield "meta", {"conversation_id": conversation.id}
 
+            skill_result = run_skill(
+                message,
+                skill=skill,  # type: ignore[arg-type]
+                chemin_id=chemin_id,
+                pack_slug=pack_slug,
+                provided_documents=provided_documents,
+            )
+            if not skill_result.get("needs_llm"):
+                answer = skill_result.get("response") or ""
+                self._add_answer(session, conversation, answer)
+                await session.commit()
+                yield "token", {"text": answer}
+                yield "done", {
+                    "sources": [],
+                    "skill": skill_result.get("skill"),
+                    "dossier_state": skill_result.get("dossier_state"),
+                }
+                return
+
             pieces: List[str] = []
             try:
-                prompt, sources = await rag_service.prepare(message, language)
+                question = message
+                state_block = skill_result.get("prompt_state")
+                if state_block:
+                    question = f"{state_block}\n\nQuestion: {message}"
+                prompt, sources = await rag_service.prepare(question, language)
                 async for piece in llm_service.astream(prompt):
                     pieces.append(piece)
                     yield "token", {"text": piece}
@@ -99,7 +151,11 @@ class ChatService:
             self._add_answer(session, conversation, "".join(pieces))
             await session.commit()
             logger.debug(f"Chat stream — conversation={conversation.id} sources={sources}")
-            yield "done", {"sources": sources}
+            yield "done", {
+                "sources": sources,
+                "skill": skill_result.get("skill"),
+                "dossier_state": skill_result.get("dossier_state"),
+            }
 
     # ------------------------------------------------------------------
     # Internal helpers

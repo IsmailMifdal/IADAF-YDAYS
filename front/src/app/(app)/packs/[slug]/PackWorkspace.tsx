@@ -249,7 +249,14 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     const prompt = langPrompts[lang] || langPrompts.fr;
 
     api
-      .chat({ message: prompt, conversation_id: undefined, language: lang })
+      .chat({
+        message: prompt,
+        conversation_id: undefined,
+        language: lang,
+        pack_slug: pack.slug,
+        provided_documents: [],
+        skill: "qa",
+      })
       .then((res) => {
         if (cancelled) return;
         setConversationId(res.conversation_id);
@@ -343,6 +350,15 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
         document_content: summary,
         document_type: pack.slug,
         language: lang.toUpperCase(),
+        pack_slug: pack.slug,
+        provided_documents: provided,
+        missing_documents: missing,
+        piece_statuses: Object.fromEntries(
+          documents.map((d) => {
+            const a = results[d.id];
+            return [d.documentType, a?.status ?? "uploaded"] as const;
+          }),
+        ),
       });
 
       const parts = [res.analysis];
@@ -390,7 +406,15 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
         ? `[CONTEXTE : L'utilisateur travaille sur la démarche "${pack.title}" (${pack.shortDescription}). Réponds UNIQUEMENT en rapport avec cette démarche. Ne parle pas d'autres démarches.]\n\nQuestion de l'utilisateur : `
         : "";
       const res = await api.chatStream(
-        { message: packContext + trimmed, conversation_id: conversationId, language: lang },
+        {
+          message: packContext + trimmed,
+          conversation_id: conversationId,
+          language: lang,
+          pack_slug: pack?.slug,
+          provided_documents: pack
+            ? pack.requiredDocuments.filter((d) => bySlot[d])
+            : undefined,
+        },
         showAnswer,
       );
       setConversationId(res.conversation_id);
@@ -403,7 +427,7 @@ Reglas: breve (máx 8 líneas), informal, positivo. Responde en español.`,
     } finally {
       setIsLoading(false);
     }
-  }, [chatInput, conversationId, isBusy, pack, lang, m]);
+  }, [chatInput, conversationId, isBusy, pack, lang, m, bySlot]);
 
   const uploadDocument = async (documentType: string, file: File) => {
     const validationError = validateFile(file, t);

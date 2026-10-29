@@ -42,6 +42,19 @@ const REQUIRED_DOCUMENTS: Record<string, string[]> = {
     "Situation familiale",
     "Justificatif de domicile",
   ],
+  "permis-conduire": [
+    "Pièce d'identité",
+    "Justificatif de domicile",
+    "Photo d'identité",
+    "Attestation ASSR / Joconde si demandé",
+  ],
+  "carte-grise": [
+    "Pièce d'identité",
+    "Justificatif de domicile",
+    "Certificat de cession / facture",
+    "Contrôle technique si applicable",
+    "Ancien certificat d'immatriculation",
+  ],
   "pack-complet": [
     "[Assurance maladie] Carte d'identité / passeport",
     "[Assurance maladie] Visa ou titre de séjour",

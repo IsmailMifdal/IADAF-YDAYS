@@ -12,12 +12,18 @@ export type ChatRequest = {
   message: string;
   conversation_id?: string;
   language?: string;
+  chemin_id?: string;
+  pack_slug?: string;
+  provided_documents?: string[];
+  skill?: "qa" | "checklist" | "precheck" | "prefill" | "refuse";
 };
 
 export type ChatResponse = {
   response: string;
   conversation_id: string;
   sources: string[];
+  skill?: string;
+  dossier_state?: Record<string, unknown>;
 };
 
 export type TranslateRequest = {
@@ -36,12 +42,36 @@ export type DocumentAnalysisRequest = {
   document_content: string;
   document_type: string;
   language?: string;
+  pack_slug?: string;
+  chemin_id?: string;
+  provided_documents?: string[];
+  missing_documents?: string[];
+  piece_statuses?: Record<string, string>;
+  extracted_fields?: Record<string, unknown>;
 };
 
 export type DocumentAnalysisResponse = {
   analysis: string;
   missing_info: string[];
   recommendations: string[];
+  dossier_state?: Record<string, unknown>;
+  deterministic?: boolean;
+};
+
+export type PrefillRequest = {
+  chemin_id?: string;
+  pack_slug?: string;
+  extracted_fields?: Record<string, unknown>;
+};
+
+export type PrefillResponse = {
+  chemin_id?: string;
+  pack_slug?: string;
+  portal_url?: string;
+  fields: Record<string, unknown>;
+  missing_fields: string[];
+  message: string;
+  submit_allowed: boolean;
 };
 
 export type HealthResponse = {
@@ -197,6 +227,22 @@ export const api = {
       "/api/ai/analyze-document",
       req,
     );
+  },
+
+  /** Prefill V1 — récap champs extraits (pas de soumission portail). */
+  prefill(req: PrefillRequest) {
+    return post<PrefillRequest, PrefillResponse>("/api/ai/prefill", req);
+  },
+
+  dossierState(req: {
+    chemin_id?: string;
+    pack_slug?: string;
+    provided_documents?: string[];
+    piece_statuses?: Record<string, string>;
+    extracted_fields?: Record<string, unknown>;
+    anomalies?: string[];
+  }) {
+    return post<typeof req, Record<string, unknown>>("/api/ai/dossier-state", req);
   },
 
   /** Health check. */

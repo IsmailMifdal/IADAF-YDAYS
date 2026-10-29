@@ -1,10 +1,12 @@
-# QLoRA config — fits RTX 5080 Laptop 16 GB VRAM + 64 GB RAM
-base_model: Qwen/Qwen2.5-7B-Instruct
-# After merge+quantize, load via Strata --model-path
-output_name: iadaf-qwen2.5-7b-instruct
+# IADAF v2 — chat QLoRA sur RTX 5080 Laptop 16 Go
+# Famille : Qwen3 (plus Qwen2.5). Un seul gros poids GPU à la fois.
+base_model: Qwen/Qwen3-8B
+output_name: iadaf-qwen3-8b
+version: v2
 
 max_seq_length: 2048
 load_in_4bit: true
+gradient_checkpointing: true
 
 lora:
   r: 16
@@ -21,8 +23,9 @@ lora:
 
 training:
   epochs: 2
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 8
+  # batch 1–2 + accum pour tenir en 10–14 Go VRAM
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
   learning_rate: 2.0e-4
   warmup_ratio: 0.03
   weight_decay: 0.01

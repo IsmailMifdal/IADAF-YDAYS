@@ -1,0 +1,30 @@
+{"term":"ANEF","definition":"Administration Numérique des Étrangers en France : portail en ligne des démarches de séjour.","confusions":["ANTS","listes électorales","service électoral"],"url":"https://administration-etrangers-en-france.interieur.gouv.fr/"}
+{"term":"OFII","definition":"Office Français de l'Immigration et de l'Intégration : accueil, validation VLS-TS, intégration.","confusions":["OFPRA","préfecture"],"url":"https://www.ofii.fr/"}
+{"term":"OFPRA","definition":"Office français de protection des réfugiés et apatrides : demande d'asile et statut de réfugié.","confusions":["OFII","ANEF"],"url":"https://www.ofpra.gouv.fr/"}
+{"term":"VLS-TS","definition":"Visa de Long Séjour valant Titre de Séjour (en général 4 à 12 mois), à valider en ligne auprès de l'OFII.","confusions":["visa Schengen C","carte de séjour temporaire"],"url":"https://www.service-public.fr/"}
+{"term":"AME","definition":"Aide Médicale de l'État : prise en charge des soins pour certaines personnes en situation irrégulière.","confusions":["PMA","procréation","PUMa"],"url":"https://www.service-public.fr/"}
+{"term":"PUMa","definition":"Protection Universelle Maladie : prise en charge des frais de santé pour les personnes résidant en France de façon stable.","confusions":["AME","C2S","mutuelle"],"url":"https://www.ameli.fr/"}
+{"term":"C2S","definition":"Complémentaire Santé Solidaire : aide pour les frais non couverts par l'assurance maladie de base.","confusions":["PUMa","mutuelle privée"],"url":"https://www.ameli.fr/"}
+{"term":"APL","definition":"Aide Personnalisée au Logement pour certains logements conventionnés.","confusions":["ALS","ALF"],"url":"https://www.caf.fr/"}
+{"term":"ALS","definition":"Allocation de Logement Sociale lorsque l'APL/ALF ne s'appliquent pas.","confusions":["APL","ALF"],"url":"https://www.caf.fr/"}
+{"term":"ALF","definition":"Allocation de Logement Familiale liée à la situation familiale.","confusions":["APL","ALS"],"url":"https://www.caf.fr/"}
+{"term":"RFR","definition":"Revenu Fiscal de Référence figurant sur l'avis d'imposition, utilisé pour de nombreuses aides.","confusions":["revenu net imposable","revenu brut"],"url":"https://www.impots.gouv.fr/"}
+{"term":"Récépissé","definition":"Document prouvant le dépôt d'une demande de titre de séjour ou de renouvellement.","confusions":["APS","attestation de prolongation d'instruction"],"url":"https://www.service-public.fr/"}
+{"term":"APS","definition":"Autorisation Provisoire de Séjour pour motifs spécifiques (soins, jeunes diplômés, etc.).","confusions":["titre pluriannuel","récépissé"],"url":"https://www.service-public.fr/"}
+{"term":"CERFA","definition":"Formulaire administratif officiel identifié par un numéro (ex. 12100*02). Ne jamais inventer le numéro.","confusions":["identifiant usager"],"url":"https://www.service-public.fr/"}
+{"term":"Timbre fiscal","definition":"Taxe perçue pour certains titres (passeport, carte de séjour). Ne jamais inventer le montant : renvoyer vers le site officiel.","confusions":["montant inventé"],"url":"https://www.service-public.fr/"}
+{"term":"ANTS","definition":"Agence Nationale des Titres Sécurisés : CNI, passeports, permis, cartes grises.","confusions":["ANEF"],"url":"https://ants.gouv.fr/"}
+{"term":"CAF","definition":"Caisse d'Allocations Familiales : prestations familiales et aides au logement. Ne pas inventer de délai d'instruction fixe.","confusions":["CPAM","délai inventé"],"url":"https://www.caf.fr/"}
+{"term":"CPAM","definition":"Caisse Primaire d'Assurance Maladie : affiliation, carte Vitale, remboursements.","confusions":["CAF","URSSAF"],"url":"https://www.ameli.fr/"}
+{"term":"URSSAF","definition":"Recouvrement des cotisations sociales des entreprises et indépendants.","confusions":["DGFIP","greffe"],"url":"https://www.urssaf.fr/"}
+{"term":"SIREN","definition":"Identifiant entreprise à 9 chiffres.","confusions":["SIRET"],"url":"https://www.insee.fr/"}
+{"term":"SIRET","definition":"Identifiant établissement à 14 chiffres (SIREN + NIC).","confusions":["SIREN"],"url":"https://www.insee.fr/"}
+{"term":"RNE","definition":"Registre National des Entreprises géré par l'INPI (depuis 2023).","confusions":["RCS","Sirene"],"url":"https://www.inpi.fr/"}
+{"term":"INPI","definition":"Institut National de la Propriété Industrielle : marques, brevets, guichet unique entreprises.","confusions":["INSEE"],"url":"https://www.inpi.fr/"}
+{"term":"France Travail","definition":"Opérateur public de l'emploi (ex-Pôle Emploi) depuis 2024.","confusions":["Mission Locale"],"url":"https://www.francetravail.fr/"}
+{"term":"OQTF","definition":"Obligation de Quitter le Territoire Français, mesure d'éloignement préfectorale.","confusions":["simple refus de titre"],"url":"https://www.service-public.fr/"}
+{"term":"Carte Vitale","definition":"Carte d'assuré social pour les remboursements de santé ; ne sert pas de justificatif de domicile.","confusions":["justificatif de domicile"],"url":"https://www.ameli.fr/"}
+{"term":"Justificatif de domicile","definition":"Document récent (souvent < 3 mois) prouvant l'adresse : quittance, facture énergie, avis d'imposition, etc.","confusions":["carte Vitale","passeport seul"],"url":"https://www.service-public.fr/"}
+{"term":"RIB","definition":"Relevé d'Identité Bancaire avec IBAN (souvent FR76…) pour les virements.","confusions":["16 chiffres + BIC simpliste"],"url":"https://www.service-public.fr/"}
+{"term":"Titre de séjour","definition":"Document autorisant un étranger à résider en France selon un motif et une durée.","confusions":["visa court séjour","récépissé seul"],"url":"https://www.service-public.fr/"}
+{"term":"RSA","definition":"Revenu de Solidarité Active : minimum de ressources sous conditions.","confusions":["ASS","Prime d'activité"],"url":"https://www.service-public.fr/"}

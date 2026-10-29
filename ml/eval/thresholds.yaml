@@ -5,6 +5,10 @@ quality:
   # calcule quand même le score sur les items présents.
   target_count: 100
 
+docs:
+  min_score: 0.85
+  target_count: 8
+
 performance:
   # Latence totale chat (prompt court, sans cold start)
   p95_latency_ms: 15000

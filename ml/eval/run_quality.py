@@ -77,20 +77,41 @@ def score_item(item: dict, answer: str) -> dict:
     return {"id": item["id"], "ok": ok, "detail": detail, "answer_preview": answer[:240]}
 
 
-def chat_openai(client: httpx.Client, base: str, model: str, question: str) -> str:
+SYSTEM_BASE = (
+    "Tu es l'assistant IADAF pour les démarches administratives françaises. "
+    "Sois factuel. Refuse le hors-sujet dangereux ou hors périmètre. "
+    "N'invente pas de montants, délais ni numéros CERFA."
+)
+
+SYSTEM_RAG = (
+    SYSTEM_BASE
+    + " Appuie-toi STRICTEMENT sur le contexte officiel fourni. "
+    "Cite [Source: URL] quand tu utilises une fiche. "
+    "Si l'info manque dans le contexte, dis-le et renvoie vers service-public.fr."
+)
+
+
+def chat_openai(
+    client: httpx.Client,
+    base: str,
+    model: str,
+    question: str,
+    *,
+    context: str | None = None,
+) -> str:
+    if context:
+        user = f"Contexte officiel :\n{context}\n\nQuestion usager : {question}"
+        system = SYSTEM_RAG
+    else:
+        user = question
+        system = SYSTEM_BASE
     r = client.post(
         f"{base}/chat/completions",
         json=chat_payload(
             model,
             [
-                {
-                    "role": "system",
-                    "content": (
-                        "Tu es l'assistant IADAF pour les démarches administratives "
-                        "françaises. Sois factuel. Refuse le hors-sujet dangereux ou hors périmètre."
-                    ),
-                },
-                {"role": "user", "content": question},
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
             ],
             max_tokens=800,
         ),
@@ -138,12 +159,29 @@ def main() -> int:
     parser.add_argument("--ai-token", default=os.environ.get("IADAF_EVAL_JWT", ""))
     parser.add_argument("--limit", type=int, default=0, help="0 = all")
     parser.add_argument("--dry-run", action="store_true", help="Score expected_answer vs itself")
+    parser.add_argument(
+        "--with-rag",
+        action="store_true",
+        help="Injecte top-k passages locaux (artifacts/rag_v3) dans le prompt openai",
+    )
+    parser.add_argument("--rag-dir", type=Path, default=ROOT / "artifacts" / "rag_v3")
+    parser.add_argument("--rag-top-k", type=int, default=4)
     args = parser.parse_args()
 
     th = yaml.safe_load(args.thresholds.read_text(encoding="utf-8"))["quality"]
     gold = load_gold(args.gold)
     if args.limit:
         gold = gold[: args.limit]
+
+    rag = None
+    if args.with_rag:
+        if args.target != "openai":
+            print("--with-rag n'est supporté qu'avec --target openai pour l'instant", file=sys.stderr)
+            return 1
+        from rag_local import LocalRag
+
+        rag = LocalRag(args.rag_dir)
+        print(f"RAG local: {len(rag.passages)} passages ← {args.rag_dir}")
 
     results = []
     if args.dry_run:
@@ -166,8 +204,16 @@ def main() -> int:
             for item in gold:
                 try:
                     if args.target == "openai":
+                        ctx = None
+                        if rag is not None:
+                            hits = rag.retrieve(item["question"], top_k=args.rag_top_k)
+                            ctx = rag.format_context(hits)
                         ans = chat_openai(
-                            client, args.base_url.rstrip("/"), model, item["question"]
+                            client,
+                            args.base_url.rstrip("/"),
+                            model,
+                            item["question"],
+                            context=ctx,
                         )
                     else:
                         ans = chat_ai_service(
@@ -198,9 +244,12 @@ def main() -> int:
         "incomplete_gold": incomplete,
         "threshold": th["min_score"],
         "success": score >= float(th["min_score"]) and not incomplete,
+        "with_rag": bool(args.with_rag),
         "failures": [r for r in results if not r["ok"]],
     }
-    out = ROOT / "artifacts" / "eval_quality.json"
+    out = ROOT / "artifacts" / (
+        "eval_quality_rag.json" if args.with_rag else "eval_quality.json"
+    )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 

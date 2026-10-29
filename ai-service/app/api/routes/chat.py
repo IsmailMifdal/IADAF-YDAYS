@@ -38,6 +38,10 @@ async def chat(
         conversation_id=request.conversation_id,
         language=request.language,
         user_id=user_id,
+        chemin_id=request.chemin_id,
+        pack_slug=request.pack_slug,
+        provided_documents=request.provided_documents,
+        skill=request.skill,
     )
     return ChatResponse(**result)
 
@@ -58,6 +62,10 @@ async def chat_stream(
         conversation_id=request.conversation_id,
         language=request.language,
         user_id=user_id,
+        chemin_id=request.chemin_id,
+        pack_slug=request.pack_slug,
+        provided_documents=request.provided_documents,
+        skill=request.skill,
     )
     return StreamingResponse(_sse(events), media_type="text/event-stream", headers=SSE_HEADERS)
 
