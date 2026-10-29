@@ -71,3 +71,6 @@ Desktop.ini
 venv/
 ai-service/.venv/
 ai-service/.venv311/
+
+# AI assistants: personal settings, not shared
+CLAUDE.local.md

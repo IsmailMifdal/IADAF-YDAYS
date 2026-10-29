@@ -1,28 +1,27 @@
 ---
 name: Bug
-about: Quelque chose ne marche pas comme prévu
-title: ""
+about: Something does not work as expected
+title: "fix(<scope>): "
 labels: bug
 ---
 
-## Ce qui se passe
+## What happens
 
-<!-- Ce que vous voyez. Une capture d'écran aide beaucoup. -->
+<!-- What you see. A screenshot helps a lot. -->
 
-## Ce qui devrait se passer
+## Expected
 
-## Comment le reproduire
+## How to reproduce
 
 1. 
 2. 
 3. 
 
-## Contexte
+## Context
 
-- Site ou application mobile :
-- Page, écran ou adresse :
-- Langue de l'interface : <!-- français, anglais, arabe, espagnol -->
-- Navigateur et appareil :
+- Website or mobile app:
+- Page, screen or URL:
+- UI language: <!-- French, English, Arabic, Spanish -->
+- Browser and device:
 
-<!-- Ne collez jamais de vraie pièce d'identité, de mot de passe ou de donnée personnelle
-d'un utilisateur dans une issue. -->
+<!-- Never paste a real identity document, password or user's personal data in an issue. -->
