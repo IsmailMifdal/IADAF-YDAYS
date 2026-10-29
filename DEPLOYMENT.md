@@ -21,7 +21,8 @@ Fichiers concernés :
 | `deploy/smoke-test.sh` | Contrôle le site de l'extérieur : HTTPS, en-têtes, santé, limites, webhook |
 | `deploy/deploy.sh` | Déploie le commit extrait : images, sauvegarde, démarrage, contrôle (étape 8) |
 | `deploy/caddy.d/` | Réglages Caddy propres à un serveur, non versionnés : l'accès restreint de la recette |
-| `.github/workflows/deploy.yml` | Recette après chaque CI verte sur `main`, production sur une version `vX.Y.Z` approuvée |
+| `.github/workflows/deploy.yml` | Déploie un commit : appelé par la CI (`develop` → recette, `main` → production approuvée), ou lancé à la main pour un retour arrière |
+| `.github/workflows/release.yml` | Version `vX.Y.Z` sur `main` : étiquette des images et notes de version |
 | `deploy/replay-erasures.sh` | Après une restauration, supprime de nouveau les comptes supprimés depuis la sauvegarde |
 | `docker/postgres/provision.sql` | Un compte PostgreSQL par service, limité à son schéma (rejoué à chaque démarrage) |
 
@@ -243,13 +244,13 @@ facturée.
 
 ## 8. Environnements, versions et mises à jour
 
-Trois environnements, une seule branche (`main`) : décidé dans l'issue #70.
+Trois niveaux de branches, un environnement par niveau : décidé dans l'issue #70.
 
-| Environnement | Où | Ce qui y arrive | Données et clés |
+| Branche | Qui y fusionne | Environnement | Données et clés |
 |---|---|---|---|
-| `local` | Le poste de chaque développeur | `docker compose up -d --build --wait` | Données de test, Mailpit, Stripe en mode test |
-| `staging` (la recette) | **Un serveur à part**, `recette.<domaine>` | Chaque commit de `main` dont la CI est verte, automatiquement | Données fictives, Stripe en mode test, clé d'IA dédiée à plafond bas, accès par mot de passe |
-| `prod` | Le serveur de production | Une version `vX.Y.Z`, après l'approbation du porteur | Vraies données, Stripe en mode réel |
+| `<type>/<n°>-<sujet>` (`fix/42-flyway`…) | Le développeur, sur sa branche de travail | `local`, son poste : `docker compose up -d --build --wait` | Données de test, Mailpit, Stripe en mode test |
+| **`develop`** (branche par défaut) | L'équipe, par PR relue, en *squash* | `staging`, la recette : **un serveur à part**, `recette.<domaine>`, mis à jour automatiquement | Données fictives, Stripe en mode test, clé d'IA dédiée à plafond bas, accès par mot de passe |
+| **`main`** | Le porteur seul, par une PR `develop` → `main` | `prod`, après son approbation | Vraies données, Stripe en mode réel |
 
 La recette ne partage pas le serveur de production : la stack demande à elle seule
 les 8 Go du serveur (étape 1). Elle tourne sur les **mêmes images** que la
@@ -257,25 +258,38 @@ production : ce qui marche en recette marchera en production.
 
 ### Le circuit
 
-1. Une PR est fusionnée dans `main`. La CI teste, construit et publie les images
-   (`ghcr.io/<owner>/iadaf-<service>:<sha>`), puis le workflow **Deploy** met la
-   recette à jour.
-2. Une fois la recette vérifiée, le porteur crée la version, sur ce commit de `main` :
+1. **Travail quotidien.** Chaque développeur part de `develop`
+   (`git switch develop && git pull && git switch -c fix/42-flyway`) et ouvre
+   sa PR vers `develop`. Une fois relue et la CI verte, elle est fusionnée en
+   *squash*. La CI publie les images (`ghcr.io/<owner>/iadaf-<service>:<sha>`),
+   puis déploie la recette.
+2. **Mise en production.** Quand la recette est validée, le porteur ouvre une PR
+   `develop` → `main` et la fusionne en **merge commit** (jamais en *squash* :
+   `main` et `develop` divergeraient, et chaque PR suivante repasserait tout
+   l'historique). La CI de `main` publie les images, puis le déploiement attend
+   l'approbation (Actions → la run CI → *Review deployments*) avant de mettre la
+   production à jour.
+3. **Version.** Juste après, le porteur pose la version sur ce commit de `main` :
 
    ```bash
-   git fetch origin && git checkout <sha-validé-en-recette>
+   git fetch origin && git switch main && git pull
    git tag -a v1.2.0 -m "v1.2.0"
    git push origin v1.2.0
    ```
 
-   Seuls les administrateurs du dépôt peuvent créer, déplacer ou supprimer une
-   étiquette `v*` (règle du dépôt). Le workflow **Deploy** attend alors
-   l'approbation (Actions → Deploy → *Review deployments*), étiquette les images
-   `v1.2.0`, déploie, puis publie les notes de version.
-3. Numérotation `vMAJEUR.MINEUR.CORRECTIF` : CORRECTIF pour une correction,
-   MINEUR pour une fonctionnalité, MAJEUR pour un changement qui casse un
-   client (l'API de l'application mobile, par exemple). Pas de suffixe
-   (`-rc.1`…) : la recette joue ce rôle, et la production refuse ces étiquettes.
+   Le workflow **Release** étiquette les images `v1.2.0` et publie les notes de
+   version. Seuls les administrateurs peuvent créer, déplacer ou supprimer une
+   étiquette `v*`. Numérotation `vMAJEUR.MINEUR.CORRECTIF` : CORRECTIF pour une
+   correction, MINEUR pour une fonctionnalité, MAJEUR pour un changement qui
+   casse un client (l'API de l'application mobile, par exemple).
+4. **Correction urgente** en production : branche `hotfix/<n°>-<sujet>` partie de
+   `main`, PR vers `main`, puis **aussitôt** une PR `main` → `develop` (merge
+   commit) pour que la correction ne disparaisse pas à la mise en production
+   suivante.
+
+Les PR vers `main` exigent l'approbation du propriétaire du code (le porteur) ;
+celles vers `develop`, l'approbation d'un membre de l'équipe. Les deux branches
+exigent la CI verte et les conversations résolues, et refusent le force push.
 
 Sur le serveur, chaque déploiement passe par `deploy/deploy.sh`, qui déploie le
 commit extrait : images de ce commit (rien ne change si elles n'existent pas),
@@ -288,7 +302,7 @@ deploy/deploy.sh
 ```
 
 **Retour arrière** : Actions → Deploy → *Run workflow*, en choisissant la version
-précédente (« Use workflow from ») et l'environnement ; ou, sur le serveur, les
+précédente (« Use workflow from » : une étiquette `v*`) et l'environnement ; ou, sur le serveur, les
 commandes ci-dessus avec la version précédente. Les migrations de base (Flyway,
 Alembic) ne s'annulent pas : si la version retirée avait modifié le schéma,
 l'ancienne refusera de démarrer. Restaurer alors la sauvegarde prise juste avant
@@ -315,8 +329,8 @@ Pour chaque serveur (recette, puis production), après les étapes 2 à 4 :
    - secrets : `DEPLOY_SSH_KEY` (la clé privée), `DEPLOY_KNOWN_HOSTS`.
 
    Tant que `DEPLOY_HOST` est vide, le workflow l'indique et ne fait rien.
-   `staging` accepte `main` et les versions ; `prod` n'accepte que les versions,
-   et attend l'approbation du porteur.
+   `staging` n'accepte que `develop` et les versions ; `prod` n'accepte que
+   `main` et les versions, et attend l'approbation du porteur.
 
 **Particularités de la recette**, dans son `.env` :
 

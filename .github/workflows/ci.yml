@@ -1,5 +1,7 @@
-# Every pull request and every push to main: lint, type-check, test, build,
-# scan. Images are pushed to GHCR only from main.
+# Every pull request and every push to develop (staging) or main
+# (production): lint, type-check, test, build, scan. Images are pushed to GHCR
+# from those two branches only, tagged with the commit SHA; "latest" follows
+# main.
 #
 # Third-party actions are pinned to the commit of a release (tag in comment):
 # a moved or hijacked tag cannot change what runs here.
@@ -8,7 +10,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [develop, main]
 
 permissions:
   contents: read
@@ -176,15 +178,28 @@ jobs:
             aquasec/trivy:0.74.0 image --quiet --exit-code 0 \
             --severity HIGH --ignore-unfixed "$IMAGE:${{ github.sha }}"
       - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         run: |
-          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
-          docker push "$IMAGE:latest"
+          if [ "$GITHUB_REF" = refs/heads/main ]; then
+            docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          fi
+
+  # Once every image of the commit is on GHCR: develop → staging, main → prod
+  # (prod waits for the project owner's approval). See deploy.yml.
+  ship:
+    name: Deploy to ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+    needs: images
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+    secrets: inherit
