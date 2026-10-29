@@ -12,8 +12,8 @@ py-eureka-client==0.11.8
 pydantic-settings>=2.4.0
 httpx==0.28.1
 # Document analysis (app/documents): image quality, PDF text layer
-Pillow==12.3.0
-pypdf==6.19.0
+Pillow==13.0.0
+pypdf==6.21.2
 PyJWT==2.15.1
 sqlalchemy==2.0.30
 asyncpg==0.30.0
