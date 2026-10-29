@@ -19,6 +19,9 @@ Fichiers concernés :
 | `deploy/backup.sh` | Sauvegarde chiffrée de la base, rotation, copie hors serveur |
 | `deploy/restore-test.sh` | Restaure une sauvegarde dans une base jetable et la contrôle |
 | `deploy/smoke-test.sh` | Contrôle le site de l'extérieur : HTTPS, en-têtes, santé, limites, webhook |
+| `deploy/deploy.sh` | Déploie le commit extrait : images, sauvegarde, démarrage, contrôle (étape 8) |
+| `deploy/caddy.d/` | Réglages Caddy propres à un serveur, non versionnés : l'accès restreint de la recette |
+| `.github/workflows/deploy.yml` | Recette après chaque CI verte sur `main`, production sur une version `vX.Y.Z` approuvée |
 | `deploy/replay-erasures.sh` | Après une restauration, supprime de nouveau les comptes supprimés depuis la sauvegarde |
 | `docker/postgres/provision.sql` | Un compte PostgreSQL par service, limité à son schéma (rejoué à chaque démarrage) |
 
@@ -238,23 +241,98 @@ facturée.
 
 ---
 
-## 8. Mettre à jour, revenir en arrière
+## 8. Environnements, versions et mises à jour
 
-Une mise à jour = un commit de `main` dont la CI est verte et les images publiées.
+Trois environnements, une seule branche (`main`) : décidé dans l'issue #70.
+
+| Environnement | Où | Ce qui y arrive | Données et clés |
+|---|---|---|---|
+| `local` | Le poste de chaque développeur | `docker compose up -d --build --wait` | Données de test, Mailpit, Stripe en mode test |
+| `staging` (la recette) | **Un serveur à part**, `recette.<domaine>` | Chaque commit de `main` dont la CI est verte, automatiquement | Données fictives, Stripe en mode test, clé d'IA dédiée à plafond bas, accès par mot de passe |
+| `prod` | Le serveur de production | Une version `vX.Y.Z`, après l'approbation du porteur | Vraies données, Stripe en mode réel |
+
+La recette ne partage pas le serveur de production : la stack demande à elle seule
+les 8 Go du serveur (étape 1). Elle tourne sur les **mêmes images** que la
+production : ce qui marche en recette marchera en production.
+
+### Le circuit
+
+1. Une PR est fusionnée dans `main`. La CI teste, construit et publie les images
+   (`ghcr.io/<owner>/iadaf-<service>:<sha>`), puis le workflow **Deploy** met la
+   recette à jour.
+2. Une fois la recette vérifiée, le porteur crée la version, sur ce commit de `main` :
+
+   ```bash
+   git fetch origin && git checkout <sha-validé-en-recette>
+   git tag -a v1.2.0 -m "v1.2.0"
+   git push origin v1.2.0
+   ```
+
+   Seuls les administrateurs du dépôt peuvent créer, déplacer ou supprimer une
+   étiquette `v*` (règle du dépôt). Le workflow **Deploy** attend alors
+   l'approbation (Actions → Deploy → *Review deployments*), étiquette les images
+   `v1.2.0`, déploie, puis publie les notes de version.
+3. Numérotation `vMAJEUR.MINEUR.CORRECTIF` : CORRECTIF pour une correction,
+   MINEUR pour une fonctionnalité, MAJEUR pour un changement qui casse un
+   client (l'API de l'application mobile, par exemple). Pas de suffixe
+   (`-rc.1`…) : la recette joue ce rôle, et la production refuse ces étiquettes.
+
+Sur le serveur, chaque déploiement passe par `deploy/deploy.sh`, qui déploie le
+commit extrait : images de ce commit (rien ne change si elles n'existent pas),
+sauvegarde, démarrage, contrôle de l'extérieur. À la main :
 
 ```bash
 cd /opt/iadaf
-deploy/backup.sh                          # toujours, avant
-git fetch && git checkout <nouveau-sha>   # fichiers compose et Caddyfile de cette version
-sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=<nouveau-sha>/" .env
-docker compose pull && docker compose up -d --wait
-deploy/smoke-test.sh <DOMAIN>
+git fetch --tags origin && git checkout <sha-ou-version>
+deploy/deploy.sh
 ```
 
-**Retour arrière** : mêmes commandes avec le SHA précédent. Les migrations de
-base (Flyway, Alembic) ne s'annulent pas : si la version retirée avait modifié
-le schéma, l'ancienne refusera de démarrer — restaurer alors la sauvegarde
-prise juste avant la mise à jour (étape 9).
+**Retour arrière** : Actions → Deploy → *Run workflow*, en choisissant la version
+précédente (« Use workflow from ») et l'environnement ; ou, sur le serveur, les
+commandes ci-dessus avec la version précédente. Les migrations de base (Flyway,
+Alembic) ne s'annulent pas : si la version retirée avait modifié le schéma,
+l'ancienne refusera de démarrer. Restaurer alors la sauvegarde prise juste avant
+la mise à jour (étape 9).
+
+### Brancher un serveur sur le déploiement automatique
+
+Pour chaque serveur (recette, puis production), après les étapes 2 à 4 :
+
+1. **Une clé SSH réservée à la CI**, sur ton poste :
+
+   ```bash
+   ssh-keygen -t ed25519 -N "" -C "github-actions staging" -f iadaf-deploy-staging
+   ssh-keyscan -t ed25519 <ip-du-serveur>      # → DEPLOY_KNOWN_HOSTS
+   ```
+
+   Sur le serveur, en `deploy`, ajouter la clé publique dans
+   `~/.ssh/authorized_keys`, précédée de `restrict ` (ni terminal, ni redirection
+   de ports). Ranger la clé privée dans le coffre de l'équipe, puis la supprimer
+   du poste.
+2. **GitHub → Settings → Environments** (`staging` ou `prod`, déjà créés) :
+   - variables : `DEPLOY_HOST` (IP ou nom du serveur), `DOMAIN` ; `DEPLOY_USER`
+     et `DEPLOY_PATH` seulement s'ils diffèrent de `deploy` et `/opt/iadaf` ;
+   - secrets : `DEPLOY_SSH_KEY` (la clé privée), `DEPLOY_KNOWN_HOSTS`.
+
+   Tant que `DEPLOY_HOST` est vide, le workflow l'indique et ne fait rien.
+   `staging` accepte `main` et les versions ; `prod` n'accepte que les versions,
+   et attend l'approbation du porteur.
+
+**Particularités de la recette**, dans son `.env` :
+
+| Variable | Valeur |
+|---|---|
+| `DOMAIN` | `recette.<domaine>` (enregistrement DNS `A` vers le serveur de recette) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Clés du **mode test**, webhook déclaré en mode test vers `https://recette.<domaine>/api/stripe/webhook` |
+| `OPENAI_API_KEY` | Clé dédiée à la recette, avec un plafond de dépenses bas chez le fournisseur |
+| `MAIL_FROM` | Une adresse de recette (`recette@<domaine>`) |
+| `DEPLOY_BACKUP` | `0` : données fictives, pas de sauvegarde avant chaque déploiement |
+| `SMOKE_BASIC_AUTH` | `equipe:<mot-de-passe>`, le mot de passe de l'accès restreint |
+
+Puis l'accès restreint : copier `deploy/caddy.d/staging.caddy.example` en
+`deploy/caddy.d/staging.caddy` et y mettre le hash du mot de passe (voir le
+fichier). Le mot de passe se partage avec l'équipe et les testeurs par le coffre,
+jamais dans une issue ou sur Discord.
 
 ---
 

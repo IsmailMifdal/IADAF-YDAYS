@@ -116,11 +116,20 @@ jobs:
           if docker compose config --format json | jq -e '.services.frontend.ports // [] | length > 0'; then
             echo "::error::frontend publishes a port in production"; exit 1
           fi
-      - name: Caddyfile
+      - name: Caddyfile, for production and for staging
         run: |
-          docker run --rm -e DOMAIN=ci.example -e ACME_EMAIL=ci@ci.example \
-            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.11.4-alpine \
-            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          validate() {  # validate <folder mounted as /etc/caddy/caddy.d>
+            docker run --rm -e DOMAIN=ci.example -e ACME_EMAIL=ci@ci.example \
+              -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" -v "$1:/etc/caddy/caddy.d:ro" \
+              caddy:2.11.4-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          }
+          validate "$PWD/deploy/caddy.d"
+          # Staging restricted access, with a real hash in place of the placeholder.
+          hash="$(docker run --rm caddy:2.11.4-alpine caddy hash-password --plaintext ci)"
+          mkdir -p "$RUNNER_TEMP/staging"
+          sed "s|\$2a\$14\$REMPLACER[^ ]*|$hash|" deploy/caddy.d/staging.caddy.example \
+            > "$RUNNER_TEMP/staging/staging.caddy"
+          validate "$RUNNER_TEMP/staging"
 
   images:
     name: Image ${{ matrix.name }}
