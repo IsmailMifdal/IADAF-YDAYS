@@ -30,6 +30,8 @@ spring:
   flyway:
     schemas: analytics
     default-schema: analytics
+    # Created by docker/postgres/provision.sql; fail fast if it is missing.
+    create-schemas: false
 
 server:
   port: 8085

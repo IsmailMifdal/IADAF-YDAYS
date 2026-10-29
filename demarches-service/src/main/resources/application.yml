@@ -21,6 +21,8 @@ spring:
   flyway:
     schemas: demarches
     default-schema: demarches
+    # Created by docker/postgres/provision.sql; fail fast if it is missing.
+    create-schemas: false
     # Bases créées avant Flyway (par Hibernate, ddl-auto=update) : leur schéma
     # correspond à V1, qui est donc marquée appliquée sans être rejouée.
     baseline-on-migrate: true
