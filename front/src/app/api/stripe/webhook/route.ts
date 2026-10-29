@@ -39,17 +39,12 @@ export async function POST(request: Request) {
       signature,
       webhookSecret,
     );
-  } catch {
-    // StripeSignatureVerificationError contains the raw payload and signature.
-    // Neither belongs in logs, even when the request is malicious.
-    console.error("[stripe-webhook] signature verification failed");
+  } catch (error) {
+    console.error("[stripe-webhook] signature verification failed", error);
     return NextResponse.json({ error: "Signature invalide." }, { status: 400 });
   }
 
-  if (
-    event.type !== "checkout.session.completed" &&
-    event.type !== "checkout.session.async_payment_succeeded"
-  ) {
+  if (event.type !== "checkout.session.completed") {
     // Acknowledged and ignored — Stripe stops retrying on a 2xx.
     return NextResponse.json({ received: true });
   }
@@ -69,6 +64,7 @@ export async function POST(request: Request) {
   if (!userId || !packSlug || !getPackBySlug(packSlug)) {
     console.error(
       `[stripe-webhook] session ${session.id} has unusable metadata`,
+      session.metadata,
     );
     // 200 on purpose: retrying will not repair bad metadata.
     return NextResponse.json({ received: true });

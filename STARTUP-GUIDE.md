@@ -102,65 +102,15 @@ npm run dev                   # http://localhost:3000
 
 ### 4. Webhook Stripe (si vous testez le paiement)
 
-Pour la stack Docker, renseigner une clé **de test** dans `STRIPE_SECRET_KEY`
-du `.env` racine, puis depuis la racine du dépôt :
+Stripe doit pouvoir joindre votre machine :
 
 ```bash
-command -v stripe
-stripe version
-stripe login list
-stripe login                    # seulement si l'authentification manque
-./scripts/stripe-webhook-dev.sh  # laisser actif dans un terminal dédié
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
-Le script utilise Python 3 sans dépendance supplémentaire. Il refuse les clés
-live et les comptes CLI/applicatif différents. Il récupère le secret de
-signature sans l'afficher, met à jour uniquement `STRIPE_WEBHOOK_SECRET` du
-`.env` et recrée le frontend si nécessaire avec :
-
-```bash
-docker compose up -d --no-deps --force-recreate frontend
-```
-
-Compose injecte ces deux variables à l'exécution. Une modification du `.env`
-exige une **recréation** du conteneur, un simple `restart` ne suffit pas.
-Une modification du code exige d'abord un build de l'image :
-`docker compose build frontend`, puis la recréation ci-dessus.
-
-Pour un frontend lancé avec `npm run dev`, utiliser `front/.env.local` pour les
-deux variables, puis relancer Next.js. Lancer manuellement la CLI :
-
-```bash
-stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded \
-  --forward-to localhost:3000/api/stripe/webhook
-```
-
-Cette commande manuelle affiche un secret : le reporter uniquement dans
-`front/.env.local`, sans le copier dans un ticket ou des logs partagés. Le
-script Docker masque ce secret. La CLI 1.55.3 exige un choix explicite des
-événements (`--events`) ; la commande sans ce paramètre échoue.
-
-Depuis un second terminal :
-
-```bash
-curl -I http://localhost:3000
-stripe trigger checkout.session.completed
-```
-
-Un événement générique teste le transport et la signature ; sans `userId` et
-`packSlug`, il est acquitté sans attribuer de pack. Pour vérifier le métier,
-acheter un pack depuis l'application avec un compte de test, puis contrôler
-`users.pack_entitlements` et `billing.sales` dans PostgreSQL. Un retour avec
-`?checkout=success` ne donne aucun droit à lui seul.
-
-Le test ciblé suivant crée un compte temporaire, envoie des événements signés
-localement et vérifie en base les refus, paiements différés, doublons et accès.
-Il nettoie uniquement ses propres données synthétiques ; il ne constitue pas
-un paiement Checkout réel, même en mode test :
-
-```bash
-python3 tests/e2e/stripe-webhook.py
-```
+Reporter le secret `whsec_...` affiché dans `STRIPE_WEBHOOK_SECRET`, puis
+redémarrer le frontend.
 
 Carte de test : `4242 4242 4242 4242`, date future, CVC quelconque.
 
