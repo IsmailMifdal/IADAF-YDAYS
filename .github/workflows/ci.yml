@@ -1,7 +1,7 @@
-# Every pull request and every push to develop (staging) or main
-# (production): lint, type-check, test, build, scan. Images are pushed to GHCR
-# from those two branches only, tagged with the commit SHA; "latest" follows
-# main.
+# Every pull request and every push to dev_v1 (team integration), develop
+# (staging) or main (production): lint, type-check, test, build, scan. Images
+# are pushed to GHCR from develop and main only, tagged with the commit SHA;
+# "latest" follows main.
 #
 # Third-party actions are pinned to the commit of a release (tag in comment):
 # a moved or hijacked tag cannot change what runs here.
@@ -10,7 +10,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [develop, main]
+    branches: [dev_v1, develop, main]
 
 permissions:
   contents: read
@@ -178,14 +178,14 @@ jobs:
             aquasec/trivy:0.74.0 image --quiet --exit-code 0 \
             --severity HIGH --ignore-unfixed "$IMAGE:${{ github.sha }}"
       - name: Log in to GHCR
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
         run: |
           docker push "$IMAGE:${{ github.sha }}"
           if [ "$GITHUB_REF" = refs/heads/main ]; then
@@ -198,7 +198,7 @@ jobs:
   ship:
     name: Deploy to ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
     needs: images
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     uses: ./.github/workflows/deploy.yml
     with:
       environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}

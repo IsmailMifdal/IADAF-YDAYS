@@ -244,12 +244,14 @@ facturée.
 
 ## 8. Environnements, versions et mises à jour
 
-Trois niveaux de branches, un environnement par niveau : décidé dans l'issue #70.
+Trois branches permanentes, de la plus mouvante à la plus stable : décidé dans
+l'issue #70.
 
 | Branche | Qui y fusionne | Environnement | Données et clés |
 |---|---|---|---|
 | `<type>/<n°>-<sujet>` (`fix/42-flyway`…) | Le développeur, sur sa branche de travail | `local`, son poste : `docker compose up -d --build --wait` | Données de test, Mailpit, Stripe en mode test |
-| **`develop`** (branche par défaut) | L'équipe, par PR relue, en *squash* | `staging`, la recette : **un serveur à part**, `recette.<domaine>`, mis à jour automatiquement | Données fictives, Stripe en mode test, clé d'IA dédiée à plafond bas, accès par mot de passe |
+| **`dev_v1`** (branche par défaut) | L'équipe, par PR relue, en *squash* : l'intégration de la v1 | Aucun serveur : la CI teste chaque fusion | — |
+| **`develop`** | Un référent ou le porteur, par une PR `dev_v1` → `develop` | `staging`, la recette : **un serveur à part**, `recette.<domaine>`, mis à jour automatiquement | Données fictives, Stripe en mode test, clé d'IA dédiée à plafond bas, accès par mot de passe |
 | **`main`** | Le porteur seul, par une PR `develop` → `main` | `prod`, après son approbation | Vraies données, Stripe en mode réel |
 
 La recette ne partage pas le serveur de production : la stack demande à elle seule
@@ -258,18 +260,23 @@ production : ce qui marche en recette marchera en production.
 
 ### Le circuit
 
-1. **Travail quotidien.** Chaque développeur part de `develop`
-   (`git switch develop && git pull && git switch -c fix/42-flyway`) et ouvre
-   sa PR vers `develop`. Une fois relue et la CI verte, elle est fusionnée en
-   *squash*. La CI publie les images (`ghcr.io/<owner>/iadaf-<service>:<sha>`),
-   puis déploie la recette.
-2. **Mise en production.** Quand la recette est validée, le porteur ouvre une PR
-   `develop` → `main` et la fusionne en **merge commit** (jamais en *squash* :
-   `main` et `develop` divergeraient, et chaque PR suivante repasserait tout
-   l'historique). La CI de `main` publie les images, puis le déploiement attend
-   l'approbation (Actions → la run CI → *Review deployments*) avant de mettre la
-   production à jour.
-3. **Version.** Juste après, le porteur pose la version sur ce commit de `main` :
+1. **Travail quotidien.** Chaque développeur part de `dev_v1`
+   (`git switch dev_v1 && git pull && git switch -c fix/42-flyway`) et ouvre
+   sa PR vers `dev_v1`. Une fois relue et la CI verte, elle est fusionnée en
+   *squash* : un commit par fonctionnalité.
+2. **Passage en recette.** Quand `dev_v1` est stable (en général à la fin d'un
+   sprint), un référent ou le porteur ouvre une PR `dev_v1` → `develop` et la
+   fusionne en **merge commit**. La CI publie les images
+   (`ghcr.io/<owner>/iadaf-<service>:<sha>`), puis met la recette à jour.
+3. **Mise en production.** Quand la recette est validée, le porteur ouvre une PR
+   `develop` → `main` et la fusionne en **merge commit**. La CI de `main` publie
+   les images, puis le déploiement attend l'approbation (Actions → la run CI →
+   *Review deployments*) avant de mettre la production à jour.
+
+   Entre deux branches permanentes, jamais de *squash* (une règle du dépôt
+   l'interdit sur `develop` et `main`) : les branches divergeraient, et chaque
+   PR suivante repasserait tout l'historique.
+4. **Version.** Juste après, le porteur pose la version sur ce commit de `main` :
 
    ```bash
    git fetch origin && git switch main && git pull
@@ -282,14 +289,15 @@ production : ce qui marche en recette marchera en production.
    étiquette `v*`. Numérotation `vMAJEUR.MINEUR.CORRECTIF` : CORRECTIF pour une
    correction, MINEUR pour une fonctionnalité, MAJEUR pour un changement qui
    casse un client (l'API de l'application mobile, par exemple).
-4. **Correction urgente** en production : branche `hotfix/<n°>-<sujet>` partie de
-   `main`, PR vers `main`, puis **aussitôt** une PR `main` → `develop` (merge
-   commit) pour que la correction ne disparaisse pas à la mise en production
-   suivante.
+5. **Correction urgente** en production : branche `hotfix/<n°>-<sujet>` partie de
+   `main`, PR vers `main`, puis **aussitôt** une PR `main` → `develop` et une PR
+   `develop` → `dev_v1` (merge commits), pour que la correction ne disparaisse
+   pas à la mise en production suivante.
 
 Les PR vers `main` exigent l'approbation du propriétaire du code (le porteur) ;
-celles vers `develop`, l'approbation d'un membre de l'équipe. Les deux branches
-exigent la CI verte et les conversations résolues, et refusent le force push.
+celles vers `dev_v1` et `develop`, l'approbation d'un membre de l'équipe. Les
+trois branches exigent la CI verte et les conversations résolues, et refusent le
+force push.
 
 Sur le serveur, chaque déploiement passe par `deploy/deploy.sh`, qui déploie le
 commit extrait : images de ce commit (rien ne change si elles n'existent pas),
