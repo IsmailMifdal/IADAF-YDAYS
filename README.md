@@ -171,11 +171,25 @@ Le pack `pack-complet` débloque tous les autres.
 Le webhook doit pouvoir joindre l'application. En développement :
 
 ```bash
-stripe login
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe login  # une seule fois, si la CLI n'est pas déjà authentifiée
+./scripts/stripe-webhook-dev.sh
 ```
 
-La commande affiche un secret `whsec_...` à placer dans `STRIPE_WEBHOOK_SECRET`.
+Prérequis : Stripe CLI, Python 3, Docker Compose et une `STRIPE_SECRET_KEY` de
+test valide dans le `.env` racine. Le script vérifie que la CLI et la clé
+applicative utilisent le même compte de test, configure `STRIPE_WEBHOOK_SECRET`
+sans afficher sa valeur et recrée **uniquement le frontend** si ses variables
+diffèrent. Les autres clés existantes sont conservées. Le `.env` reste ignoré
+par Git et ses permissions sont restreintes au propriétaire.
+
+Garder le terminal ouvert : arrêter l'écoute interrompt la réception des
+événements locaux. Pour le détail des tests et le frontend hors Docker, voir
+le [guide de démarrage](STARTUP-GUIDE.md#4-webhook-stripe-si-vous-testez-le-paiement).
+
+Événements traités : `checkout.session.completed` et
+`checkout.session.async_payment_succeeded`, uniquement si `payment_status=paid`
+et si les métadonnées `userId` / `packSlug` sont exploitables. Les contraintes
+uniques PostgreSQL empêchent de doubler une vente ou un droit lors d'un rejeu.
 
 Carte de test : `4242 4242 4242 4242`, date future, CVC quelconque.
 

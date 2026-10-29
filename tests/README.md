@@ -7,6 +7,7 @@
 | Python sur PostgreSQL | `ai-service/tests/test_conversations_pg.py` | idem, avec `TEST_DATABASE_URL=postgresql+asyncpg://…` |
 | Frontend (types, lint, build) | `front/` | `npx tsc --noEmit && npx eslint src && npm run build` |
 | **De bout en bout** | `tests/e2e/` | stack lancée, puis `bash tests/e2e/run-all.sh` |
+| Webhook Stripe signé et PostgreSQL | `tests/e2e/stripe-webhook.py` | après configuration de l'écoute : `python3 tests/e2e/stripe-webhook.py` |
 | Santé rapide | `tests/health-checks/` | `bash tests/health-checks/check-all-services.sh` |
 | Fichiers de déploiement (shellcheck, compose de production, Caddyfile) | `deploy/`, `docker-compose.prod.yml` | job `deploy` de la CI |
 | **Après un déploiement** | `deploy/smoke-test.sh` | `deploy/smoke-test.sh <domaine>` — sans écriture, sûr en production |
@@ -39,6 +40,13 @@ bash tests/e2e/run-all.sh          # code de sortie = nombre de scripts en éche
 Configuration par variables d'environnement (voir `tests/e2e/lib.sh`) :
 `BASE_URL`, `GATEWAY_URL`, `MAILPIT_URL`, `ENV_FILE`, `PG_CONTAINER`, et
 `E2E_SKIP_LLM=1` pour sauter les contrôles qui appellent le LLM.
+
+Le test Stripe s'exécute séparément contre `http://localhost:3000` et la base
+Compose locale, avec les clés de test du `.env` racine. Il signe ses propres
+événements, vérifie les signatures, les droits, les paiements différés et les
+rejeux concurrents, puis supprime uniquement son compte temporaire et ses
+ventes synthétiques. Il ne remplace ni `stripe trigger` pour le transport,
+ni un paiement Checkout hébergé en mode test pour le parcours complet.
 
 > ⚠️ Les scripts créent des comptes, simulent des achats en écrivant
 > directement en base et vident les compteurs de limitation de débit : **à ne
