@@ -116,6 +116,13 @@ SELECT 'ALTER TABLE public.lead_emails OWNER TO iadaf_frontend'
 
 -- 5. Rien de plus pour personne : ni nouveau schéma, ni table dans public.
 SELECT format('REVOKE CREATE ON DATABASE %I FROM PUBLIC', current_database()) \gexec
+--    Sur une ancienne base, des comptes avaient reçu CREATE en direct (le
+--    retrait à PUBLIC ne le leur enlève pas), y compris l'ancien iadaf_user.
+SELECT format('REVOKE CREATE ON DATABASE %I FROM %I', current_database(), name)
+  FROM unnest(ARRAY['iadaf_frontend', 'iadaf_profiles', 'iadaf_demarches',
+                    'iadaf_documents', 'iadaf_analytics', 'iadaf_ai',
+                    'iadaf_user']) AS name
+ WHERE EXISTS (SELECT FROM pg_roles WHERE rolname = name) \gexec
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
 COMMIT;
