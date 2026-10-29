@@ -1,5 +1,7 @@
-# Every pull request and every push to main: lint, type-check, test, build,
-# scan. Images are pushed to GHCR only from main.
+# Every pull request and every push to dev_v1 (team integration), develop
+# (staging) or main (production): lint, type-check, test, build, scan. Images
+# are pushed to GHCR from develop and main only, tagged with the commit SHA;
+# "latest" follows main.
 #
 # Third-party actions are pinned to the commit of a release (tag in comment):
 # a moved or hijacked tag cannot change what runs here.
@@ -8,7 +10,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [dev_v1, develop, main]
 
 permissions:
   contents: read
@@ -116,11 +118,20 @@ jobs:
           if docker compose config --format json | jq -e '.services.frontend.ports // [] | length > 0'; then
             echo "::error::frontend publishes a port in production"; exit 1
           fi
-      - name: Caddyfile
+      - name: Caddyfile, for production and for staging
         run: |
-          docker run --rm -e DOMAIN=ci.example -e ACME_EMAIL=ci@ci.example \
-            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.11.4-alpine \
-            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          validate() {  # validate <folder mounted as /etc/caddy/caddy.d>
+            docker run --rm -e DOMAIN=ci.example -e ACME_EMAIL=ci@ci.example \
+              -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" -v "$1:/etc/caddy/caddy.d:ro" \
+              caddy:2.11.4-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          }
+          validate "$PWD/deploy/caddy.d"
+          # Staging restricted access, with a real hash in place of the placeholder.
+          hash="$(docker run --rm caddy:2.11.4-alpine caddy hash-password --plaintext ci)"
+          mkdir -p "$RUNNER_TEMP/staging"
+          sed "s|\$2a\$14\$REMPLACER[^ ]*|$hash|" deploy/caddy.d/staging.caddy.example \
+            > "$RUNNER_TEMP/staging/staging.caddy"
+          validate "$RUNNER_TEMP/staging"
 
   images:
     name: Image ${{ matrix.name }}
@@ -167,15 +178,28 @@ jobs:
             aquasec/trivy:0.74.0 image --quiet --exit-code 0 \
             --severity HIGH --ignore-unfixed "$IMAGE:${{ github.sha }}"
       - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
         run: |
-          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
-          docker push "$IMAGE:latest"
+          if [ "$GITHUB_REF" = refs/heads/main ]; then
+            docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          fi
+
+  # Once every image of the commit is on GHCR: develop → staging, main → prod
+  # (prod waits for the project owner's approval). See deploy.yml.
+  ship:
+    name: Deploy to ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+    needs: images
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+    secrets: inherit

@@ -6,12 +6,14 @@
 #
 # À lancer après chaque mise en production ou mise à jour (DEPLOYMENT.md).
 # SMOKE_INSECURE=1 accepte un certificat auto-signé (test local, DOMAIN=localhost).
+# SMOKE_BASIC_AUTH=utilisateur:mot-de-passe passe l'accès restreint de la recette.
 # N'écrit rien : aucune requête ne crée de compte ni de donnée.
 set -uo pipefail
 
 DOMAIN="${1:?usage: deploy/smoke-test.sh <domaine>}"
 CURL=(curl -s --max-time 20)
 [ "${SMOKE_INSECURE:-0}" = 1 ] && CURL+=(-k)
+[ -n "${SMOKE_BASIC_AUTH:-}" ] && CURL+=(-u "$SMOKE_BASIC_AUTH")
 
 PASS=0
 FAIL=0

@@ -7,6 +7,10 @@
 }
 
 {$DOMAIN} {
+	# Réglages propres à un serveur (deploy/caddy.d, non versionné) : rien en
+	# production ; sur la recette, l'accès restreint (staging.caddy.example).
+	import /etc/caddy/caddy.d/*.caddy
+
 	encode zstd gzip
 
 	# Une pièce fait 10 Mo au plus ; la marge couvre le reste du formulaire.

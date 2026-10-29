@@ -1,0 +1,18 @@
+# Recette : accès réservé à l'équipe et aux testeurs, jamais indexé.
+#
+# Sur le serveur de recette :
+#   cp deploy/caddy.d/staging.caddy.example deploy/caddy.d/staging.caddy
+#   docker run --rm caddy:2.11.4-alpine caddy hash-password --plaintext '<mot-de-passe>'
+#   → remplacer le hash ci-dessous, puis : docker compose restart caddy
+# et, dans .env : SMOKE_BASIC_AUTH=equipe:<mot-de-passe> (contrôle après déploiement).
+#
+# Sans cette barrière, n'importe qui pourrait créer un compte sur la recette et
+# consommer la clé de l'IA. Le webhook Stripe reste ouvert : Stripe (mode test)
+# ne connaît pas le mot de passe, et chaque appel est vérifié par sa signature.
+
+@team not path /api/stripe/webhook
+basic_auth @team {
+	equipe $2a$14$REMPLACER.PAR.LE.HASH.DE.caddy.hash-password.XXXXXXXXXXXXXXXXXX
+}
+
+header X-Robots-Tag "noindex, nofollow"

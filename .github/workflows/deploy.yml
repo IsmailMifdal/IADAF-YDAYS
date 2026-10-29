@@ -1,0 +1,64 @@
+# Deployment to one environment, as decided in #70 (option A):
+# - called by CI after every push to develop (→ staging) or main (→ prod)
+#   whose checks pass and whose images are on GHCR; "prod" waits for the
+#   project owner's approval (GitHub environment protection);
+# - run by hand (Actions → Deploy → Run workflow) to redeploy or roll back:
+#   pick the ref (develop, main or a version tag) and the environment. The
+#   environments only accept their own branch and version tags.
+#
+# Each GitHub environment points at its own server:
+#   vars    DEPLOY_HOST, DEPLOY_USER (default deploy), DEPLOY_PATH (default
+#           /opt/iadaf), DOMAIN
+#   secrets DEPLOY_SSH_KEY (private key allowed for DEPLOY_USER),
+#           DEPLOY_KNOWN_HOSTS (output of ssh-keyscan for DEPLOY_HOST)
+# While DEPLOY_HOST is empty the job only says so: nothing fails before the
+# servers exist. Setup: DEPLOYMENT.md § 8.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy the chosen ref to
+        type: choice
+        options: [staging, prod]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://${{ vars.DOMAIN }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - name: Deploy over SSH
+        env:
+          TARGET: ${{ inputs.environment }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/iadaf' }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "::notice::$TARGET is not configured yet (DEPLOY_HOST is empty): nothing deployed. See DEPLOYMENT.md § 8."
+            exit 0
+          fi
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::unexpected commit SHA: $GITHUB_SHA"; exit 1; }
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$DEPLOY_PATH' && git fetch --quiet --tags origin && git -c advice.detachedHead=false checkout --quiet $GITHUB_SHA && deploy/deploy.sh"
