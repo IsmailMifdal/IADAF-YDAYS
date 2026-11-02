@@ -48,6 +48,9 @@ Run the commands for the area you touched before proposing a commit.
 - UI texts in the 4 languages.
 - The simplest code that works; follow the style of the file you edit.
 - Credit the assistant in the commit (`Co-Authored-By:`).
+- One task per session: name the session (chat, thread, conversation) after the
+  Linear task, `ISM-<n> <task title>`.
+- Never set a Linear task to Done: it moves there when Ismail merges the PR.
 
 ## Never
 

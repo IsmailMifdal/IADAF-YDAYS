@@ -18,6 +18,8 @@ bash tests/e2e/run-all.sh             # everything must be green
 ```
 
 Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+(E2E failing locally: `python` missing, 401 everywhere, no OpenAI key, container
+name already in use).
 
 ## 2. Task first
 
@@ -133,7 +135,10 @@ assistant. A bug or a missing test? Fix it before pushing.
 - **Check a remark against the code** before applying it: reviewers, human or bot,
   are sometimes wrong.
 - **Merge** by Ismail into `dev_v1`, squashed, once CI is green, comments are handled
-  and both reviewers approved. Then delete your branch.
+  and both reviewers approved.
+- **After the merge**: `git checkout dev_v1 && git pull`, delete your branch
+  (`git branch -d <branch>`, `git remote prune origin`), and start the next task from
+  this fresh `dev_v1`.
 
 > **Why?** Nobody reviews their own code, and a teammate knows it best; Ismail checks
 > every task and keeps the branches consistent across teams. Squashing gives one
