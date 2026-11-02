@@ -17,6 +17,6 @@ Team: <!-- backend / front-web / mobile / ai / devops / marketing -->
 - [ ] Docs up to date (README, DOCKER, DEPLOYMENT or SECURITY as relevant)
 - [ ] Reviewable in 20 minutes; otherwise, split
 
-Closes #
+Fixes ISM-
 
 <!-- Touching authentication, payment or documents? Also request a security review. -->

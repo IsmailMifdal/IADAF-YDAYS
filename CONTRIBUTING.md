@@ -1,41 +1,54 @@
 # Contributing to IADAF
 
-How a contribution travels from an issue to `main`, in a 10-minute read.
+How a contribution travels from a task to `dev_v1`, in a 10-minute read.
 Teams, cadence and the definition of done live in
 [ORGANISATION.md](docs/equipe/ORGANISATION.md).
 
 ```
-issue → branch → commits → local checks → PR → review → merge
+Linear task → branch from dev_v1 → commits → local checks → PR → two reviews → merge
 ```
 
 ## 1. Get started
 
 ```bash
-cp .env.example .env          # then fill in the secrets
-docker compose up -d --build
-bash tests/e2e/run-all.sh     # everything must be green
+cp .env.example .env                  # then fill in the secrets
+docker compose up -d --build --wait   # returns once every health check passes
+cd front && npm ci && cd ..           # Node 24, as in CI: the E2E scripts sign tokens with it
+bash tests/e2e/run-all.sh             # everything must be green
 ```
 
 Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-## 2. Issue first
+## 2. Task first
 
-- Search for an existing issue; otherwise open one from a
+- Every piece of work starts from a **task in [Linear](https://linear.app/ismailmifdal)**.
+  Each task also exists as a GitHub issue, synced both ways; **Linear is the
+  reference**.
+- Search for an existing task; otherwise create one, or open a GitHub issue from a
   [template](.github/ISSUE_TEMPLATE) and fill in every section.
 - Title: `<type>(<scope>): <subject>`, e.g. `fix(db): remove CREATE SCHEMA from V1 migrations`.
-- One team label (`team:backend`, `team:front-web`…), then assign yourself and
-  move it to **In progress** on the [Project](https://github.com/users/IsmailMifdal/projects/3).
-  Columns: Todo → In progress → In review → Done.
+- One team label (`team:backend`, `team:front-web`…), then assign yourself.
+- Statuses, as in the Linear document
+  [Circuit de validation des tâches](https://linear.app/ismailmifdal/document/circuit-de-validation-des-taches-4ef6b5f90303):
 
-> **Why?** With ten people and no issue, two of us build the same thing without
-> knowing it. The board shows who does what at a glance.
+  | Status | Set by |
+  |---|---|
+  | Backlog, Todo | Ismail or the team lead |
+  | In Progress | you, or automatically when the PR opens |
+  | In Review | automatically when a review is requested; by hand for a task without code |
+  | Done | automatically when the PR merges (Ismail's approval is required); **Ismail only** for a task without code |
 
-**First time?** Pick a `first-issue` issue.
+  **Nobody but Ismail sets Done by hand.**
+
+> **Why?** With ten people and no task, two of us build the same thing without
+> knowing it. The board shows who does what at a glance, and Ismail checks every task.
+
+**First time?** Pick a `first-issue` task.
 
 ## 3. Design before code
 
 For a **new feature** (screen, API, data flow): a small [Mermaid](https://mermaid.js.org/)
-diagram in the issue (who calls what, which data), approved by Ismail or the team
+diagram in the task (who calls what, which data), approved by Ismail or the team
 lead, **then** the code.
 
 > **Why?** Fixing a diagram takes 5 minutes; rewriting a PR takes 2 days. A one-line
@@ -43,9 +56,13 @@ lead, **then** the code.
 
 ## 4. Branches and commits
 
+Work branches start from an up-to-date `dev_v1`; a `hotfix` starts from `main`.
+
 ```
-Branch: <type>/<issue #>-<short-slug>        fix/1-flyway-create-schema
-Commit: <type>(<scope>): <subject> (#n)      fix(db): remove CREATE SCHEMA from V1 (#1)
+Branch: copied from Linear ("Copy git branch name"), or <type>/ism-<n>-<short-slug>
+        fix/ism-23-revoke-create-on-database
+Commit: <type>(<scope>): <subject> (ISM-<n>)
+        fix(db): revoke CREATE ON DATABASE from service roles (ISM-23)
 ```
 
 | Type | For | | Type | For |
@@ -54,11 +71,12 @@ Commit: <type>(<scope>): <subject> (#n)      fix(db): remove CREATE SCHEMA from 
 | `fix` | bug fix | | `refactor` | restructuring, no behaviour change |
 | `docs` | documentation | | `build` / `ci` | dependencies, Docker, CI |
 | `perf` | performance | | `chore` | maintenance |
+| `hotfix` | urgent production fix, from `main` | | | |
 
 Everything in English, imperative mood, no final period. Stage files one by one
 (`git add <path>`), never `git add .`.
 
-> **Why?** The issue number ties every line of code to its reason; the type makes the
+> **Why?** The task ID ties every line of code to its reason; the type makes the
 > history readable at a glance. `git add .` is the #1 way to commit a `.env` by
 > accident.
 
@@ -68,10 +86,10 @@ Everything in English, imperative mood, no final period. Stage files one by one
 |---|---|
 | Front | `cd front && npm ci && npx tsc --noEmit && npx eslint src && npm run build` |
 | Java services | `mvn -B -ntp verify` |
-| AI service | `cd ai-service && pytest -q` |
+| AI service | `cd ai-service && python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12, as in CI) |
 | Everything | `bash tests/e2e/run-all.sh` |
 
-Then **review your own diff** (`git diff origin/main...HEAD`), alone or with an AI
+Then **review your own diff** (`git diff origin/dev_v1...HEAD`), alone or with an AI
 assistant. A bug or a missing test? Fix it before pushing.
 
 > **Why?** A red CI blocks everyone, and your own mistakes are faster to fix before a
@@ -80,8 +98,11 @@ assistant. A bug or a missing test? Fix it before pushing.
 ## 6. The pull request
 
 - **Small**: reviewable in 20 minutes, otherwise split it.
+- **Targets `dev_v1`**. A `hotfix` targets `main`; `main` is then merged back into
+  `develop` and `dev_v1`.
 - Title in the commit format, [template](.github/pull_request_template.md) filled in,
-  `Closes #<issue>` at the end.
+  `Fixes ISM-<n>` at the end: it links the PR to the Linear task, which moves to Done
+  when the PR merges.
 - Right after, a **plain-language comment** that mentions the people concerned: what
   changes, and why.
 
@@ -90,12 +111,15 @@ assistant. A bug or a missing test? Fix it before pushing.
 
 ## 7. Review and merge
 
-- **Two reviews per PR**:
+- **Two approvals per PR into `dev_v1`**, enforced by GitHub:
   1. **A teammate** reviews the code: the team lead, or a team member when the lead
      is the author (cross-review).
-  2. **Ismail approves**: the final go, after the teammate's review.
+  2. **Ismail approves**: the final go, after the teammate's review. He is the only
+     code owner ([CODEOWNERS](.github/CODEOWNERS) lists his handle alone), so no PR
+     merges without him.
 
-  Bot reviewers (Copilot, Codex) will help once enabled; they comment, never approve.
+  `develop` and `main` need Ismail's approval. Bot reviewers (Copilot, Codex)
+  comment, never approve.
 
   | Team | Lead | Cross-review |
   |---|---|---|
@@ -104,16 +128,22 @@ assistant. A bug or a missing test? Fix it before pushing.
   | Mobile | @vitalikevin | Ismail alone until a second member joins |
   | AI | @Sqwado | @Sqwado ⇄ @UgoAmeslantt |
 
-- **Every comment gets a reply** in its thread: fixed, deferred (with an issue) or
+- **Every comment gets a reply** in its thread: fixed, deferred (with a task) or
   disputed (with the argument).
 - **Check a remark against the code** before applying it: reviewers, human or bot,
   are sometimes wrong.
-- **Merge** by Ismail, squashed, once CI is green, comments are handled and both
-  reviewers approved. Then delete your branch.
+- **Merge** by Ismail into `dev_v1`, squashed, once CI is green, comments are handled
+  and both reviewers approved. Then delete your branch.
 
-> **Why?** Nobody reviews their own code, and a teammate knows it best; Ismail keeps
-> `main` consistent across teams. Squashing gives one commit per feature: the history stays readable and easy
-> to revert.
+> **Why?** Nobody reviews their own code, and a teammate knows it best; Ismail checks
+> every task and keeps the branches consistent across teams. Squashing gives one
+> commit per feature: the history stays readable and easy to revert.
+
+### Releases
+
+`dev_v1` (integration) → `develop` (staging) → `main` (production). At the end of a
+sprint, a lead or Ismail merges `dev_v1` into `develop`; only Ismail merges `develop`
+into `main`, then tags the release. Details in [DEPLOYMENT.md § 8](DEPLOYMENT.md).
 
 ## 8. Security
 
@@ -136,11 +166,13 @@ assistant. A bug or a missing test? Fix it before pushing.
   one.
 - **TypeScript**: no `any`, UI texts in the 4 languages.
 - **Python**: no blocking call inside an `async` function.
-- **Language**: code, comments, commits, issues, PRs and docs in English. Only the
-  product's translated UI texts are in other languages.
+- **Language**: code, comments, commits, issues, PRs and docs in English. Two
+  exceptions: the product's translated UI texts, and the legal and GDPR documents
+  (`docs/rgpd`, the DPIA, the legal pages), which stay in French.
 
 > **Why?** Simple code reads fast and can be picked up by anyone, even from another
-> team. One language for the repository keeps it searchable and consistent.
+> team. One language for the repository keeps it searchable and consistent; legal
+> documents are written for French authorities and users.
 
 ## 10. AI assistants
 

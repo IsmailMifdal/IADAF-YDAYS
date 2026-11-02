@@ -24,20 +24,25 @@ discovery-service Eureka (:8761) · PostgreSQL: one schema and one account per s
 
 | What | Command |
 |---|---|
-| Start the stack | `docker compose up -d --build` |
+| Start the stack | `docker compose up -d --build --wait` |
 | Java services | `mvn -B -ntp verify` |
-| Front | `cd front && npx tsc --noEmit && npx eslint src && npm run build` |
-| AI service | `cd ai-service && pytest -q` |
-| End-to-end | `bash tests/e2e/run-all.sh` |
+| Front | `cd front && npm ci && npx tsc --noEmit && npx eslint src && npm run build` (Node 24) |
+| AI service | `cd ai-service && python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12) |
+| End-to-end | `cd front && npm ci && cd .. && bash tests/e2e/run-all.sh` |
 
 Run the commands for the area you touched before proposing a commit.
 
 ## Always
 
-- Write everything in English: code, comments, commits, issues, PRs, docs. Only the
-  translated UI texts (`front/src/app/i18n/messages/*.ts`) use other languages.
-- Start from an issue; branch `<type>/<issue #>-<short-slug>` from an up-to-date `main`.
-- Commit `<type>(<scope>): <imperative subject> (#<issue>)`.
+- Write everything in English: code, comments, commits, issues, PRs, docs. Two
+  exceptions: the translated UI texts (`front/src/app/i18n/messages/*.ts`), and the
+  legal and GDPR documents (`docs/rgpd`, the DPIA, the legal pages), which stay in
+  French.
+- Start from a Linear task; branch from an up-to-date `dev_v1`, named as copied from
+  Linear or `<type>/ism-<n>-<short-slug>`.
+- Commit `<type>(<scope>): <imperative subject> (ISM-<n>)`.
+- PRs target `dev_v1` (a `hotfix` targets `main`) and end with `Fixes ISM-<n>`; they
+  need two approvals, a teammate then Ismail (CONTRIBUTING § 7).
 - `git add <path>`, one file at a time.
 - A test with every feature and every fix.
 - UI texts in the 4 languages.
@@ -46,7 +51,7 @@ Run the commands for the area you touched before proposing a commit.
 
 ## Never
 
-- Push to `main`, force-push, merge a PR: that is Ismail's role.
+- Push to `dev_v1`, `develop` or `main`, force-push, merge a PR: that is Ismail's role.
 - `git add .` or `git add -A`.
 - Write a secret anywhere but `.env` (not versioned), or echo it in an answer.
 - Edit a merged Flyway migration: add a new one.
