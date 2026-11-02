@@ -2,7 +2,8 @@
 
 How a contribution travels from a task to `dev_v1`, in a 10-minute read.
 Teams, cadence and the definition of done live in
-[ORGANISATION.md](docs/equipe/ORGANISATION.md).
+[ORGANISATION.md](docs/equipe/ORGANISATION.md); where they differ (labels, branch
+names, tracking), this guide wins.
 
 ```
 Linear task → branch from dev_v1 → commits → local checks → PR → two reviews → merge
@@ -14,7 +15,7 @@ Linear task → branch from dev_v1 → commits → local checks → PR → two r
 cp .env.example .env                  # then fill in the secrets
 docker compose up -d --build --wait   # returns once every health check passes
 cd front && npm ci && cd ..           # Node 24, as in CI: the E2E scripts sign tokens with it
-bash tests/e2e/run-all.sh             # everything must be green
+E2E_SKIP_LLM=1 bash tests/e2e/run-all.sh   # all green; drop E2E_SKIP_LLM with an OpenAI key
 ```
 
 Site: http://localhost:3000 · Trouble: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
@@ -61,14 +62,14 @@ lead, **then** the code.
 Work branches start from an up-to-date `dev_v1`; a `hotfix` starts from `main`.
 
 ```
-Branch:   <type>/ism-<n>-<short-slug>   (a few words)
+Branch:   <type>/ism-<n>-<short-slug>   (5 words max)
           fix/ism-23-revoke-create-on-database
 PR title: <type>(<scope>): <subject> (ISM-<n>)
           fix(db): revoke CREATE ON DATABASE from service roles (ISM-23)
 Commit:   <type>(<scope>): <subject>   ((ISM-<n>) optional)
 ```
 
-PRs are squash-merged, so the PR title becomes the commit on `dev_v1`: the
+PRs into `dev_v1` are squash-merged, so the PR title becomes the commit there: the
 `(ISM-<n>)` suffix is required there and optional in intermediate commits.
 Branches opened before Linear keep their names.
 
@@ -78,9 +79,9 @@ Branches opened before Linear keep their names.
 | `fix` | bug fix | | `refactor` | restructuring, no behaviour change |
 | `docs` | documentation | | `build` / `ci` | dependencies, Docker, CI |
 | `perf` | performance | | `chore` | maintenance |
-| `hotfix` | urgent production fix, from `main` | | | |
 
-Everything in English, imperative mood, no final period. Stage files one by one
+A `hotfix/ism-<n>-<slug>` branch starts from `main`; its commits and PR title use
+`fix`. Everything in English, imperative mood, no final period. Stage files one by one
 (`git add <path>`), never `git add .`.
 
 > **Why?** The task ID ties every line of code to its reason; the type makes the
@@ -91,10 +92,10 @@ Everything in English, imperative mood, no final period. Stage files one by one
 
 | Area | Command |
 |---|---|
-| Front | `cd front && npm ci && npx tsc --noEmit && npx eslint src && npm run build` |
+| Front | `cd front && npm ci && npm audit --omit=dev --audit-level=high && npx tsc --noEmit && npx eslint src && npm run build` |
 | Java services | `mvn -B -ntp verify` |
-| AI service | `cd ai-service && python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12, as in CI) |
-| Everything | `bash tests/e2e/run-all.sh` |
+| AI service | `cd ai-service && python3.12 -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12, as in CI) |
+| Everything | `E2E_SKIP_LLM=1 bash tests/e2e/run-all.sh` (without an OpenAI key) |
 
 Then **review your own diff** (`git diff origin/dev_v1...HEAD`), alone or with an AI
 assistant. A bug or a missing test? Fix it before pushing.
@@ -153,7 +154,7 @@ assistant. A bug or a missing test? Fix it before pushing.
 
 `dev_v1` (integration) → `develop` (staging) → `main` (production). At the end of a
 sprint, a lead or Ismail merges `dev_v1` into `develop`; only Ismail merges `develop`
-into `main`, then tags the release. Details in [DEPLOYMENT.md § 8](DEPLOYMENT.md).
+into `main`, then tags the release. Updating the server: [DEPLOYMENT.md § 8](DEPLOYMENT.md).
 
 ## 8. Security
 

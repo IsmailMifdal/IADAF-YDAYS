@@ -1,9 +1,10 @@
 # IADAF — instructions for AI assistants
 
-Read by Codex, Copilot, Cursor and Claude Code (through `CLAUDE.md`); Gemini CLI
-users set `context.fileName` to `AGENTS.md`. It
-summarises [CONTRIBUTING.md](CONTRIBUTING.md): when in doubt, CONTRIBUTING wins. Any
-change goes through a PR approved by Ismail.
+Read by Codex, Copilot, Cursor and Claude Code (through `CLAUDE.md`). Gemini CLI
+users set `context.fileName` to `AGENTS.md`.
+
+This file summarises [CONTRIBUTING.md](CONTRIBUTING.md): when in doubt, CONTRIBUTING
+wins. Any change goes through a PR approved by Ismail.
 
 ## The project
 
@@ -26,9 +27,9 @@ discovery-service Eureka (:8761) · PostgreSQL: one schema and one account per s
 |---|---|
 | Start the stack | `docker compose up -d --build --wait` |
 | Java services | `mvn -B -ntp verify` |
-| Front | `cd front && npm ci && npx tsc --noEmit && npx eslint src && npm run build` (Node 24) |
-| AI service | `cd ai-service && python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12) |
-| End-to-end | `cd front && npm ci && cd .. && bash tests/e2e/run-all.sh` |
+| Front | `cd front && npm ci && npm audit --omit=dev --audit-level=high && npx tsc --noEmit && npx eslint src && npm run build` (Node 24) |
+| AI service | `cd ai-service && python3.12 -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt && pytest -q` (Python 3.12) |
+| End-to-end | `cd front && npm ci && cd .. && E2E_SKIP_LLM=1 bash tests/e2e/run-all.sh` (LLM checks need an OpenAI key) |
 
 Run the commands for the area you touched before proposing a commit.
 
@@ -40,11 +41,11 @@ Run the commands for the area you touched before proposing a commit.
   French.
 - Start from a Linear task; branch from an up-to-date `dev_v1`, named
   `<type>/ism-<n>-<short-slug>`.
-- Commit `<type>(<scope>): <imperative subject>`; the PR title (squash-merged) must
+- Commit `<type>(<scope>): <imperative subject>`; the PR title (squash-merged into `dev_v1`) must
   end with `(ISM-<n>)`, intermediate commits may.
-- PRs target `dev_v1` (a `hotfix` targets `main`) and end with `Fixes ISM-<n>`; they
+- PRs target `dev_v1` (a `hotfix/…` branch targets `main`, typed `fix`) and end with `Fixes ISM-<n>`; they
   need two approvals, a teammate then Ismail (CONTRIBUTING § 7).
-- `git add <path>`, one file at a time.
+- Stage explicit paths only (`git add <path>…`), never `git add .` or `-A`.
 - A test with every feature and every fix.
 - UI texts in the 4 languages.
 - The simplest code that works; follow the style of the file you edit.
