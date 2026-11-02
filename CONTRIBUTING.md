@@ -61,11 +61,16 @@ lead, **then** the code.
 Work branches start from an up-to-date `dev_v1`; a `hotfix` starts from `main`.
 
 ```
-Branch: copied from Linear ("Copy git branch name"), or <type>/ism-<n>-<short-slug>
-        fix/ism-23-revoke-create-on-database
-Commit: <type>(<scope>): <subject> (ISM-<n>)
-        fix(db): revoke CREATE ON DATABASE from service roles (ISM-23)
+Branch:   <type>/ism-<n>-<short-slug>   (a few words)
+          fix/ism-23-revoke-create-on-database
+PR title: <type>(<scope>): <subject> (ISM-<n>)
+          fix(db): revoke CREATE ON DATABASE from service roles (ISM-23)
+Commit:   <type>(<scope>): <subject>   ((ISM-<n>) optional)
 ```
+
+PRs are squash-merged, so the PR title becomes the commit on `dev_v1`: the
+`(ISM-<n>)` suffix is required there and optional in intermediate commits.
+Branches opened before Linear keep their names.
 
 | Type | For | | Type | For |
 |---|---|---|---|---|
@@ -102,7 +107,7 @@ assistant. A bug or a missing test? Fix it before pushing.
 - **Small**: reviewable in 20 minutes, otherwise split it.
 - **Targets `dev_v1`**. A `hotfix` targets `main`; `main` is then merged back into
   `develop` and `dev_v1`.
-- Title in the commit format, [template](.github/pull_request_template.md) filled in,
+- Title in the commit format, ending with `(ISM-<n>)`, [template](.github/pull_request_template.md) filled in,
   `Fixes ISM-<n>` at the end: it links the PR to the Linear task, which moves to Done
   when the PR merges.
 - Right after, a **plain-language comment** that mentions the people concerned: what

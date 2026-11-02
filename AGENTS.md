@@ -38,9 +38,10 @@ Run the commands for the area you touched before proposing a commit.
   exceptions: the translated UI texts (`front/src/app/i18n/messages/*.ts`), and the
   legal and GDPR documents (`docs/rgpd`, the DPIA, the legal pages), which stay in
   French.
-- Start from a Linear task; branch from an up-to-date `dev_v1`, named as copied from
-  Linear or `<type>/ism-<n>-<short-slug>`.
-- Commit `<type>(<scope>): <imperative subject> (ISM-<n>)`.
+- Start from a Linear task; branch from an up-to-date `dev_v1`, named
+  `<type>/ism-<n>-<short-slug>`.
+- Commit `<type>(<scope>): <imperative subject>`; the PR title (squash-merged) must
+  end with `(ISM-<n>)`, intermediate commits may.
 - PRs target `dev_v1` (a `hotfix` targets `main`) and end with `Fixes ISM-<n>`; they
   need two approvals, a teammate then Ismail (CONTRIBUTING § 7).
 - `git add <path>`, one file at a time.
