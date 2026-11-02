@@ -190,7 +190,7 @@ privée.
 
 | Symptôme | Cause | Solution |
 |---|---|---|
-| `python: command not found` | Les scripts appellent `python` ; sur Linux, souvent seul `python3` existe (#48) | `mkdir -p ~/bin && ln -s "$(command -v python3)" ~/bin/python`, avec `~/bin` dans le `PATH` |
+| `python: command not found` | Les scripts appellent `python` ; sur Linux, souvent seul `python3` existe (#48) | `mkdir -p ~/bin && printf '#!/bin/sh\nexec python3 "$@"\n' > ~/bin/python && chmod +x ~/bin/python`, avec `~/bin` dans le `PATH` (un script plutôt qu'un lien : marche aussi avec mise ou pyenv) |
 | Presque tout répond `401` avec un jeton « valide » | `node` introuvable ou `front/node_modules` absent : les jetons sortent vides | `cd front && npm ci` ; lancer les tests avec le `PATH` complet |
 | `chat.sh` : `meta error` au lieu de `meta token done` | Pas de clé OpenAI en local | `E2E_SKIP_LLM=1 bash tests/e2e/run-all.sh` |
 | `Conflict. The container name "/iadaf-…" is already in use` | Les noms de conteneurs sont fixes (#50) : une seule stack à la fois | Arrêter l'autre stack avec `docker compose -p <projet> down` (jamais `-v` : cela efface ses données), puis relancer |
