@@ -20,6 +20,8 @@ spring:
   flyway:
     schemas: documents
     default-schema: documents
+    # Created by docker/postgres/provision.sql; fail fast if it is missing.
+    create-schemas: false
   servlet:
     multipart:
       # 10 Mo par pièce, plus la marge des autres champs du formulaire.

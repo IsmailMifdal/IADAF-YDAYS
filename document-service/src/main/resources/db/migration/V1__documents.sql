@@ -3,7 +3,8 @@
 -- Le contenu est chiffré par le service (AES-256-GCM) avant d'arriver ici :
 -- la base, ses sauvegardes et l'hébergeur ne voient que du chiffré.
 
-CREATE SCHEMA IF NOT EXISTS documents;
+-- The schema is created by docker/postgres/provision.sql: service roles
+-- cannot create schemas (CREATE ON DATABASE is revoked).
 
 CREATE TABLE documents.documents (
     id                uuid PRIMARY KEY,

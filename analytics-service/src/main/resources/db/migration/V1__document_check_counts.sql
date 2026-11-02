@@ -4,7 +4,8 @@
 -- catégorie de pièce et l'issue de chaque contrôle. Ce sont des statistiques,
 -- pas des données personnelles.
 
-CREATE SCHEMA IF NOT EXISTS analytics;
+-- The schema is created by docker/postgres/provision.sql: service roles
+-- cannot create schemas (CREATE ON DATABASE is revoked).
 
 CREATE TABLE analytics.document_check_counts (
     day      date        NOT NULL,

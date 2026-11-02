@@ -2,7 +2,8 @@
 -- Flyway. Rejoué seulement sur une base vierge : les bases existantes sont
 -- marquées à cette version (baseline-on-migrate).
 
-CREATE SCHEMA IF NOT EXISTS demarches;
+-- The schema is created by docker/postgres/provision.sql: service roles
+-- cannot create schemas (CREATE ON DATABASE is revoked).
 
 CREATE TABLE demarches.demarches (
     id                 bigserial PRIMARY KEY,

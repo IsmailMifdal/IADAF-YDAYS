@@ -57,6 +57,47 @@ docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"
 
 ---
 
+## Flyway: `Migration checksum mismatch for migration version 1`
+
+`demarches-service`, `document-service` or `analytics-service` stops at startup
+with this error on a database where their V1 migration ran before issue #42
+(a `demarches` database baselined from Hibernate is not affected). V1 no longer
+runs `CREATE SCHEMA` (schemas are created by `docker/postgres/provision.sql`),
+so its checksum changed; the resulting schema is identical.
+
+Local data you do not need: start from a fresh volume.
+
+```bash
+docker compose down -v && docker compose up -d --build
+```
+
+Data to keep: run `flyway repair`, which only realigns the stored checksum
+(no SQL is replayed), with the stack running, then restart the services.
+Run it from the repository root: it reads `POSTGRES_DB` and the
+`*_DB_PASSWORD` values from your `.env`, with the same defaults as
+`docker-compose.yml`. The network is `<compose project>_iadaf-network`
+(`iadaf-ydays_…` when the folder is `IADAF-YDAYS`); check it with
+`docker network ls`.
+
+```bash
+( # subshell: the .env values do not stay in your terminal
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+repair() { # <service folder> <schema> <password>
+  docker run --rm --network iadaf-ydays_iadaf-network \
+    -v "$PWD/$1/src/main/resources/db/migration:/flyway/sql:ro" \
+    -e FLYWAY_PASSWORD="$3" flyway/flyway:11 \
+    -url="jdbc:postgresql://postgres:5432/${POSTGRES_DB:-iadaf_db}" \
+    -user="iadaf_$2" -schemas="$2" repair
+}
+repair demarches-service demarches "${DEMARCHES_DB_PASSWORD:-dev-demarches-db}"
+repair document-service documents "${DOCUMENTS_DB_PASSWORD:-dev-documents-db}"
+repair analytics-service analytics "${ANALYTICS_DB_PASSWORD:-dev-analytics-db}"
+)
+docker restart iadaf-demarches iadaf-document iadaf-analytics
+```
+
+---
+
 ## Erreur : « Port 8080 already in use »
 
 ```bash
