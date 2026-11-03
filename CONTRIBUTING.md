@@ -46,7 +46,7 @@ name already in use).
 > **Why?** With ten people and no task, two of us build the same thing without
 > knowing it. The board shows who does what at a glance, and Ismail checks every task.
 
-**First time?** Pick a `first-issue` task.
+**First time?** Pick a task labelled **Bonne première issue** in Linear.
 
 ## 3. Design before code
 
@@ -133,7 +133,7 @@ assistant. A bug or a missing test? Fix it before pushing.
   |---|---|---|
   | Backend | @benoit-bremaud | @benoit-bremaud ⇄ @CorentinBL |
   | Front web | @SoulSkunk | within the team |
-  | Mobile | @vitalikevin | Ismail alone until a second member joins |
+  | Mobile | @vitalikevin | a front-web member until a second mobile member joins |
   | AI | @Sqwado | @Sqwado ⇄ @UgoAmeslantt |
 
 - **Every comment gets a reply** in its thread: fixed, deferred (with a task) or
