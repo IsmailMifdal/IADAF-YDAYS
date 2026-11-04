@@ -15,9 +15,12 @@ on:
 permissions:
   contents: read
 
+# A newer push cancels a stale pull request run, never a run on dev_v1, develop
+# or main: on develop and main the run ends with the deploy (ship), and
+# cancelling it mid-SSH would leave a server half updated. Those runs queue.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   frontend:
