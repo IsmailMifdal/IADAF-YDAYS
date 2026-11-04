@@ -46,23 +46,27 @@ rollback_hint() {
   echo "sauvegarde prise juste avant la mise à jour (DEPLOYMENT.md § 9)." >&2
 }
 
-echo "== Déploiement de $TARGET sur $DOMAIN (précédent : ${PREVIOUS:-aucun})"
-set_tag "$TARGET"
-
-echo "== Images"
-if ! docker compose pull --quiet; then
-  echo "deploy: images introuvables pour $TARGET (CI en cours ou en échec) : rien n'a changé" >&2
+# Abandon avant le démarrage : remet le tag et le commit précédents, pour que
+# .env ne désigne jamais une version qui n'a pas été démarrée.
+abandon() {
+  echo "deploy: $1 : rien n'a changé" >&2
   set_tag "$PREVIOUS"
   if [ -n "$PREVIOUS" ]; then
     git checkout --quiet "$PREVIOUS"
   fi
   exit 1
-fi
+}
+
+echo "== Déploiement de $TARGET sur $DOMAIN (précédent : ${PREVIOUS:-aucun})"
+set_tag "$TARGET"
+
+echo "== Images"
+docker compose pull --quiet || abandon "images introuvables pour $TARGET (CI en cours ou en échec)"
 
 # Pas de sauvegarde au tout premier déploiement : il n'y a pas encore de base.
 if [ "$(env_value DEPLOY_BACKUP)" != 0 ] && [ -n "$PREVIOUS" ]; then
   echo "== Sauvegarde avant la mise à jour"
-  deploy/backup.sh
+  deploy/backup.sh || abandon "la sauvegarde a échoué, mise à jour annulée"
 fi
 
 echo "== Démarrage"
