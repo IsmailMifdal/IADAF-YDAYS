@@ -301,7 +301,7 @@ services:
       start_period: 300s
 
   # --- Analytics Service (Spring Boot) ---
-  # Comptes anonymes des pré-vérifications de pièces.
+  # Anonymous counts of document pre-checks.
   analytics-service:
     build:
       context: .
