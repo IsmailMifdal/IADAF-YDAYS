@@ -95,5 +95,6 @@ flowchart LR
 - `document-service` has the same shape and the same identity defect
   (`DocumentService.java:151-158`); it also throws `ResponseStatusException` from the service,
   which rule 1 moves to the edge. Not drawn twice.
-- Open question carried by ADR-0001: 8 of the 12 endpoints have no caller; removing them
-  (step 1) shrinks `DemarcheService` before step 3 touches it.
+- ADR-0001 decision 2: the 8 endpoints with no caller stay (a "my procedures" page is
+  planned), so step 4 routes every write path, `POST` and `PUT /{id}` included, through
+  `changeStatut()`.

@@ -1,8 +1,8 @@
 # Architecture dossier
 
 The single entry point to IADAF's conception documents: how the backend is structured, which
-decisions shape it, and how to read the folder. Proposed with ADR-0001: once Ismail accepts it,
-code conforms to this dossier and a change that makes them diverge updates both.
+decisions shape it, and how to read the folder. Since ADR-0001 was accepted, code conforms to
+this dossier and a change that makes them diverge updates both.
 
 ## Scope
 
@@ -33,8 +33,8 @@ May 2027.
   cases and traceability to follow
   with the first feature study.
 - Every choice between options is argued with a weighted decision matrix inside the ADR, so a
-  reviewer can contest a weight or a score rather than the conclusion (proposed with ADR-0001;
-  to be added to CONTRIBUTING if Ismail agrees).
+  reviewer can contest a weight or a score rather than the conclusion (agreed with ADR-0001;
+  added to CONTRIBUTING in a follow-up once PR #34 is merged).
 
 ## Context (C4 level 1)
 

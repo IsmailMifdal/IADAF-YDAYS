@@ -1,6 +1,6 @@
 # ADR-0001 — Adopt a proportional Clean architecture for the backend
 
-- **Status**: proposed (weights and outcome to be validated by Ismail and the backend team)
+- **Status**: accepted (weights, outcome and the three decisions validated by Ismail on 2026-11-05)
 - **Date**: 2026-11-05
 - **Deciders**: Ismail (product owner, tech lead), Corentin, Benoît
 - **Linear**: ISM-116 (under ISM-111)
@@ -36,7 +36,7 @@ The findings that motivate this record:
    an unwired `FallbackController`, an `X-Gateway` header nobody reads, Eureka with single
    instances already bypassed by `analytics-service` fixed URLs, five `@Cacheable` annotations
    kept after caching was disabled on purpose (cross-user leak), 8 of 12 `demarches` endpoints
-   without a caller.
+   without a caller. Eureka and the endpoints are kept (decisions 1 and 2).
 
 The project ends in May 2027 with a student team working part-time; a fine-tuned language model
 (LLM, large language model) and a vision-based document reader are planned (ISM-111). The LLM
@@ -51,7 +51,7 @@ the reader swap and the prompt format a fine-tuned chat model needs (role-tagged
 | D2 — Migration cost before May 2027 | Three part-time contributors, 1,350 lines slated for deletion (#142, #144); a big-bang restructure would consume the schedule. |
 | D3 — Readiness for the fine-tuned model and the vision reader | Swapping the document reader, or moving to role-tagged prompts, must be one adapter, not a rewrite. |
 | D4 — Readability for a newcomer | Teammates and school reviewers must find their way without a tour. |
-| D5 — Dependency rule enforced | Web and security types never reach the services or the domain; the rule is checkable in review. |
+| D5 — Dependency rule enforced | Web and security types never reach the services or the domain; the rule is checked by a test, not only in review. |
 
 ## Options considered
 
@@ -73,6 +73,10 @@ Three rules, no package reshuffle in the Java services:
    exceptions are domain exceptions mapped to Spring `ProblemDetail` (RFC 9457 error body) at
    the edge. Persistence annotations on entities, Spring Data repositories and `@Transactional`
    are the accepted persistence seam: one persistence technology, no second implementation.
+   The rule is checked by a machine: an ArchUnit test in `demarches-service`, `document-service`
+   and any Java service that gains a `service` package (no `org.springframework.security..`,
+   `org.springframework.web.bind..`, `org.springframework.web.server..` or `jakarta.servlet..`
+   import in `service` or `entity`), and an `import-linter` contract in `ai-service`.
 2. **Invariants on the entities**: `Demarche.changeStatut()`, `completeStep()`,
    `openPackFolder()`, with `statut` and `dateFin` writable only through them (no Lombok
    `@Data` setters); rules in `ai-service` stay in `app/documents` and consume frozen facts.
@@ -97,8 +101,8 @@ HTTP clients, clock, LLM, OCR, embeddings, vector store, conversation store.
 
 ## Decision matrix
 
-Scores 0–5, weights sum to 100, totals out of 500. Weights are a proposal for Ismail to confirm
-or change; the matrix is kept so that a changed weight recomputes the outcome.
+Scores 0–5, weights sum to 100, totals out of 500. Weights confirmed by Ismail on 2026-11-05;
+the matrix is kept so that a changed weight recomputes the outcome.
 
 | Criterion | Weight | A — current layering | B — proportional Clean | C — hexagonal everywhere |
 |---|---:|---:|---:|---:|
@@ -106,7 +110,7 @@ or change; the matrix is kept so that a changed weight recomputes the outcome.
 | D2 Migration cost before May 2027 | 25 | 5 — none | 4 — seven small PRs, each shipping a fix already filed | 1 — every package moves, no feature value |
 | D3 Ready for the model and reader swaps | 20 | 3 — endpoint already configurable; reader and prompt format need four modules edited | 5 — one adapter behind `ChatModel` / `DocumentReader` | 5 — same |
 | D4 Readable for a newcomer | 15 | 4 — standard Spring layout | 4 — same layout plus three written rules | 2 — nine interfaces to trace for one call |
-| D5 Dependency rule enforced | 15 | 1 — broken in two services, unchecked | 5 — rule written, checked in review | 5 — enforced by package boundaries |
+| D5 Dependency rule enforced | 15 | 1 — broken in two services, unchecked | 5 — rule written, checked by ArchUnit and import-linter | 5 — enforced by package boundaries plus the same tests |
 | **Total** | **100** | **310** | **460** | **355** |
 
 Sensitivity (weights still sum to 100): D1 40 / D2 10 / D3 20 / D4 15 / D5 15 gives B 475,
@@ -123,34 +127,36 @@ D2 > 3 × D1 + 2 × D3 + 4 × D5, that is when migration cost outweighs every ot
 
 | Step | Scope | Issue |
 |---|---|---|
-| 1 | Delete before refactoring: `user-service`, the analytics aggregator, unused `demarches` endpoints (pending question 2), gateway circuit breaker, fallback, `X-Gateway`, `CorsConfig` (after checking the browser never calls `:8080`), unused cache and `WebClient` beans | #142, #144, new |
-| 2 | Shared `iadaf-security` module (`InternalJwt`, `CurrentUser`), `ProblemDetail` everywhere, delete the dead 401 handlers and the three `ErrorResponse` classes | #145 |
+| 1 | Delete before refactoring: `user-service`, the analytics aggregator, gateway circuit breaker, fallback, `X-Gateway`, `CorsConfig` (after checking the browser never calls `:8080`), unused cache and `WebClient` beans. With the aggregator go the `services.*.url` properties and the `*_SERVICE_URL` compose variables; any future call between backend services (calls through the gateway excluded) resolves through discovery (`lb://` or a `@LoadBalanced` client), never a fixed URL (decision 1). The 8 `demarches` endpoints without a caller and the overdue query stay (decision 2) | #142, #144, new |
+| 2 | Shared `iadaf-security` module (`InternalJwt`, `CurrentUser`), `ProblemDetail` everywhere (domain exceptions replace `ResponseStatusException` in `DocumentService`), delete the dead 401 handlers and the three `ErrorResponse` classes; rule 1 checked by ArchUnit and `import-linter` (rule 1 above); the known violations of `DemarcheService` and `DocumentService` are frozen (ArchUnit `FreezingArchRule`) and step 3 empties the freeze store | #145 |
 | 3 | Identity at the controller in `demarches-service` and `document-service`; services take `String userId` | new (audit M1) |
-| 4 | Invariants on `Demarche` (`@Data` replaced by getters, status and end date set only through `changeStatut`); every remaining write path goes through the entity; unit tests on the rules. Scope depends on question 2: the two bypassing paths (`POST`, `PUT /{id}`) are among the endpoints with no caller | #143 |
+| 4 | Invariants on `Demarche` (`@Data` replaced by getters, status and end date set only through `changeStatut`); every write path goes through the entity; unit tests on the rules. Full scope (decision 2): `POST` and `PUT /{id}` go through `changeStatut()` | #143 |
 | 5 | `ai-service`: `ChatModel` port and `OpenAICompatibleChatModel`; messages with roles; `ModelUnavailable` instead of error text; objects built in `lifespan`; one LLM configuration (`LLM_BASE_URL`, `LLM_MODEL`, optional `LLM_API_KEY`) | new |
 | 6 | `ai-service`: split `rag_service.py` (prompts, knowledge index, chat use case), typed results, ownership rule as a pure function | new |
-| 7 | `ai-service`: `DocumentFacts` and `DocumentReader`; rules consume facts; `/analyze-document` re-scoped so the model explains a rule-based verdict and never produces one | new, with the front team |
+| 7 | `ai-service`: `DocumentFacts` and `DocumentReader`; rules consume facts; `/analyze-document` re-scoped so the model explains a rule-based verdict and never produces one (decision 3) | new, with the front team |
 
 Steps 1–4 and 5–7 are independent and can proceed in parallel.
 
-### Questions for Ismail, to settle in this record
+### Decisions (Ismail, 2026-11-05)
 
-1. **Eureka**: keep `discovery-service` (school requirement, or a planned second instance), or
-   replace `lb://` by compose DNS names as `analytics-service` already does? See
-   `03c-component-gateway-discovery.md`.
-2. **Unused `demarches` endpoints**: is a "my procedures" page planned? If not, step 1 removes
-   the 8 endpoints and the "overdue" query (JPQL, the JPA query language) with them.
-3. **Verdict ownership**: confirm the product rule "the model explains, the rules decide"
-   before step 7, since the front's `PackWorkspace` already computes the missing list.
+1. **Eureka: keep `discovery-service`.** `03c-component-gateway-discovery.md` keeps the
+   registry-free option as the documented alternative. Used consistently: the fixed URLs leave
+   with the analytics aggregator (step 1), and any future call between backend services (calls
+   through the gateway excluded) resolves through discovery like the gateway's routes.
+2. **Unused `demarches` endpoints: keep them.** A "my procedures" page is planned. Step 1 no
+   longer removes the 8 endpoints or the overdue query; step 4 keeps its full scope.
+3. **Verdict ownership: confirmed.** The rules decide; the model explains and never produces a
+   verdict. Step 7 goes ahead with the front team, whose `PackWorkspace` computes the missing
+   list today.
 
 ## Consequences
 
 - Positive: the fine-tuned model lands as a configuration change plus role-tagged prompts and
   an evaluation set; the vision reader is a third `DocumentReader` adapter; procedure rules get
   real unit tests; ~30 % of the Java code disappears before any refactoring.
-- Negative: reviewers must apply three rules by hand (no ArchUnit or import-linter yet; add one
-  if a violation slips through twice); the port trigger list in this ADR must be updated when a
-  port is added or refused.
+- Negative: ArchUnit tests and an `import-linter` contract to write and maintain, with a
+  freeze store until step 3 (step 2); rules 2 and 3 are still applied in review; the port trigger
+  list in this ADR must be updated when a port is added or refused.
 - Neutral: Java package names do not change (`ai-service` gains `facts.py`, `prompts.py` and
   an `adapters` module); JPA entities remain the domain model (one persistence technology);
   Spring Data interfaces remain the persistence seam.

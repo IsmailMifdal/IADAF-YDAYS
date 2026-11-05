@@ -7,6 +7,7 @@ word used in the code or the UI follows in parentheses when it differs.
 |---|---|---|
 | Adapter | A class at the edge of a service that implements a port with one concrete technology (an HTTP client, a database, a library). Replaceable without touching the application services. | ADR-0001 |
 | Application service | A thin orchestration of one user goal: resolve inputs, call the domain, call the ports, return a typed result. Holds no business rule. Called "use case module" in `ai-service`; distinct from a UML use case. | ADR-0001 |
+| ArchUnit | A Java library that turns architecture rules into unit tests (for example: no Spring Security import in a `service` package). Checks rule 1 in the Java services. | ADR-0001 |
 | ChatModel | The port of `ai-service` through which application services send a list of role-tagged messages to a language model and receive a completion or a stream. One adapter: the OpenAI-compatible client. | `03b-component-ai-service.md` |
 | Circuit breaker | A proxy that stops calling a failing dependency for a while instead of piling up timeouts (Resilience4j in the gateway). Configured, used by no route. | `03c-component-gateway-discovery.md` |
 | Composition root | The one place where a service builds its concrete objects and wires them together: `main.py` (`lifespan`) in `ai-service`, Spring's application context in the Java services. | ADR-0001 |
@@ -18,6 +19,7 @@ word used in the code or the UI follows in parentheses when it differs.
 | Domain | The code that expresses IADAF's business rules with no web or security framework import: the JPA entities and enums of a Java service, `app/documents/{rules,facts}` in `ai-service`. | ADR-0001 |
 | Entity invariant | A rule an entity enforces itself on every write path, for example "a procedure moved to TERMINEE gets its end date stamped". Requires that the fields it protects have no public setter. | ADR-0001 |
 | iadaf-security | The shared Maven module planned by #145: `InternalJwt` (token verification) and `CurrentUser`. Each service keeps its own filter chain. | ADR-0001 |
+| import-linter | A Python tool that fails the build when a module imports a package a contract forbids. Checks rule 1 in `ai-service`. | ADR-0001 |
 | Internal JWT | The signed token (JSON Web Token) the front issues for each request and every backend service verifies; its subject is the user id. | `api-gateway/.../SecurityConfig.java` |
 | Knowledge index | The `ai-service` adapter that embeds the knowledge base and answers `Retriever` searches from ChromaDB. | `03b-component-ai-service.md` |
 | LLM | Large language model: the text-generation model behind the chat, the translation and the verdict explanations. | ADR-0001 |
