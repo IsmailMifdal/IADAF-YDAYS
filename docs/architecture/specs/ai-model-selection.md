@@ -128,8 +128,8 @@ Scores 0 to 5 with a one-line reason. Desk estimates from model cards, vendor pa
 | C6 Qwen3 14B | 5 | 3 | 5 | 0 | 5 | 5 | 3 | **375** |
 | C16 HF AutoTrain / Jobs | 4 · any base model | 3 · paid GPU hours, free tier uncertain | 5 · weights returned | 4 · depends on base | 4 | 2 · US hosting | 4 | **375** |
 | C8 Gemma 3 12B | 4 | 3 | 3 · terms of use, revocable | 4 | 4 | 5 | 3 | **370** |
+| C15 Mistral fine-tuning API | 4 · Ministral or Small base | 5 · no GPU to manage | 2 · fine-tuned weights stay hosted | 3 · depends on base and API | 3 · vendor tooling only | 5 · EU hosting, processor contract | 2 · per token plus a monthly storage fee | **365** |
 | C13 EuroLLM-9B | 4 · EU languages first, Arabic among the extra 11 | 5 | 4 · Apache reported, not verified on the card | 0 · text only | 3 · 4k context, less tooling | 5 | 4 | **360** |
-| C15 Mistral fine-tuning API | 4 · Ministral or Small base | 5 · no GPU to manage | 2 · fine-tuned weights stay hosted | 3 · depends on base and API | 3 · vendor tooling only | 4 · EU hosting, processor contract | 2 · per token plus a monthly storage fee | **355** |
 | C11 Phi-4-mini | 2 | 5 | 5 | 0 | 4 | 5 | 5 | **340** |
 | C4 Llama 3.1 8B | 3 · eight official languages, no Arabic | 5 | 2 · community licence, EU exclusion on multimodal, naming duties | 0 | 5 · the best-supported target | 5 | 4 | **325** |
 | C17 OpenAI fine-tuning | 5 | 5 | 0 · no weights | 3 | 3 | 1 · US hosting | 2 | **320** |
@@ -161,7 +161,7 @@ Rule: the top four of the matrix under the validated profile. Under profile A th
 
 Baselines, always measured alongside, all with RAG and no fine-tuning:
 
-- B0 the current hosted API (`gpt-4o-mini` through `LLMService`, J3 only; J1 and J2 through its image input if enabled).
+- B0 the current hosted API (`gpt-4o-mini` through `LLMService`), J3 only: `LLMService` sends text only today.
 - B0-EU an EU-hosted OpenAI-compatible API (the option `ai-service/app/core/config.py` already documents), so a self-hosted finalist is compared with the GDPR-equivalent hosted option ISM-98 will weigh.
 - B1 the current pre-check without any model: J1 is the user's label only (no recognition, so B1 sets the floor, not a bar), J2 is pypdf text plus the optional OCR.
 
@@ -205,7 +205,7 @@ Pass criterion proposed (Ismail validates the thresholds): J1 accuracy ≥ 0.90;
 
 Options: A human rubric only; B LLM-as-judge only; C exact match and F1 only; D hybrid (exact match and F1 for J1 and J2, human rubric on a sample of J3, LLM-as-judge calibrated on that sample for the rest of J3).
 
-Eliminatory criterion: the judges must cover all three jobs. C cannot grade J3 explanations, so C is out; it is kept in the table to show its score would not have been enough reason to keep it.
+Eliminatory criterion: the judges must cover all three jobs. C cannot grade J3 explanations, so C is out; it stays in the table for the record, and an eliminated option is not totalled.
 
 | Criterion | Weight | A human only | B LLM judge only | C exact match only | D hybrid |
 |---|---|---|---|---|---|
