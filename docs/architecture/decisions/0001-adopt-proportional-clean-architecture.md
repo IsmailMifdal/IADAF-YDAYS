@@ -139,8 +139,11 @@ Steps 1–4 and 5–7 are independent and can proceed in parallel.
 
 ### Decisions (Ismail, 2026-11-05)
 
-1. **Eureka: keep `discovery-service`.** Reason: a school requirement; the project must
-   demonstrate service discovery. `03c-component-gateway-discovery.md` keeps the registry-free
+1. **Eureka: keep `discovery-service`.** Reason: Eureka belongs to the microservices
+   architecture the project is built on and must demonstrate (school requirement). Service
+   discovery is one of its core patterns, next to the API gateway: each service registers by
+   name, callers resolve it through the registry, and a second instance of a service needs no
+   change on the caller side. `03c-component-gateway-discovery.md` keeps the registry-free
    option as the documented alternative. Used consistently: the fixed URLs leave with the
    analytics aggregator (step 1), and any future call between backend services (calls through
    the gateway excluded) resolves through discovery like the gateway's routes.
