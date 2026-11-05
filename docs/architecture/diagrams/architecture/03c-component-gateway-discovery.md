@@ -85,9 +85,10 @@ flowchart LR
   healthcheck on the critical startup path, a client library in six services (including a
   Python one that fails silently when the registry is down), and the two-peer cluster profile
   that no environment uses.
-- Decision (ADR-0001, decision 1): keep `discovery-service`, a school requirement to
-  demonstrate service discovery, and use it consistently. The two `Ana` fixed-URL edges of the
-  first diagram leave with the analytics aggregator (step 1, #144); any future call between
+- Decision (ADR-0001, decision 1): keep `discovery-service`. Service discovery is a core pattern
+  of the microservices architecture the project is built on and must demonstrate (school
+  requirement), next to the API gateway. Use it consistently: the two `Ana` fixed-URL edges of
+  the first diagram leave with the analytics aggregator (step 1, #144); any future call between
   backend services (calls through the gateway excluded) resolves through the registry like the
   gateway's routes.
 - The registry-free option stays documented in case the school requirement goes away.
