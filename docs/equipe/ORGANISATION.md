@@ -80,8 +80,8 @@ Backlog, par priorité :
    faut une connexion par jeton (jeton court et jeton de renouvellement) et des routes
    documentées (OpenAPI), en réutilisant la logique des routes existantes. À livrer
    d'ici janvier.
-2. **Back-office d'administration** : tableau de bord branché sur les statistiques
-   qu'`analytics-service` expose déjà sans qu'aucune page ne les affiche, qualité de
+2. **Back-office d'administration** : tableau de bord des statistiques globales, à
+   construire (l'ancien agrégateur d'`analytics-service`, faux, a été retiré), qualité de
    l'IA (taux de vérifications contestées), gestion des contenus.
 3. **Paiement en production** : Stripe en mode réel, factures, historique des achats.
 4. **Espace accompagnant** : une association suit plusieurs bénéficiaires. C'est la

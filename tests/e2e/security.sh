@@ -5,9 +5,9 @@ source "$(dirname "$0")/lib.sh"
 
 section "Sans jeton : tout est refusé"
 for url in "$GATEWAY_URL/api/users" "$GATEWAY_URL/api/demarches" "$GATEWAY_URL/api/documents?packSlug=impots" \
-           "$GATEWAY_URL/api/analytics/dashboard" \
+           "$GATEWAY_URL/api/analytics/document-checks" \
            "http://127.0.0.1:8081/users" "http://127.0.0.1:8082/demarches" \
-           "http://127.0.0.1:8083/documents?packSlug=impots" "http://127.0.0.1:8085/analytics/dashboard"; do
+           "http://127.0.0.1:8083/documents?packSlug=impots" "http://127.0.0.1:8085/analytics/document-checks"; do
   check "GET $url" "$(status "$url")" 401
 done
 check "POST gateway /api/ai/chat" "$(status -X POST "$GATEWAY_URL/api/ai/chat" -H 'Content-Type: application/json' -d '{"message":"x"}')" 401
@@ -26,17 +26,15 @@ done
 
 section "Jeton valide"
 check "démarches via la gateway" "$(status "$GATEWAY_URL/api/demarches" -H "Authorization: Bearer $(token e2e-user)")" 200
-check "analytics (propagation du jeton)" "$(status "$GATEWAY_URL/api/analytics/demarches/statut" -H "Authorization: Bearer $(token e2e-user)")" 200
 
 section "Vues d'administration : scope admin exigé"
 USER_TOKEN=$(token e2e-user)
 ADMIN_TOKEN=$(token e2e-admin 60 admin)
-for path in /api/users /api/users/email/someone@test.fr /api/analytics/dashboard /api/analytics/users/activity; do
+for path in /api/users /api/users/email/someone@test.fr; do
   check "compte ordinaire refusé : $path" "$(status "$GATEWAY_URL$path" -H "Authorization: Bearer $USER_TOKEN")" 403
 done
 check "compte ordinaire ne supprime pas une fiche" "$(status -X DELETE "$GATEWAY_URL/api/users/1" -H "Authorization: Bearer $USER_TOKEN")" 403
 check "admin : liste des fiches" "$(status "$GATEWAY_URL/api/users" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
-check "admin : tableau de bord global" "$(status "$GATEWAY_URL/api/analytics/dashboard" -H "Authorization: Bearer $ADMIN_TOKEN")" 200
 
 section "Base de données : un compte par service"
 # as_role <role> <sql> — "lu" or "refusé", through the container's socket.

@@ -91,6 +91,8 @@ flowchart LR
   the first diagram leave with the analytics aggregator (step 1, #144); any future call between
   backend services (calls through the gateway excluded) resolves through the registry like the
   gateway's routes.
+- Done in ISM-109: the analytics aggregator, its fixed URLs, the circuit breaker, the fallback
+  controller and `X-Gateway` are removed; `CorsConfig` remains (pending the `:8080` check).
 - The registry-free option stays documented in case the school requirement goes away.
 - Independent of the Eureka decision, step 1 of ADR-0001 deletes the circuit-breaker
   configuration, the fallback controller, the `X-Gateway` header and, after one check that the

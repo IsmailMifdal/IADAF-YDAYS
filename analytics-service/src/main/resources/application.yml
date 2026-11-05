@@ -16,17 +16,6 @@ spring:
         # dialect supprimé - auto-détection par Hibernate
         format_sql: true
         default_schema: analytics
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=1000,expireAfterWrite=300s
-    cache-names:
-      - demarcheStats
-      - documentStats
-      - userActivity
-      - dashboard
-      - performance
-
   flyway:
     schemas: analytics
     default-schema: analytics
@@ -48,17 +37,6 @@ eureka:
 logging:
   level:
     org.springframework.security: INFO
-
-# Service URLs for inter-service communication
-# Ports alignés sur ceux réellement exposés par chaque service :
-# user 8081, demarches 8082, document 8083 (ils étaient tous décalés d'un cran).
-services:
-  user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8081}
-  demarches-service:
-    url: ${DEMARCHES_SERVICE_URL:http://localhost:8082}
-  document-service:
-    url: ${DOCUMENT_SERVICE_URL:http://localhost:8083}
 
 # Clé des jetons internes signés par le frontend (HS256, 32 octets minimum).
 # Le service refuse de démarrer sans elle.
