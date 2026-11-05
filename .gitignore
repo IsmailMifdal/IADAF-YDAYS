@@ -71,3 +71,4 @@ Desktop.ini
 venv/
 ai-service/.venv/
 ai-service/.venv311/
+deploy/caddy.d/*.caddy

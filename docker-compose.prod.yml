@@ -45,6 +45,9 @@ services:
       - ACME_EMAIL=${ACME_EMAIL:?ACME_EMAIL is required — see DEPLOYMENT.md}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Réglages propres au serveur (accès restreint de la recette), voir
+      # deploy/caddy.d/README.md.
+      - ./deploy/caddy.d:/etc/caddy/caddy.d:ro
       # Certificats et clés ACME : à conserver, sinon chaque redémarrage
       # redemande un certificat (et Let's Encrypt limite les demandes).
       - caddy_data:/data
