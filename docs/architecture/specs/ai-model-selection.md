@@ -184,7 +184,7 @@ The ISM-33 set does not exist yet; this section states what Phase 2 needs from i
 | Languages | document languages per A4; questions and expected explanations in fr, en, ar, es |
 | Size | 300 items minimum: 120 for J1, 120 for J2, 60 for J3 (a set of checks with their statuses `ok`, `warning`, `error`, `unknown`, and the expected explanation) |
 | Ground truth | J1 the kind; J2 the fields the rules need, with values; J3 the rule output and a reference explanation written by a human in each language, plus the rubric |
-| Split | 20 % kept blind until the final report, never used to tune prompts |
+| Split | 60 % open (prompt work), 20 % selection holdout run once at the end of Phase 2, 20 % final holdout locked until fine-tuning (ISM-75) is finished; neither holdout is used to tune prompts, data or hyperparameters |
 | Storage | in the repository under a test fixtures folder, no personal data, licence of each specimen recorded |
 
 The windows (90 and 92 days) and the status vocabulary are those of `ai-service/app/documents/rules.py` on 2026-11-05; the test set follows the code if it changes.
@@ -195,7 +195,7 @@ The windows (90 and 92 days) and the status vocabulary are those of `ai-service/
 |---|---|---|
 | J1 recognise | accuracy on the kind, confusion matrix | a single label; exact match is unambiguous |
 | J2 extract | per-field exact match for dates and identifiers; F1 over the fields the rules need; "unreadable" counts as correct when the ground truth is unreadable | the rules consume values: a partly right date is wrong |
-| J2 safety | **false "compliant" rate**: share of items where the extracted facts lead the rules to `ok` while the ground truth leads to `warning`, `error` or `unknown` | the DPIA preparation requires this rate before every release (`docs/rgpd/aipd-preparation.md`, "Exactitude") |
+| J2 safety | **false "compliant" rate**: among the items whose ground truth leads the rules to `warning`, `error` or `unknown`, the share where the extracted facts lead them to `ok`; the prevalence of those items is reported next to it | the DPIA preparation requires this rate before every release (`docs/rgpd/aipd-preparation.md`, "Exactitude") |
 | J3 explain | human rubric 1 to 5 on three axes (in the right language, understandable by a newcomer, concise) plus two binary flags per answer: **contradicts the rule output**, **states a fact absent from the input**; LLM-as-judge with the same rubric, calibrated on the human sample | free text: exact match cannot grade it; a contradiction or an invented fact is a defect, not a low grade |
 | All | latency per item, VRAM at inference, tokens generated, dtype and quantisation used | feeds K7 and ISM-98 |
 
@@ -229,11 +229,12 @@ Judge rules for D:
 
 1. Freeze the test set version (git tag) and the prompts (one system prompt per job, identical for every finalist, versioned in the repository).
 2. Serve each finalist with vLLM on one free GPU session (Kaggle T4 or Modal), **4-bit for every finalist**, dtype recorded. Run a smoke test of 10 items first: the T4 has no bfloat16, and some families overflow in float16; a finalist that fails the smoke test on a T4 is run on a Modal L4 or A10G instead, and the report says so.
-3. Run J1, J2, J3 on the public 80 % of the set; one JSON line per item with model, prompt hash, raw output, parsed output, latency.
+3. Run J1, J2, J3 on the open 60 % of the set; one JSON line per item with model, prompt hash, raw output, parsed output, latency.
 4. Compute J1 and J2 metrics by script; grade the J3 human sample (two graders, blind to the model); run the LLM judge on all of J3; compute kappa.
-5. Run the blind 20 % once, at the end, on every finalist.
-6. Write the report: one table per job, baselines included, the pass criterion applied, VRAM and latency, cost estimate per 1,000 users for ISM-98.
-7. Sign-off: the data/AI role signs the measurement, Ismail signs the choice. The report goes next to this study as the Phase 2 record and replaces the desk scores of § 3.4 with measured ones.
+5. Run the selection holdout once, at the end, on every finalist. The final holdout stays locked: it is run only after fine-tuning, to measure the gain without bias.
+6. Pick the winner on the selection holdout, with a rule fixed before the results: (a) a finalist that misses the pass criterion is out; (b) lowest false "compliant" rate; (c) highest J2 field F1; (d) highest J3 rubric mean; (e) lowest VRAM at inference. A difference under 1 point of percentage or 0.1 of rubric counts as a tie and moves to the next step. If no finalist passes, the RAG-only baseline stays (A8) and fine-tuning is not started.
+7. Write the report: one table per job, baselines included, the pass criterion applied, VRAM and latency, cost estimate per 1,000 users for ISM-98.
+8. Sign-off: the data/AI role signs the measurement, Ismail signs the choice. The report goes next to this study as the Phase 2 record and replaces the desk scores of § 3.4 with measured ones.
 
 Estimated effort: 4 GPU-hours (4 finalists × about 1 h; baselines use hosted APIs or no model), 12 GPU-hours booked in the training plan for reruns; 25 human hours (building the set excluded, it belongs to ISM-33); about 3 calendar weeks at 8 h/week per contributor once the set is frozen.
 
