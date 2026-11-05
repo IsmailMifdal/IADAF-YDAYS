@@ -3,9 +3,11 @@
 # GitHub demande la relecture du propriétaire d'un dossier dès qu'une PR le touche.
 # La dernière règle qui correspond l'emporte : les règles générales d'abord.
 #
-# En attendant les pseudos GitHub des membres, le porteur du projet possède tout.
-# Pour chaque équipe, remplacez @IsmailMifdal par les pseudos de ses membres sur
-# les lignes de son bloc (exemple : /ai-service/ @pseudo-1 @pseudo-2).
+# Le porteur du projet valide chaque tâche : il reste le SEUL propriétaire de
+# tout le code. Ne pas ajouter d'autres pseudos sur ces lignes : l'approbation
+# de n'importe quel propriétaire suffit à GitHub, le porteur ne validerait plus
+# les PR de cette équipe. La relecture par un coéquipier est assurée autrement :
+# dev_v1 exige deux approbations, celle d'un coéquipier et celle du porteur.
 
 # Tout le dépôt, par défaut
 *                                         @IsmailMifdal

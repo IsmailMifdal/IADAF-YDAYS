@@ -71,6 +71,7 @@ Desktop.ini
 venv/
 ai-service/.venv/
 ai-service/.venv311/
+deploy/caddy.d/*.caddy
 
 # AI assistants: personal settings, not shared
 CLAUDE.local.md
