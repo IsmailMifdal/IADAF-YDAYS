@@ -242,11 +242,6 @@ curl http://localhost:8080/api/demarches -H "Authorization: Bearer $TOKEN"
 
 | Méthode | Chemin | Description |
 |---------|--------|-------------|
-| GET | `/api/analytics/demarches/statut` | Répartition par statut (dossiers de l'appelant) |
-| GET | `/api/analytics/demarches/type` | Répartition par type (dossiers de l'appelant) |
-| GET | `/api/analytics/demarches/evolution` | Évolution dans le temps (dossiers de l'appelant) |
-| GET | `/api/analytics/dashboard` | Synthèse générale — scope `admin` |
-| GET | `/api/analytics/users/activity` | Activité des utilisateurs — scope `admin` |
 | POST | `/api/analytics/document-checks` | Comptes anonymes de pré-vérification (envoyés par l'AI Service) |
 | POST | `/api/analytics/document-checks/disputes` | Résultat signalé comme faux (relayé par le frontend) |
 | GET | `/api/analytics/document-checks` | Totaux et résultats contestés par contrôle — scope `analytics:read` |
@@ -339,12 +334,12 @@ maturité diffère :
 |---------|------|----------|
 | `user-service` | Fonctionnel | CRUD utilisateurs. Ne porte **pas** l'authentification — celle-ci vit dans le frontend (Auth.js). |
 | `demarches-service` | Fonctionnel, branché | Démarches, étapes, commentaires. Alimente « Mes dossiers » et le tableau de bord : un dossier par pack débloqué, une étape par pièce à réunir. Schéma géré par Flyway. |
-| `analytics-service` | Fonctionnel | Agrège les données des trois autres via RestClient. |
+| `analytics-service` | Fonctionnel, branché | Comptes anonymes des pré-vérifications de pièces et résultats contestés. Schéma géré par Flyway. |
 | `document-service` | Fonctionnel, branché | Pièces des dossiers, chiffrées (AES-256-GCM) dans PostgreSQL. Type réel vérifié, 10 Mo max, purge à 180 jours. Schéma géré par Flyway. |
 
-Le frontend appelle `/api/ai/*` et `/api/demarches/*`. `user-service` et
-`analytics-service` (statistiques tous utilisateurs confondus, destinées à
-l'administration) ne sont pas encore consommés.
+Le frontend appelle `/api/ai/*`, `/api/demarches/*`, `/api/documents/*` et
+`/api/analytics/document-checks/disputes` ; l'AI Service envoie ses comptes à
+`/api/analytics/document-checks`. `user-service` n'est pas encore consommé.
 
 Chacun exige un jeton interne signé par le frontend et revalide sa signature,
 même derrière la gateway — voir [SECURITY.md](SECURITY.md#-jetons-internes).

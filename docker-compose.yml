@@ -301,7 +301,7 @@ services:
       start_period: 300s
 
   # --- Analytics Service (Spring Boot) ---
-  # Agrège les données des trois services ci-dessus via RestClient.
+  # Comptes anonymes des pré-vérifications de pièces.
   analytics-service:
     build:
       context: .
@@ -313,9 +313,6 @@ services:
       - INTERNAL_JWT_SECRET=${INTERNAL_JWT_SECRET:?INTERNAL_JWT_SECRET is required — see .env.example}
       - SPRING_DATASOURCE_USERNAME=iadaf_analytics
       - SPRING_DATASOURCE_PASSWORD=${ANALYTICS_DB_PASSWORD:-dev-analytics-db}
-      - USER_SERVICE_URL=http://user-service:8081
-      - DEMARCHES_SERVICE_URL=http://demarches-service:8082
-      - DOCUMENT_SERVICE_URL=http://document-service:8083
     networks:
       - iadaf-network
     depends_on:

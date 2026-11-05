@@ -13,16 +13,6 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ServiceUnavailableException.class)
-    public ResponseEntity<ErrorResponse> handleServiceUnavailableException(ServiceUnavailableException ex) {
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.SERVICE_UNAVAILABLE.value(),
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(error, HttpStatus.SERVICE_UNAVAILABLE);
-    }
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         ErrorResponse error = new ErrorResponse(

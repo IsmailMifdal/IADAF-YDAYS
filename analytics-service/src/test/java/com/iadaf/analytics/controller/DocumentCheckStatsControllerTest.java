@@ -89,6 +89,8 @@ class DocumentCheckStatsControllerTest {
 
     @Test
     void readingTotalsNeedsTheAnalyticsScope() throws Exception {
+        mockMvc.perform(get("/analytics/document-checks"))
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/analytics/document-checks")
                         .header(HttpHeaders.AUTHORIZATION, TestTokens.bearer("user-1")))
                 .andExpect(status().isForbidden());

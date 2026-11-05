@@ -29,43 +29,33 @@ public class GatewayConfig {
                 // concernées : le délai court entre deux lectures.
                 .route("ai-service-gateway", r -> r
                         .path("/api/ai/**")
-                        .filters(f -> f
-                                .stripPrefix(1)
-                                .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .filters(f -> f.stripPrefix(1))
                         .metadata(RouteMetadataUtils.RESPONSE_TIMEOUT_ATTR, AI_RESPONSE_TIMEOUT_MS)
                         .uri("lb://AI-SERVICE"))
 
                 // /api/users/**      → lb://USER-SERVICE/users/**
                 .route("user-service-gateway", r -> r
                         .path("/api/users/**")
-                        .filters(f -> f
-                                .stripPrefix(1)
-                                .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://USER-SERVICE"))
 
                 // /api/demarches/**  → lb://DEMARCHES-SERVICE/demarches/**
                 .route("demarches-service-gateway", r -> r
                         .path("/api/demarches/**")
-                        .filters(f -> f
-                                .stripPrefix(1)
-                                .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://DEMARCHES-SERVICE"))
 
                 // /api/documents/**  → lb://DOCUMENT-SERVICE/documents/**
                 // Le service est enregistré mais n'expose encore aucun endpoint.
                 .route("document-service-gateway", r -> r
                         .path("/api/documents/**")
-                        .filters(f -> f
-                                .stripPrefix(1)
-                                .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://DOCUMENT-SERVICE"))
 
                 // /api/analytics/**  → lb://ANALYTICS-SERVICE/analytics/**
                 .route("analytics-service-gateway", r -> r
                         .path("/api/analytics/**")
-                        .filters(f -> f
-                                .stripPrefix(1)
-                                .addRequestHeader("X-Gateway", "API-Gateway"))
+                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://ANALYTICS-SERVICE"))
 
                 .build();

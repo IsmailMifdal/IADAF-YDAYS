@@ -34,12 +34,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         
-        <!-- Circuit Breaker (Resilience4J) -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
-        </dependency>
-        
         <!-- Spring Security : validation des jetons internes signés par le frontend -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

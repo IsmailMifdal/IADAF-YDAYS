@@ -9,7 +9,7 @@ word used in the code or the UI follows in parentheses when it differs.
 | Application service | A thin orchestration of one user goal: resolve inputs, call the domain, call the ports, return a typed result. Holds no business rule. Called "use case module" in `ai-service`; distinct from a UML use case. | ADR-0001 |
 | ArchUnit | A Java library that turns architecture rules into unit tests (for example: no Spring Security import in a `service` package). Checks rule 1 in the Java services. | ADR-0001 |
 | ChatModel | The port of `ai-service` through which application services send a list of role-tagged messages to a language model and receive a completion or a stream. One adapter: the OpenAI-compatible client. | `03b-component-ai-service.md` |
-| Circuit breaker | A proxy that stops calling a failing dependency for a while instead of piling up timeouts (Resilience4j in the gateway). Configured, used by no route. | `03c-component-gateway-discovery.md` |
+| Circuit breaker | A proxy that stops calling a failing dependency for a while instead of piling up timeouts (Resilience4j in the gateway). Was configured, used by no route; removed by ADR-0001 step 1 (ISM-109). | `03c-component-gateway-discovery.md` |
 | Composition root | The one place where a service builds its concrete objects and wires them together: `main.py` (`lifespan`) in `ai-service`, Spring's application context in the Java services. | ADR-0001 |
 | Conversation store | The `ai-service` persistence of chat conversations and messages in PostgreSQL (schema `ai`). Plain dependency, no port. | `03b-component-ai-service.md` |
 | CurrentUser | The helper of the shared `iadaf-security` module that reads the user id from a verified internal JWT at the controller. | ADR-0001 |

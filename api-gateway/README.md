@@ -2,16 +2,14 @@
 
 ## Description
 
-Point d'entrée unique pour tous les microservices de l'application IA-DAF. Gère le routage, le load balancing, la résilience et la sécurité.
+Point d'entrée unique pour tous les microservices de l'application IA-DAF. Gère le routage, le load balancing et la sécurité.
 
 ## Fonctionnalités
 
 - ✅ Routage dynamique vers les microservices
 - ✅ Load balancing automatique via Eureka
-- ✅ Circuit Breaker (Resilience4J)
 - ✅ Configuration CORS
 - ✅ Logging des requêtes
-- ✅ Gestion des fallbacks
 - ✅ Monitoring via Actuator
 
 ## Démarrage
@@ -79,8 +77,9 @@ POST   /api/ia/detect-langue  → http://localhost:8084/ia/detect-langue
 ### Analytics Service
 
 ```
-GET    /api/analytics/stats   → http://localhost:8085/analytics/stats
-GET    /api/analytics/demarches → http://localhost:8085/analytics/demarches
+POST   /api/analytics/document-checks          → http://localhost:8085/analytics/document-checks
+POST   /api/analytics/document-checks/disputes → http://localhost:8085/analytics/document-checks/disputes
+GET    /api/analytics/document-checks          → http://localhost:8085/analytics/document-checks
 ```
 
 ## Architecture
@@ -98,7 +97,6 @@ GET    /api/analytics/demarches → http://localhost:8085/analytics/demarches
 │                             │
 │  - Routage                  │
 │  - Load Balancing           │
-│  - Circuit Breaker          │
 │  - CORS                     │
 └──────┬──────────────────────┘
        │
@@ -140,26 +138,6 @@ curl -X POST http://localhost:8080/api/ia/ask \
   -H "Content-Type: application/json" \
   -d '{"question": "Comment obtenir un titre de séjour?", "langue": "fr"}'
 ```
-
-## Circuit Breaker
-
-Si un microservice est indisponible, le circuit breaker s'ouvre et renvoie une réponse de fallback :
-
-```json
-{
-  "timestamp": "2025-12-17T10:30:00",
-  "status": 503,
-  "error": "Service Unavailable",
-  "message": "User Service is currently unavailable. Please try again later.",
-  "service": "User Service"
-}
-```
-
-### États du Circuit Breaker
-
-- **CLOSED** : Fonctionnement normal
-- **OPEN** : Service indisponible, fallback activé
-- **HALF_OPEN** : Test de récupération du service
 
 ## Configuration CORS
 
@@ -218,7 +196,6 @@ Les logs montrent :
 - Les requêtes entrantes avec méthode et URI
 - Les réponses sortantes avec code de statut
 - Les erreurs de routage
-- Les activations du circuit breaker
 
 ## Sécurité
 
@@ -241,7 +218,6 @@ La gateway refuse de démarrer si `INTERNAL_JWT_SECRET` manque ou fait moins de
 - Spring Boot 4.0.8 (Spring Framework 7)
 - Spring Cloud Gateway
 - Spring Cloud Netflix Eureka Client
-- Resilience4J Circuit Breaker
 
 ## Performance
 

@@ -161,7 +161,7 @@ appel, le frontend signe un JWT ([`lib/aiService.ts`](front/src/app/lib/aiServic
 | `iss` / `aud` | `iadaf-frontend` / `iadaf-backend` |
 | `exp` | 60 secondes |
 | `sub` | Identifiant du compte connecté — **absent** pour un visiteur |
-| `scope` | `account:erase` pour l'effacement d'un compte, jamais sur un appel relayé depuis le navigateur ; `analytics:read` pour les statistiques d'exploitation ; `admin` pour les routes d'administration (fiches `users.users`, vues globales d'analytics) — **aucun jeton ne le porte aujourd'hui**, faute de back-office |
+| `scope` | `account:erase` pour l'effacement d'un compte, jamais sur un appel relayé depuis le navigateur ; `analytics:read` pour les statistiques d'exploitation ; `admin` pour les routes d'administration (fiches `users.users`) — **aucun jeton ne le porte aujourd'hui**, faute de back-office |
 
 **Vérifié deux fois** : par la gateway, qui rejette en 401 tout appel sans
 jeton valide, puis par chaque service (Spring Security OAuth2 Resource Server

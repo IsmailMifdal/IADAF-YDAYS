@@ -41,33 +41,6 @@ eureka:
     metadata-map:
       management.context-path: /actuator
 
-# Circuit Breaker Configuration
-resilience4j:
-  circuitbreaker:
-    instances:
-      userServiceCircuitBreaker:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10000
-        permitted-number-of-calls-in-half-open-state: 3
-        automatic-transition-from-open-to-half-open-enabled: true
-      demarchesServiceCircuitBreaker:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10000
-      documentServiceCircuitBreaker:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10000
-      aiServiceCircuitBreaker:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10000
-      analyticsServiceCircuitBreaker:
-        sliding-window-size: 10
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10000
-
 # Actuator — santé seulement, et sans détail : /actuator/health répond sans
 # jeton (healthchecks). L'endpoint « gateway » a été retiré : il listait les
 # routes et permettait d'en créer à quiconque détenait un jeton.
@@ -103,10 +76,3 @@ management:
     web:
       exposure:
         include: health,info
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      userServiceCircuitBreaker:
-        sliding-window-size: 20
-        failure-rate-threshold: 60
