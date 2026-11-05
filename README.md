@@ -56,6 +56,8 @@
 | `analytics-service` | Spring Boot | 8085 | `analytics` (`iadaf_analytics`) |
 | `postgres` | PostgreSQL 16 | 5432 | — |
 
+Décisions d'architecture et diagrammes de conception : [docs/architecture](docs/architecture/README.md).
+
 ---
 
 ## 🚀 Démarrage rapide
