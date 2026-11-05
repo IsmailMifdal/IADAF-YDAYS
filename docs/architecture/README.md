@@ -29,7 +29,8 @@ May 2027.
 - Docs-as-code: Markdown and Mermaid in git, reviewed in pull requests like code.
 - Lightweight hybrid: decisions as MADR (Markdown Architectural Decision Records) in
   `decisions/`, numbered once, never renumbered (`ADR-0001`); diagrams in UML 2.5 notation at a
-  stated C4 zoom level (context, container, component); use cases and traceability to follow
+  stated C4 zoom level (the C4 model's context, container, component and code views); use
+  cases and traceability to follow
   with the first feature study.
 - Every choice between options is argued with a weighted decision matrix inside the ADR, so a
   reviewer can contest a weight or a score rather than the conclusion (proposed with ADR-0001;
@@ -69,6 +70,7 @@ ISM-111) will add them.
 
 ## Related documents
 
-- [AGENTS.md](../../AGENTS.md) § Before changing code — a plan, and for a new feature an
-  approved diagram, before the code.
-- [docs/rgpd](../rgpd/) — DPIA and data-protection documents (in French).
+- `CONTRIBUTING.md` § 3 and `AGENTS.md` § Before changing code (both arrive with PR #34) — a
+  plan, and for a new feature an approved diagram, before the code.
+- [docs/rgpd](../rgpd/) — DPIA (data protection impact assessment) and other data-protection
+  documents (in French).

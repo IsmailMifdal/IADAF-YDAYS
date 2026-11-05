@@ -34,8 +34,8 @@ The findings that motivate this record:
    verdicts are deterministic.
 5. **Speculative infrastructure with no consumer**: Resilience4j circuit breakers on no route,
    an unwired `FallbackController`, an `X-Gateway` header nobody reads, Eureka with single
-   instances already bypassed by `analytics-service` fixed URLs, a `@Cacheable` annotation kept
-   after caching was disabled on purpose (cross-user leak), 8 of 12 `demarches` endpoints
+   instances already bypassed by `analytics-service` fixed URLs, five `@Cacheable` annotations
+   kept after caching was disabled on purpose (cross-user leak), 8 of 12 `demarches` endpoints
    without a caller.
 
 The project ends in May 2027 with a student team working part-time; a fine-tuned language model

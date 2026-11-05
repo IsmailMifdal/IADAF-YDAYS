@@ -86,7 +86,8 @@ flowchart LR
 ## Notes
 
 - Three edges disappear (`service → SecurityContextHolder`, `service → mapper`,
-  `mapper → entity`) and the shared module appears; nothing else moves. `DemarcheDTO.of(entity)`
+  `mapper → entity`); the shared module and the domain-exception edges appear; nothing else
+  moves. `DemarcheDTO.of(entity)`
   (a static factory, as `document-service` does) replaces the mapper bean. The exception
   handler is not an edge from the controller: Spring wires it at runtime.
 - No port on the repository: Spring Data's interface is already the seam, and there is one

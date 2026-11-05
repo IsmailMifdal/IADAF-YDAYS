@@ -54,6 +54,7 @@ flowchart LR
   Tr --> Llm
   An --> Rules
   An --> Ocr
+  Stats --> An
   Llm -.->|"runtime: HTTPS"| LLMApi["LLM provider (OpenAI-compatible)"]
   Ocr -.->|"runtime: HTTPS"| OcrApi["OCR provider"]
   Rag -.->|"runtime: local files"| Chroma[("ChromaDB")]
