@@ -212,7 +212,7 @@ Chaque nouveau membre :
    ```bash
    bash tests/e2e/run-all.sh
    ```
-4. prend une première petite issue réelle (étiquette `premiere-issue`), la livre en
+4. prend une première petite issue réelle (étiquette « Bonne première issue » dans Linear), la livre en
    PR et passe par la relecture : c'est le meilleur moyen de découvrir le circuit
    complet.
 

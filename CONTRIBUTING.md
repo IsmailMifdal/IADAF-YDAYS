@@ -126,6 +126,9 @@ assistant. A bug or a missing test? Fix it before pushing.
      code owner ([CODEOWNERS](.github/CODEOWNERS) lists his handle alone), so no PR
      merges without him.
 
+  GitHub enforces the two approvals and Ismail's code-owner review, not their order:
+  the order, teammate first and then Ismail, is a team rule.
+
   `develop` and `main` need Ismail's approval. Bot reviewers (Copilot, Codex)
   comment, never approve.
 
