@@ -1,11 +1,10 @@
-FROM python:3.12-slim
+# Build stage: the compilers for native extensions stay here. The final image
+# only receives /usr/local (Python and its packages), so it carries no compiler
+# and no kernel headers (linux-libc-dev), which Trivy flags at every kernel CVE.
+FROM python:3.12-slim AS build
 
-WORKDIR /app
-
-# System deps for health checks and native extensions, plus the Debian
-# security fixes published since the base image.
-RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends curl build-essential \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # CPU-only PyTorch first (avoids downloading ~6GB of CUDA libs), and before
@@ -16,6 +15,20 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# curl for the health check, plus the Debian security fixes published since
+# the base image.
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Same base image in both stages: /usr/local is the base's Python plus the
+# packages installed above.
+COPY --from=build /usr/local /usr/local
 
 COPY . .
 
