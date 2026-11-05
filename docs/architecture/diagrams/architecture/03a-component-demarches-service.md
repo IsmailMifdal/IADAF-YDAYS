@@ -56,7 +56,7 @@ title: cmp — demarches-service target (component level)
 flowchart LR
   subgraph Web ["web edge"]
     Ctrl["DemarcheController — resolves userId from the Jwt"]
-    ExH["ProblemDetail mapping of domain exceptions"]
+    ExH["GlobalExceptionHandler — maps domain exceptions to ProblemDetail"]
   end
   subgraph Shared ["iadaf-security (shared Maven module)"]
     Jwt["InternalJwt + CurrentUser"]
@@ -65,16 +65,15 @@ flowchart LR
     Svc["service/DemarcheService(userId, …) — thin orchestration"]
   end
   subgraph Dom ["domain"]
-    Ent["entity/Demarche — changeStatut, completeStep, openPackFolder"]
+    Ent["entity/Demarche — changeStatut, completeStep, openPackFolder; no public setter on statut and dateFin"]
     Enum["enums"]
-    Exc["exception/ResourceNotFound, UnauthorizedAccess"]
+    Exc["exception/ResourceNotFoundException, UnauthorizedAccessException"]
   end
-  subgraph Infra ["persistence"]
+  subgraph Infra ["persistence (accepted seam)"]
     Repo["repository/DemarcheRepository (Spring Data)"]
   end
   Ctrl --> Jwt
   Ctrl --> Svc
-  Ctrl --> ExH
   ExH --> Exc
   Svc --> Repo
   Svc --> Ent
@@ -86,10 +85,10 @@ flowchart LR
 
 ## Notes
 
-- The only two arrows that change direction or disappear are the defects: the service no
-  longer reaches `SecurityContextHolder`, and the mapper no longer writes business fields.
-  `DemarcheDTO.of(entity)` (a static factory, as `document-service` does) replaces the mapper
-  bean.
+- Three edges disappear (`service → SecurityContextHolder`, `service → mapper`,
+  `mapper → entity`) and the shared module appears; nothing else moves. `DemarcheDTO.of(entity)`
+  (a static factory, as `document-service` does) replaces the mapper bean. The exception
+  handler is not an edge from the controller: Spring wires it at runtime.
 - No port on the repository: Spring Data's interface is already the seam, and there is one
   persistence technology. The ADR names the trigger that would add one.
 - `document-service` has the same shape and the same identity defect

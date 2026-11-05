@@ -10,7 +10,9 @@
 How a request reaches a service today, and what changes if Eureka is removed. Container level
 (one box per deployable); solid arrows are compile-time dependencies, `runtime:` edges are
 network calls. The purpose is to give Ismail a precise question, not to decide it here. Not
-covered: TLS termination (Caddy), the front's own routes, the JWT contract itself.
+covered: TLS termination (Caddy), the front's own routes, the JWT contract itself. Inside the
+gateway box the security filter chain and the routes are wired by Spring at runtime, so no
+compile-time edge joins them.
 
 ## Diagram — today (dev_v1 f3e7328)
 
@@ -25,7 +27,6 @@ flowchart LR
     Sec["SecurityConfig + UserIdentityFilter — verifies the internal JWT, sets X-User-Id"]
     CB["Resilience4j + FallbackController — configured, no route uses them"]
     Cors["CorsConfig — probably unused (browser talks to the front)"]
-    Routes --> Sec
   end
   Eureka["discovery-service (Eureka, 1 instance)"]
   User["user-service"]
@@ -46,6 +47,7 @@ flowchart LR
   Routes -.->|"runtime: HTTP"| Ana
   Routes -.->|"runtime: HTTP, 90 s timeout"| Ai
   Ana -.->|"runtime: HTTP, fixed URLs from compose, bypasses Eureka"| Dem
+  Ana -.->|"runtime: HTTP, fixed URL"| User
 ```
 
 ## Diagram — option without a registry (compose DNS)
@@ -59,7 +61,6 @@ flowchart LR
   subgraph GW ["api-gateway (WebFlux)"]
     Routes["GatewayConfig — 5 routes, http://service-name:port"]
     Sec["SecurityConfig + UserIdentityFilter"]
-    Routes --> Sec
   end
   User["user-service — slated for deletion (#142)"]
   Dem["demarches-service"]
@@ -73,6 +74,7 @@ flowchart LR
   Routes -.->|"runtime: HTTP"| Ana
   Routes -.->|"runtime: HTTP, 90 s timeout"| Ai
   Ana -.->|"runtime: HTTP, same fixed URLs as today"| Dem
+  Ana -.->|"runtime: HTTP, same fixed URL as today"| User
 ```
 
 ## Notes

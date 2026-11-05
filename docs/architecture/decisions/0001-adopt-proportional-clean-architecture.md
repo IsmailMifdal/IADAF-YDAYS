@@ -25,20 +25,23 @@ The findings that motivate this record:
    to `TERMINEE` gets `dateFin` stamped" sits in the service, and both `DemarcheMapper` write
    paths skip it (`:65` on create, `:87` on update; #143).
 3. **The security contract is copied five times** (`InternalJwt`, `SecurityConfig`,
-   `SecurityExceptionHandler` in four services, a fifth reactive copy in the gateway: 648 lines),
-   with five error-body shapes (#145).
-4. **`ai-service` already has a pure domain** (`app/documents`: rules, MRZ, quality, text — no
-   framework import, injected clock) but its chat side mixes six concerns in `rag_service.py`
-   and the language model produces a completeness verdict in `routes/document.py:20-70`, which
-   contradicts the product rule that verdicts are deterministic.
+   `SecurityExceptionHandler` in four services: 648 lines; plus an 85-line reactive copy in the
+   gateway), with five error-body shapes (#145).
+4. **`ai-service` already has a pure domain** (`app/documents`: rules, MRZ — machine-readable
+   zone — parsing, quality, text; no framework import, a clock injected into the rules) but its
+   chat side mixes six concerns in `rag_service.py` and the language model produces a
+   completeness verdict in `routes/document.py:20-70`, which contradicts the product rule that
+   verdicts are deterministic.
 5. **Speculative infrastructure with no consumer**: Resilience4j circuit breakers on no route,
    an unwired `FallbackController`, an `X-Gateway` header nobody reads, Eureka with single
-   instances already bypassed by `analytics-service` fixed URLs, `@Cacheable` without
-   `@EnableCaching`, 8 of 12 `demarches` endpoints without a caller.
+   instances already bypassed by `analytics-service` fixed URLs, a `@Cacheable` annotation kept
+   after caching was disabled on purpose (cross-user leak), 8 of 12 `demarches` endpoints
+   without a caller.
 
 The project ends in May 2027 with a student team working part-time; a fine-tuned language model
-and a vision-based document reader are planned (ISM-111). The architecture must make those two
-swaps cheap without reorganising every package first.
+(LLM, large language model) and a vision-based document reader are planned (ISM-111). The LLM
+endpoint is already configurable (`OPENAI_BASE_URL`, `OPENAI_MODEL`); what is not cheap today is
+the reader swap and the prompt format a fine-tuned chat model needs (role-tagged messages).
 
 ## Decision drivers
 
@@ -46,9 +49,9 @@ swaps cheap without reorganising every package first.
 |---|---|
 | D1 — Business rules testable without mocks | Verdict rules and procedure invariants are the product; they must be unit-tested with plain values. |
 | D2 — Migration cost before May 2027 | Three part-time contributors, 1,350 lines slated for deletion (#142, #144); a big-bang restructure would consume the schedule. |
-| D3 — Readiness for the fine-tuned model and the vision reader | Swapping the LLM or the document reader must be configuration plus an adapter, not a rewrite. |
+| D3 — Readiness for the fine-tuned model and the vision reader | Swapping the document reader, or moving to role-tagged prompts, must be one adapter, not a rewrite. |
 | D4 — Readability for a newcomer | Teammates and school reviewers must find their way without a tour. |
-| D5 — Dependency rule enforced | Web, security and persistence types never reach the domain; the rule is checkable in review. |
+| D5 — Dependency rule enforced | Web and security types never reach the services or the domain; the rule is checkable in review. |
 
 ## Options considered
 
@@ -57,25 +60,29 @@ swaps cheap without reorganising every package first.
 No structural rule beyond Spring and FastAPI conventions. Fix defects case by case.
 
 - Pro: zero migration; every teammate knows it.
-- Con: nothing stops the next `SecurityContextHolder` read or the next bypassed invariant; the
-  LLM swap stays a search-and-replace across `llm_service.py`, `rag_service.py` and the routes.
+- Con: nothing stops the next `SecurityContextHolder` read or the next bypassed invariant;
+  moving to role-tagged prompts or adding a vision reader edits `llm_service.py`,
+  `rag_service.py`, `analyzer.py` and the routes.
 
 ### Option B — Proportional Clean architecture
 
-Three rules, no package reshuffle:
+Three rules, no package reshuffle in the Java services:
 
-1. **Dependency rule**: services and domain never import web, security or persistence
-   framework types. Identity is resolved at the controller (`@AuthenticationPrincipal Jwt` →
-   `String userId`); exceptions are domain exceptions mapped to `ProblemDetail` at the edge.
+1. **Dependency rule**: services and domain never import web or security framework types.
+   Identity is resolved at the controller (`@AuthenticationPrincipal Jwt` → `String userId`);
+   exceptions are domain exceptions mapped to Spring `ProblemDetail` (RFC 9457 error body) at
+   the edge. Persistence annotations on entities, Spring Data repositories and `@Transactional`
+   are the accepted persistence seam: one persistence technology, no second implementation.
 2. **Invariants on the entities**: `Demarche.changeStatut()`, `completeStep()`,
-   `openPackFolder()`; rules in `ai-service` stay in `app/documents` and consume frozen facts.
+   `openPackFolder()`, with `statut` and `dateFin` writable only through them (no Lombok
+   `@Data` setters); rules in `ai-service` stay in `app/documents` and consume frozen facts.
 3. **A port only on a named trigger**: a second implementation exists or is scheduled, or a
    boundary must be replaced in tests. Today that is three ports in `ai-service` (`ChatModel`,
    `DocumentReader`, optional `Retriever`) and none in the Java services; `DocumentStore` is
    added the day the MinIO migration starts, not before.
 
-- Pro: fixes the five findings with the smallest diff; the two planned swaps become one adapter
-  each; rules stay reviewable as a checklist.
+- Pro: fixes the five findings with the smallest diff; the reader swap and the prompt format
+  change become one adapter each; rules stay reviewable as a checklist.
 - Con: "proportional" needs judgement; the trigger list must be kept in this ADR.
 
 ### Option C — Hexagonal architecture everywhere
@@ -96,15 +103,17 @@ or change; the matrix is kept so that a changed weight recomputes the outcome.
 | Criterion | Weight | A — current layering | B — proportional Clean | C — hexagonal everywhere |
 |---|---:|---:|---:|---:|
 | D1 Rules testable without mocks | 25 | 2 — service needs a security context and a mocked repository | 5 — entity methods and pure functions take values | 5 — same, through ports |
-| D2 Migration cost before May 2027 | 25 | 5 — none | 4 — six small PRs, each shipping a fix already filed | 1 — every package moves, no feature value |
-| D3 Ready for the model and reader swaps | 20 | 2 — three modules to edit per swap | 5 — one adapter behind `ChatModel` / `DocumentReader` | 5 — same |
+| D2 Migration cost before May 2027 | 25 | 5 — none | 4 — seven small PRs, each shipping a fix already filed | 1 — every package moves, no feature value |
+| D3 Ready for the model and reader swaps | 20 | 3 — endpoint already configurable; reader and prompt format need four modules edited | 5 — one adapter behind `ChatModel` / `DocumentReader` | 5 — same |
 | D4 Readable for a newcomer | 15 | 4 — standard Spring layout | 4 — same layout plus three written rules | 2 — nine interfaces to trace for one call |
 | D5 Dependency rule enforced | 15 | 1 — broken in two services, unchecked | 5 — rule written, checked in review | 5 — enforced by package boundaries |
-| **Total** | **100** | **295** | **455** | **355** |
+| **Total** | **100** | **310** | **460** | **355** |
 
-Sensitivity: B stays first when D2 drops to 10 and D1 rises to 40 (B 470, C 410, A 275), and
-when D4 is removed (B 395, C 325, A 235). C overtakes B only if D2 is weighted 0 and D4 ≤ 5,
-which contradicts the May 2027 deadline.
+Sensitivity (weights still sum to 100): D1 40 / D2 10 / D3 20 / D4 15 / D5 15 gives B 475,
+C 415, A 265; moving D4's weight to D1 (40 / 25 / 20 / 0 / 15) gives B 475, C 400, A 280.
+B scores at least as high as C on every criterion (B − C = 3 × D2 + 2 × D4), so C never
+overtakes B and only ties when D2 and D4 both weigh 0. A overtakes B only when
+D2 > 3 × D1 + 2 × D3 + 4 × D5, that is when migration cost outweighs every other driver together.
 
 ## Outcome
 
@@ -114,10 +123,10 @@ which contradicts the May 2027 deadline.
 
 | Step | Scope | Issue |
 |---|---|---|
-| 1 | Delete before refactoring: `user-service`, the analytics aggregator, unused `demarches` endpoints (pending the question below), gateway circuit breaker, fallback, `X-Gateway`, unused cache and `WebClient` beans | #142, #144, new |
+| 1 | Delete before refactoring: `user-service`, the analytics aggregator, unused `demarches` endpoints (pending question 2), gateway circuit breaker, fallback, `X-Gateway`, `CorsConfig` (after checking the browser never calls `:8080`), unused cache and `WebClient` beans | #142, #144, new |
 | 2 | Shared `iadaf-security` module (`InternalJwt`, `CurrentUser`), `ProblemDetail` everywhere, delete the dead 401 handlers and the three `ErrorResponse` classes | #145 |
 | 3 | Identity at the controller in `demarches-service` and `document-service`; services take `String userId` | new (audit M1) |
-| 4 | Invariants on `Demarche`; both write paths go through the entity; unit tests on the rules | #143 |
+| 4 | Invariants on `Demarche` (`@Data` replaced by getters, status and end date set only through `changeStatut`); every remaining write path goes through the entity; unit tests on the rules. Scope depends on question 2: the two bypassing paths (`POST`, `PUT /{id}`) are among the endpoints with no caller | #143 |
 | 5 | `ai-service`: `ChatModel` port and `OpenAICompatibleChatModel`; messages with roles; `ModelUnavailable` instead of error text; objects built in `lifespan`; one LLM configuration (`LLM_BASE_URL`, `LLM_MODEL`, optional `LLM_API_KEY`) | new |
 | 6 | `ai-service`: split `rag_service.py` (prompts, knowledge index, chat use case), typed results, ownership rule as a pure function | new |
 | 7 | `ai-service`: `DocumentFacts` and `DocumentReader`; rules consume facts; `/analyze-document` re-scoped so the model explains a rule-based verdict and never produces one | new, with the front team |
@@ -130,20 +139,21 @@ Steps 1–4 and 5–7 are independent and can proceed in parallel.
    replace `lb://` by compose DNS names as `analytics-service` already does? See
    `03c-component-gateway-discovery.md`.
 2. **Unused `demarches` endpoints**: is a "my procedures" page planned? If not, step 1 removes
-   the 8 endpoints and the JPQL "overdue" rule with them.
+   the 8 endpoints and the "overdue" query (JPQL, the JPA query language) with them.
 3. **Verdict ownership**: confirm the product rule "the model explains, the rules decide"
    before step 7, since the front's `PackWorkspace` already computes the missing list.
 
 ## Consequences
 
-- Positive: the fine-tuned model lands as a configuration change plus an evaluation set; the
-  vision reader is a second `DocumentReader` adapter; procedure rules get real unit tests;
-  ~30 % of the Java code disappears before any refactoring.
+- Positive: the fine-tuned model lands as a configuration change plus role-tagged prompts and
+  an evaluation set; the vision reader is a third `DocumentReader` adapter; procedure rules get
+  real unit tests; ~30 % of the Java code disappears before any refactoring.
 - Negative: reviewers must apply three rules by hand (no ArchUnit or import-linter yet; add one
   if a violation slips through twice); the port trigger list in this ADR must be updated when a
   port is added or refused.
-- Neutral: package names do not change; JPA entities remain the domain model (one persistence
-  technology); Spring Data interfaces remain the persistence seam.
+- Neutral: Java package names do not change (`ai-service` gains `facts.py`, `prompts.py` and
+  an `adapters` module); JPA entities remain the domain model (one persistence technology);
+  Spring Data interfaces remain the persistence seam.
 
 ## Refused on purpose
 

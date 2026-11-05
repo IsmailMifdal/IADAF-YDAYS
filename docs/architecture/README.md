@@ -1,8 +1,8 @@
 # Architecture dossier
 
 The single entry point to IADAF's conception documents: how the backend is structured, which
-decisions shape it, and how to read the folder. Code conforms to this dossier, not the reverse;
-when they diverge, the change that fixes one updates the other.
+decisions shape it, and how to read the folder. Proposed with ADR-0001: once Ismail accepts it,
+code conforms to this dossier and a change that makes them diverge updates both.
 
 ## Scope
 
@@ -11,15 +11,29 @@ Spring Boot services (`user`, `demarches`, `document`, `analytics`) and `ai-serv
 The Next.js front is drawn only as the client of the gateway; its internals belong to the front
 team.
 
+## Stakeholders and goals
+
+| Stakeholder | What the dossier gives them |
+|---|---|
+| Ismail (product owner, tech lead) | Decisions to accept, reject or re-weight, with the arguments on the page. |
+| Backend team (Corentin, Benoît) | The rules every backend PR is reviewed against, and the order of the refactoring steps. |
+| Front team | The backend contracts that change (verdict ownership, error bodies). |
+| School jury | A justified architecture, not a tour of the code. |
+
+Goals: make the document completeness verdict testable without mocks, make the fine-tuned model
+and the vision reader a configuration plus one adapter, and remove dead infrastructure before
+May 2027.
+
 ## Method
 
 - Docs-as-code: Markdown and Mermaid in git, reviewed in pull requests like code.
-- Decisions as MADR records in `decisions/`, numbered once, never renumbered
-  (`ADR-0001`).
-- Diagrams in UML 2.5 notation, one question per diagram, grouped by feature under
-  `diagrams/<feature>/`; the C4 zoom level is stated in each title.
+- Lightweight hybrid: decisions as MADR (Markdown Architectural Decision Records) in
+  `decisions/`, numbered once, never renumbered (`ADR-0001`); diagrams in UML 2.5 notation at a
+  stated C4 zoom level (context, container, component); use cases and traceability to follow
+  with the first feature study.
 - Every choice between options is argued with a weighted decision matrix inside the ADR, so a
-  reviewer can contest a weight or a score rather than the conclusion.
+  reviewer can contest a weight or a score rather than the conclusion (proposed with ADR-0001;
+  to be added to CONTRIBUTING if Ismail agrees).
 
 ## Context (C4 level 1)
 
@@ -35,7 +49,7 @@ flowchart LR
   OCR["OCR provider (optional)"]
   Pg[("PostgreSQL")]
   EndUser --> Front
-  Front -->|"runtime: HTTPS /api, internal JWT"| Backend
+  Front -->|"runtime: HTTP /api on the compose network, internal JWT"| Backend
   Backend -->|"runtime: HTTPS"| LLM
   Backend -->|"runtime: HTTPS"| OCR
   Backend -->|"runtime: SQL, one schema per service"| Pg
@@ -55,6 +69,6 @@ ISM-111) will add them.
 
 ## Related documents
 
-- [CONTRIBUTING.md](../../CONTRIBUTING.md) § 3 — the conception gate (an approved diagram before
-  a new feature).
+- [AGENTS.md](../../AGENTS.md) § Before changing code — a plan, and for a new feature an
+  approved diagram, before the code.
 - [docs/rgpd](../rgpd/) — DPIA and data-protection documents (in French).
