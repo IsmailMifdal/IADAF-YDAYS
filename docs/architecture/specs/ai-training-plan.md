@@ -1,14 +1,14 @@
 # AI training plan: free compute, December 2026 to May 2027
 
-Status: proposal, 2026-11-05. Linear ISM-117. Author: backend lead (Benoît). Reviewers: Pôle IA (co-signer to be named by Ismail), Corentin, Ismail (final word). Companion of the model selection study (`ai-model-selection.md`).
+This plan simulates what free GPU offers allow from December 2026 to May 2027 for the benchmark and fine-tuning of the selected model, under three scenarios, with the budget triggers, the GDPR items for the DPIA (ISM-64) and a glossary for beginners.
 
-This plan simulates what the free GPU offers allow between December 2026 and May 2027 for the benchmark and the fine-tuning of the selected model, under three scenarios (one account, four or more accounts, with Jean Zay), states every assumption, gives the triggers that would justify asking the school for a budget, lists the GDPR items the DPIA (ISM-64) needs, and ends with a glossary for a reader who never heard of training. Every figure is an estimate from vendor pages and guides retrieved on 2026-11-05; the quotas move, so they must be re-read before each monthly plan.
+Status: proposal, 2026-11-05, Linear ISM-117. Author: Benoît (backend). Reviewers: the data/AI role of the Users and AI pole (co-signer to be named by Ismail), Corentin, then Ismail, product owner and tech lead. Companion of the model selection study (`ai-model-selection.md`). Every figure is an estimate from vendor pages and guides retrieved on 2026-11-05; quotas move, so they must be re-read before each monthly plan.
 
 ## 1. Summary
 
-- The free compute is not the bottleneck. One contributor's accounts give about 180 reliable T4-hours a month; the plan needs at most about 105 hours in its busiest month (March 2027).
+- The free compute is not the bottleneck. One contributor's accounts give about 180 reliable T4-hours a month; the plan needs at most about 126 hours, margin included (105 without), in its busiest month (March 2027).
 - Four accounts (one per contributor, one account per service, never two accounts on one service) multiply the ceiling by four and, more usefully, let four runs go in parallel within the 12-hour session caps.
-- Jean Zay (GENCI/IDRIS dynamic access, up to 50,000 GPU-hours a year, no publication duty under that ceiling, academic sponsor required) is the only free path above 14 B parameters or to full fine-tuning; it is a lever, not a need, and the application should be filed in December 2026 to be usable in February 2027.
+- Jean Zay (GENCI/IDRIS dynamic access, up to 50,000 GPU-hours a year, no publication duty under that ceiling, academic sponsor required) is the only free path to sustained work above 14 B parameters or to full fine-tuning (Modal's H100 credits, about 7.5 hours a month per account, allow one-off runs only); it is a lever, not a need, and the application should be filed in December 2026 to be usable in February 2027.
 - The real cost is serving, not training: a self-hosted model in staging needs a GPU on 24/7. The three budget triggers (§ 5) are built around that.
 - The human time (8 hours a week per contributor, assumption A2) is the scarce resource: 25 hours of grading in Phase 2, dataset work in ISM-66, run supervision.
 
@@ -56,12 +56,14 @@ Fine-tuning as a service: Mistral (EU-hosted, free experiment tier since 2024, 2
 
 ### 4.1 Need per month
 
+A worst-case envelope: 14 B runs are booked in February to April in case the 14 B finalist wins Phase 2; if a smaller model wins, those hours drop.
+
 | Month | Work | 8 B runs | 14 B runs | 4.5 B runs | Benchmark h | Need, T4-h | Need with 20 % margin (T9) |
 |---|---|---|---|---|---|---|---|
 | 2026-12 | environment, prompts, Phase 2 benchmark on 4 finalists, Jean Zay application | 0 | 0 | 0 | 8 (4 models, reruns) | 8 | 10 |
-| 2027-01 | Phase 2 report; ISM-66 dataset (synthetic generation goes through the API, no GPU); two smoke fine-tunes | 2 | 0 | 2 | 4 | 13 | 16 |
+| 2027-01 | Phase 2 report; ISM-66 dataset (synthetic generation goes through the API, no GPU); smoke fine-tunes, two per size | 2 | 0 | 2 | 4 | 13 | 16 |
 | 2027-02 | milestone (A1); first real fine-tunes on the winner, hyper-parameter sweep | 10 | 3 | 0 | 6 | 57 | 68 |
-| 2027-03 | iterations: data formats, epochs, a DPO or ORPO trial; busiest month | 20 | 5 | 0 | 10 | 105 | 126 |
+| 2027-03 | iterations: data formats, epochs, a DPO or ORPO trial if ISM-66 adds preference pairs; busiest month | 20 | 5 | 0 | 10 | 105 | 126 |
 | 2027-04 | final candidates, staging evaluation (ISM-86), accuracy measure for the DPIA | 10 | 2 | 0 | 8 | 52 | 62 |
 | 2027-05 | final benchmark, report, hand-over | 2 | 0 | 0 | 6 | 12 | 14 |
 | **Total** | | 44 | 10 | 2 | 42 | **247** | **296** |
@@ -90,7 +92,7 @@ Bars: need with margin (§ 4.1). Lower line: S1, one account. Upper line: S2, fo
 
 ```mermaid
 gantt
-    title Milestones, December 2026 to May 2027
+    title Milestones, November 2026 to May 2027
     dateFormat YYYY-MM-DD
     axisFormat %b %Y
     section Decide
@@ -98,7 +100,7 @@ gantt
     Jean Zay application filed                 :m2, 2026-12-01, 2026-12-15
     section Measure
     ISM-33 test set built                      :t1, 2026-11-20, 2026-12-20
-    Phase 2 benchmark                          :t2, 2026-12-10, 2027-01-15
+    Phase 2 benchmark                          :t2, after t1, 2027-01-15
     Phase 2 report signed                      :milestone, t3, 2027-01-20, 0d
     section Train
     ISM-66 dataset                             :d1, 2027-01-05, 2027-02-10
@@ -114,8 +116,8 @@ gantt
 
 - S1 covers the need every month, with the March peak at 70 % of the reliable supply; the 12-hour session cap, not the quota, is what slows a single account: a 7-hour 14 B run fits one session, a sweep of ten 8 B runs takes three days of back-to-back sessions.
 - S2 is the recommended scenario: it costs nothing, each contributor stays within the terms of use (one account per service), and sweeps run in parallel. Its real benefit is calendar time, not hours.
-- S3 changes what is possible, not what is needed: with Jean Zay the team could fine-tune a 24 B model, run full fine-tuning instead of QLoRA, or train on more data, and the data would stay in France. The application costs one afternoon and a sponsor's signature; the plan does not depend on it.
-- The human constraint dominates: at 8 h/week per contributor, the Pôle IA has about 140 person-hours a month in total. Phase 2 grading (25 h), dataset building (ISM-66, likely 60 h or more) and run supervision compete for it. A sweep of twenty runs needs someone to launch, watch and log them; the plan's March peak assumes two contributors on it.
+- S3 changes what is possible, not what is needed: with Jean Zay the team could fine-tune a 24 B model, run full fine-tuning instead of QLoRA, or train on more data, and the data would stay in France. The application costs one afternoon and a sponsor's signature, provided students of a private school are eligible for dynamic access (unverified, to ask IDRIS); the plan does not depend on it.
+- The human constraint dominates: at 8 h/week for each of the 4 contributors assumed in A2, the AI work has about 140 person-hours a month in total. Phase 2 grading (25 h), dataset building (ISM-66, likely 60 h or more) and run supervision compete for it. A sweep of twenty runs needs someone to launch, watch and log them; the plan's March peak assumes two contributors on it.
 
 ## 5. Budget triggers
 
@@ -125,7 +127,7 @@ Each trigger names the observation that fires it, why free compute cannot absorb
 |---|---|---|---|---|
 | B1 Quota exhaustion | the Kaggle weekly quota is hit two weeks in a row during the February or March sweeps and Colab gives no GPU | the sweep's calendar time slips past the milestone | one month of Colab Pro, or a Modal top-up | 12 to 50 € |
 | B2 Larger model wins | Phase 2 shows the 14 B finalist beating the 8 B by more than 5 points of J2 field-F1, and Jean Zay is not granted by end of February | 14 B runs on a T4 take 7 h each and leave no VRAM margin; an A100 80 GB does them in under 2 h | 60 to 100 hours of rented A100 or H100 (about 2 to 4 €/h), after the one-shot cloud credits are spent | 150 to 300 € |
-| B3 Self-hosted serving in staging | the Phase 2 winner is a self-hosted model, Ismail confirms self-hosting over the EU-hosted API (the earlier decision matrix on #130 ranked the Mistral API first), and ISM-86 needs the model up 24/7 for the April evaluation | no free offer hosts a model continuously; a free GPU session is 4 to 12 h | a small GPU VPS or a serverless endpoint for 3 months, or the EU-hosted API pay-per-use (near 0 € at school volume) | 300 to 900 € over 3 months, or a few euros on the API |
+| B3 Self-hosted serving in staging | the Phase 2 winner is a self-hosted model, Ismail confirms self-hosting over an EU-hosted API (issue #130 suggests a hosted API as a likely compromise; no decision is taken), and ISM-86 needs the model up 24/7 for the April evaluation | no free offer hosts a model continuously; a free GPU session is 4 to 12 h | a small GPU VPS or a serverless endpoint for 3 months, or the EU-hosted API pay-per-use (near 0 € at school volume) | 300 to 900 € over 3 months, or a few euros on the API |
 
 A budget request that does not quote one of these three observations is premature; the school asked for a real needs study first, and this table is that study.
 
