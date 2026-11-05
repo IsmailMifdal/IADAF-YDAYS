@@ -186,6 +186,22 @@ Les sessions existantes sont signées avec l'ancien secret et deviennent
 invalides. Videz les cookies du site, ou ouvrez une fenêtre de navigation
 privée.
 
+## Tests de bout en bout (`tests/e2e`) en échec en local
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| `python: command not found` | Les scripts appellent `python` ; sur Linux, souvent seul `python3` existe (#48) | Créer le script `~/bin/python` ci-dessous (s'il n'existe pas déjà), avec `~/bin` dans le `PATH` |
+| Presque tout répond `401` avec un jeton « valide » | `node` introuvable ou `front/node_modules` absent : les jetons sortent vides | `cd front && npm ci` ; lancer les tests avec le `PATH` complet |
+| `chat.sh` : `meta error` au lieu de `meta token done` | Pas de clé OpenAI en local | `E2E_SKIP_LLM=1 bash tests/e2e/run-all.sh` |
+| `Conflict. The container name "/iadaf-…" is already in use` | Les noms de conteneurs sont fixes (#50) : une seule stack à la fois | Arrêter l'autre stack avec `docker compose -p <projet> down` (jamais `-v` : cela efface ses données), puis relancer |
+
+Script `python` (un script plutôt qu'un lien : marche aussi avec mise ou pyenv) :
+
+```bash
+mkdir -p ~/bin && [ ! -e ~/bin/python ] \
+  && printf '#!/bin/sh\nexec python3 "$@"\n' > ~/bin/python && chmod +x ~/bin/python
+```
+
 ---
 
 ## Tests de connectivité

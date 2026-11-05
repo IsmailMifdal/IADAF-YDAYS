@@ -1,22 +1,24 @@
-## Ce que change cette PR
+<!-- Title: <type>(<scope>): <subject> (ISM-<n>) -->
 
-<!-- En deux ou trois phrases : le besoin, et ce qui change pour l'utilisateur. -->
+## What this PR changes
 
-Issue : #
+<!-- Two or three sentences: the need, and what changes for the user. -->
 
-Équipe : <!-- web-usager / web-plateforme / mobile / transverse -->
+Team: <!-- backend / front-web / mobile / ai / devops / marketing -->
 
-## Comment le vérifier
+## How to check
 
-<!-- Les étapes pour voir la fonctionnalité marcher (page, compte de test, commande). -->
+<!-- Steps to see it work (page, test account, command). -->
 
-## Définition de « terminé »
+## Definition of done
 
-- [ ] Testé : tests de bout en bout (`tests/e2e`) pour une API, tests unitaires pour la logique ; CI verte
-- [ ] Textes présents dans les 4 langues (`front/src/app/i18n/messages/*.ts`)
-- [ ] Écran vérifié en arabe, de droite à gauche
-- [ ] Sur le site : vérification CSP au vert (`tests/browser/csp-check.mjs`)
-- [ ] Documentation à jour (README, DOCKER, DEPLOYMENT ou SECURITY selon le cas)
-- [ ] PR relisible en 20 minutes ; sinon, découpée
+- [ ] Tested: end-to-end tests (`tests/e2e`) for an API, unit tests for logic; CI green
+- [ ] UI texts present in the 4 languages (`front/src/app/i18n/messages/*.ts`)
+- [ ] Screen checked in Arabic, right to left
+- [ ] Site: CSP check green (`tests/browser/csp-check.mjs`)
+- [ ] Docs up to date (README, DOCKER, DEPLOYMENT or SECURITY as relevant)
+- [ ] Reviewable in 20 minutes; otherwise, split
 
-<!-- Authentification, paiement ou documents touchés ? Demandez aussi la relecture du profil cybersécurité. -->
+Fixes ISM-
+
+<!-- Touching authentication, payment or documents? Also request a security review. -->
