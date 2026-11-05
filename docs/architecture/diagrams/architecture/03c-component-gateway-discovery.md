@@ -79,16 +79,18 @@ flowchart LR
 
 ## Notes
 
-- What Eureka buys today: nothing observable. Every service runs as one container with a
+- What Eureka buys at runtime today: nothing observable. Every service runs as one container with a
   fixed compose name; `analytics-service` already addresses its peers by those names and the
   gateway's discovery locator is disabled on purpose. What it costs: a container and its
   healthcheck on the critical startup path, a client library in six services (including a
   Python one that fails silently when the registry is down), and the two-peer cluster profile
   that no environment uses.
-- Decision (ADR-0001, decision 1): keep `discovery-service` and use it consistently. The two
-  `Ana` fixed-URL edges of the first diagram leave with the analytics aggregator (step 1, #144);
-  any future call between backend services (calls through the gateway excluded) resolves
-  through the registry like the gateway's routes.
+- Decision (ADR-0001, decision 1): keep `discovery-service`, a school requirement to
+  demonstrate service discovery, and use it consistently. The two `Ana` fixed-URL edges of the
+  first diagram leave with the analytics aggregator (step 1, #144); any future call between
+  backend services (calls through the gateway excluded) resolves through the registry like the
+  gateway's routes.
+- The registry-free option stays documented in case the school requirement goes away.
 - Independent of the Eureka decision, step 1 of ADR-0001 deletes the circuit-breaker
   configuration, the fallback controller, the `X-Gateway` header and, after one check that the
   browser never calls `:8080` directly, `CorsConfig`.

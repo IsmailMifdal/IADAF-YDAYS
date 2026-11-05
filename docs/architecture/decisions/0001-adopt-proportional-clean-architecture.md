@@ -139,10 +139,11 @@ Steps 1–4 and 5–7 are independent and can proceed in parallel.
 
 ### Decisions (Ismail, 2026-11-05)
 
-1. **Eureka: keep `discovery-service`.** `03c-component-gateway-discovery.md` keeps the
-   registry-free option as the documented alternative. Used consistently: the fixed URLs leave
-   with the analytics aggregator (step 1), and any future call between backend services (calls
-   through the gateway excluded) resolves through discovery like the gateway's routes.
+1. **Eureka: keep `discovery-service`.** Reason: a school requirement; the project must
+   demonstrate service discovery. `03c-component-gateway-discovery.md` keeps the registry-free
+   option as the documented alternative. Used consistently: the fixed URLs leave with the
+   analytics aggregator (step 1), and any future call between backend services (calls through
+   the gateway excluded) resolves through discovery like the gateway's routes.
 2. **Unused `demarches` endpoints: keep them.** A "my procedures" page is planned. Step 1 no
    longer removes the 8 endpoints or the overdue query; step 4 keeps its full scope.
 3. **Verdict ownership: confirmed.** The rules decide; the model explains and never produces a
