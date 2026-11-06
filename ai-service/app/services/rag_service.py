@@ -187,6 +187,7 @@ class RAGService:
     def __init__(self) -> None:
         self._embedder = None
         self._collection = None
+        self._initialisation_error: str | None = None
 
     # ------------------------------------------------------------------
     # Initialisation
@@ -201,8 +202,10 @@ class RAGService:
         try:
             self._setup_embeddings()
             self._setup_vectorstore()
+            self._initialisation_error = None
             logger.info("RAG service initialised successfully.")
         except Exception as exc:  # noqa: BLE001
+            self._initialisation_error = type(exc).__name__
             logger.error(f"RAG service initialisation failed: {exc}")
 
     def _setup_embeddings(self) -> None:
@@ -353,7 +356,7 @@ class RAGService:
     @property
     def is_ready(self) -> bool:
         """Return True when the vector store is available."""
-        return self._collection is not None
+        return self._collection is not None and self._initialisation_error is None
 
 
 # Module-level singleton
