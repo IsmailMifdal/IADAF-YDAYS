@@ -203,6 +203,8 @@ class RAGService:
             self._setup_vectorstore()
             logger.info("RAG service initialised successfully.")
         except Exception as exc:  # noqa: BLE001
+            self._embedder = None
+            self._collection = None
             logger.error(f"RAG service initialisation failed: {exc}")
 
     def _setup_embeddings(self) -> None:
@@ -322,7 +324,7 @@ class RAGService:
 
         Without a vector store, the bare question (no context, no sources).
         """
-        if self._collection is None or self._embedder is None:
+        if not self.is_ready:
             return question, []
 
         # Embedding the question is CPU-bound: off the event loop.
@@ -353,7 +355,7 @@ class RAGService:
     @property
     def is_ready(self) -> bool:
         """Return True when the vector store is available."""
-        return self._collection is not None
+        return self._collection is not None and self._embedder is not None
 
 
 # Module-level singleton
