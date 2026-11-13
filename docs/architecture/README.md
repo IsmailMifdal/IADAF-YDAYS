@@ -63,6 +63,7 @@ flowchart LR
 | `decisions/` | Architecture decision records. Start with `0001-adopt-proportional-clean-architecture.md`. |
 | `diagrams/architecture/` | Component diagrams of the target structure (gateway and discovery, `demarches-service`, `ai-service`). |
 | `glossary.md` | Every term used in the diagrams and ADRs, defined once. |
+| `specs/` | Studies that feed a decision: `ai-model-selection.md` (pre-trained model selection, ISM-117) and `ai-training-plan.md` (free compute and budget triggers, December 2026 to May 2027). |
 
 Not yet written, by design: `traceability-matrix.md` and `diagrams/<feature>/01-use-case*.md`.
 No use case is formalised yet; the first feature study (document completeness check, Linear

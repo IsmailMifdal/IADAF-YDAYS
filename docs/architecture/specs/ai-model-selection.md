@@ -252,7 +252,6 @@ Estimated effort: 4 GPU-hours (4 finalists × about 1 h; baselines use hosted AP
 - ISM-33: build the test set to § 4.2.
 - ISM-75: re-title once Phase 2 has a winner; the `ChatModel` port with role-tagged messages (ADR-0001) is a prerequisite.
 - ISM-64: the DPIA items are listed in the training plan, § 6.
-- After PR #153 merges: add this spec and the training plan to the `docs/architecture/README.md` index, and the glossary rows (QLoRA, benchmark, LLM-as-judge) to `docs/architecture/glossary.md`.
 
 ## 7. Glossary
 
