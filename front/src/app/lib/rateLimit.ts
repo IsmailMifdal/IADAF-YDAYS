@@ -68,7 +68,7 @@ const DDL = `
   );
 `;
 
-const ensureSchema = runDdlOnce(DDL);
+export const ensureRateLimitSchema = runDdlOnce(DDL);
 
 function bucketFor(rule: RateLimitRule, key: string): string {
   return createHmac("sha256", process.env.AUTH_SECRET ?? "")
@@ -86,7 +86,7 @@ export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };
  */
 export async function hit(rule: RateLimitRule, key: string): Promise<RateLimitResult> {
   try {
-    await ensureSchema();
+    await ensureRateLimitSchema();
 
     // Occasional sweep instead of a scheduler the frontend doesn't have.
     if (Math.random() < 0.01) {

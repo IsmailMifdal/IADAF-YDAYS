@@ -48,8 +48,10 @@ FATAL: authentification par mot de passe a échoué pour l'utilisateur « iadaf_
 Les scripts de `docker/postgres/init/` ne sont exécutés **que sur un volume
 PostgreSQL vierge**. Sur une base déjà initialisée, ils ne rejouent jamais.
 
-Le frontend applique le même DDL de façon idempotente au premier accès :
-ouvrez http://localhost:3000 une fois, puis vérifiez :
+Le frontend applique le même DDL de façon idempotente à son démarrage, puis à
+chaque appel de `/api/health` tant qu'il échoue. Si les tables manquent, lisez
+`docker logs iadaf-front` (ligne `[schema]`), corrigez la cause, puis
+`docker compose restart frontend` et vérifiez :
 
 ```bash
 docker exec iadaf-postgres psql -U iadaf_user -d iadaf_db -c "\dt users.*"

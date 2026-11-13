@@ -32,7 +32,7 @@ const DDL = `
   );
 `;
 
-const ensureResetSchema = runDdlOnce(DDL);
+export const ensureResetSchema = runDdlOnce(DDL);
 
 async function ensureSchema(): Promise<void> {
   await ensureAuthSchema();

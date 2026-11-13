@@ -37,7 +37,7 @@ const DDL = `
   );
 `;
 
-const ensureLeadSchema = runDdlOnce(DDL);
+export const ensureLeadSchema = runDdlOnce(DDL);
 
 /**
  * Record an address with its consent. Giving consent again refreshes it, which

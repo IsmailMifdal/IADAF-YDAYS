@@ -30,7 +30,8 @@ const BCRYPT_ROUNDS = 12;
 //
 // The docker-entrypoint init scripts only run against an empty data directory,
 // so an existing database would never pick up new tables. Applying the DDL
-// idempotently on first use keeps both cases working.
+// idempotently at server startup (lib/schema.ts), and again on first use,
+// keeps both cases working.
 
 const DDL = `
   ${createSchemaIfMissing("users")}

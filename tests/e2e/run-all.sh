@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Whole end-to-end suite against a running dev stack:
-#   docker compose up -d --build && bash tests/e2e/run-all.sh
+#   docker compose up -d --build --wait && bash tests/e2e/run-all.sh
 # Exit code: number of failed scripts (0 = all green).
 cd "$(dirname "$0")"
 failed=0

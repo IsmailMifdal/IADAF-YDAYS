@@ -43,7 +43,8 @@ export function createSchemaIfMissing(name: "users" | "billing" | "ratelimit" | 
  * A function applying `ddl` on its first call, then resolving at once. A
  * failure is not remembered: the next call tries again — a database briefly
  * unreachable at the first request would otherwise break the feature until
- * the server restarts.
+ * the server restarts. Each one is listed in lib/schema.ts, so it also runs
+ * at startup.
  */
 export function runDdlOnce(ddl: string): () => Promise<void> {
   let ready: Promise<void> | undefined;

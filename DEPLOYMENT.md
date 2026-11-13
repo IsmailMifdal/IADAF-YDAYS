@@ -214,7 +214,7 @@ dès que les fiches changent) et les modèles téléchargés (`ai_model_cache`).
 
 | Quoi | Comment |
 |---|---|
-| Disponibilité | Sonde externe sur `https://<DOMAIN>/api/health` chaque minute (200 = le site et la base répondent) |
+| Disponibilité | Sonde externe sur `https://<DOMAIN>/api/health` chaque minute (200 = le site répond, la base répond et les tables du frontend existent ; sinon 503, cause dans `docker compose logs frontend`, ligne `[schema]`) |
 | Logs | `docker compose logs -f --tail=200 <service>` — plafonnés à 5 × 10 Mo par conteneur |
 | Disque | Alerte à 80 % (la base grossit avec les pièces déposées) : `df -h /var/lib/docker` |
 | Certificats | Renouvelés par Caddy ; Let's Encrypt écrit à `ACME_EMAIL` en cas de problème |
