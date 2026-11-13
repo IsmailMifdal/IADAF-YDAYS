@@ -15,6 +15,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    // The DDL result is memoised after its first success: SELECT 1 stays the
+    // live database check.
     await ensureFrontendSchema();
     await query("SELECT 1");
     return NextResponse.json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });

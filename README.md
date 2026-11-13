@@ -138,8 +138,9 @@ protection des routes est appliquée par [`front/src/proxy.ts`](front/src/proxy.
 tout est privé sauf `/`, `/login`, `/register`, `/nosPacks`, `/procedures` et
 les routes `/api/*` (qui appliquent chacune leur propre contrôle).
 
-Les tables sont créées automatiquement au premier accès — les scripts de
-`docker/postgres/init/` ne s'exécutent que sur un volume PostgreSQL vierge.
+Le frontend crée ses tables à son démarrage (et `/api/health` reste 503 tant
+qu'elles manquent) — les scripts de `docker/postgres/init/` ne s'exécutent que
+sur un volume PostgreSQL vierge.
 
 ### Callback Google
 
