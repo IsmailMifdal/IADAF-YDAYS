@@ -150,6 +150,8 @@ Items the DPIA preparation (`docs/rgpd/aipd-preparation.md`) must add for the tr
 
 ## 7. Glossary for beginners
 
+Terms shared with the dossier (Benchmark, LLM-as-judge, QLoRA, LLM, RAG) are defined in [../glossary.md](../glossary.md); the definitions below restate them for beginners and must not diverge.
+
 In the order a reader needs them.
 
 - **Language model (LLM)**: the program that answers in natural language, like IADAF's assistant. "LLM" stands for large language model. It was made by having it read enormous amounts of text.

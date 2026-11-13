@@ -255,6 +255,8 @@ Estimated effort: 4 GPU-hours (4 finalists × about 1 h; baselines use hosted AP
 
 ## 7. Glossary
 
+LLM-as-judge is defined in [../glossary.md](../glossary.md) too; the definition below restates it for beginners and must not diverge.
+
 The training plan carries the full beginner glossary (its § 7). Terms specific to this document:
 
 - **Zero-shot**: asking the model to do the job with instructions only, no example from our data and no training.

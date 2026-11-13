@@ -1,7 +1,7 @@
 # Glossary
 
-Every term used in the diagrams and decision records, defined once. English headword; the French
-word used in the code or the UI follows in parentheses when it differs.
+Every term used in the diagrams, decision records and specs, defined once. English headword; the
+French word used in the code or the UI follows in parentheses when it differs.
 
 | Term | Definition | Source |
 |---|---|---|
