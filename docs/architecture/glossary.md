@@ -1,13 +1,14 @@
 # Glossary
 
-Every term used in the diagrams and decision records, defined once. English headword; the French
-word used in the code or the UI follows in parentheses when it differs.
+Every term used in the diagrams, decision records and specs, defined once. English headword; the
+French word used in the code or the UI follows in parentheses when it differs.
 
 | Term | Definition | Source |
 |---|---|---|
 | Adapter | A class at the edge of a service that implements a port with one concrete technology (an HTTP client, a database, a library). Replaceable without touching the application services. | ADR-0001 |
 | Application service | A thin orchestration of one user goal: resolve inputs, call the domain, call the ports, return a typed result. Holds no business rule. Called "use case module" in `ai-service`; distinct from a UML use case. | ADR-0001 |
 | ArchUnit | A Java library that turns architecture rules into unit tests (for example: no Spring Security import in a `service` package). Checks rule 1 in the Java services. | ADR-0001 |
+| Benchmark | A set of questions with expected answers, used to score a model. Without one, nobody can say whether a fine-tuning improved anything. | `specs/ai-training-plan.md` |
 | ChatModel | The port of `ai-service` through which application services send a list of role-tagged messages to a language model and receive a completion or a stream. One adapter: the OpenAI-compatible client. | `03b-component-ai-service.md` |
 | Circuit breaker | A proxy that stops calling a failing dependency for a while instead of piling up timeouts (Resilience4j in the gateway). Was configured, used by no route; removed by ADR-0001 step 1 (ISM-109). | `03c-component-gateway-discovery.md` |
 | Composition root | The one place where a service builds its concrete objects and wires them together: `main.py` (`lifespan`) in `ai-service`, Spring's application context in the Java services. | ADR-0001 |
@@ -23,12 +24,14 @@ word used in the code or the UI follows in parentheses when it differs.
 | Internal JWT | The signed token (JSON Web Token) the front issues for each request and every backend service verifies; its subject is the user id. | `api-gateway/.../SecurityConfig.java` |
 | Knowledge index | The `ai-service` adapter that embeds the knowledge base and answers `Retriever` searches from ChromaDB. | `03b-component-ai-service.md` |
 | LLM | Large language model: the text-generation model behind the chat, the translation and the verdict explanations. | ADR-0001 |
+| LLM-as-judge | Using a language model to grade another model's answers against a rubric (a grading grid with fixed axes and a scale). | `specs/ai-model-selection.md` |
 | MRZ | Machine-readable zone: the two or three bottom lines of an identity document, parsed by `mrz.py`. | ADR-0001 |
 | OCR | Optical character recognition: turns an image into text. An external provider today. | `03b-component-ai-service.md` |
 | Pack (pack de démarche) | A guided set of steps and expected documents for one administrative procedure (for example a residence permit renewal), identified by a slug. | `demarches-service` |
 | Port | An interface the application services declare and the adapters implement, introduced only on a named trigger (a second implementation, or a boundary that tests must replace). | ADR-0001 |
 | ProblemDetail | Spring's implementation of the RFC 9457 error body; the one error shape every service returns once #145 lands. | ADR-0001 |
 | Procedure (démarche) | A user's instance of a pack: status, priority, steps, comments. The aggregate of `demarches-service`. | `demarches-service` |
+| QLoRA | LoRA (low-rank adaptation) fine-tuning on a base model stored in 4 bits instead of 16, so it takes four times less memory: an 8 B model trains on a 16 GB GPU. | `specs/ai-training-plan.md` |
 | RAG | Retrieval-augmented generation: passages found by the `Retriever` are added to the prompt before the LLM answers. | `03b-component-ai-service.md` |
 | Retriever | The optional port of `ai-service` that returns knowledge-base passages relevant to a question. One adapter: the knowledge index. | `03b-component-ai-service.md` |
 | Rule-based verdict | The completeness, validity or expiry status (`ok`, `warning`, `error`, `unknown`) that deterministic rules compute from document facts. The language model explains a verdict; it never produces one. | ADR-0001 |
