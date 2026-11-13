@@ -3,6 +3,14 @@
 # backend answers without a token signed by the frontend.
 source "$(dirname "$0")/lib.sh"
 
+# First, before any request reaches the frontend: a healthy stack has its
+# tables (ISM-19).
+section "Tables du frontend créées au démarrage"
+for table in users.app_users users.pack_entitlements billing.sales users.lead_emails \
+             users.password_reset_tokens ratelimit.counters erasures.journal; do
+  check "$table" "$(sql "select to_regclass('$table') is not null")" t
+done
+
 section "Sans jeton : tout est refusé"
 for url in "$GATEWAY_URL/api/users" "$GATEWAY_URL/api/demarches" "$GATEWAY_URL/api/documents?packSlug=impots" \
            "$GATEWAY_URL/api/analytics/document-checks" \

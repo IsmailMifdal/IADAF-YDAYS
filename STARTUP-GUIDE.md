@@ -158,8 +158,9 @@ docker exec iadaf-postgres pg_isready -U iadaf_user
 ### Les tables `app_users` / `pack_entitlements` n'existent pas
 
 Les scripts de `docker/postgres/init/` ne s'exécutent **que sur un volume
-vierge**. Sur une base existante, le frontend crée les tables tout seul au
-premier accès — ouvrez http://localhost:3000 une fois.
+vierge**. Sur une base existante, le frontend crée les tables tout seul à
+son démarrage ; s'il échoue, `docker logs iadaf-front` (ligne `[schema]`), puis
+`docker compose restart frontend`.
 
 ### Registre Eureka vide
 
