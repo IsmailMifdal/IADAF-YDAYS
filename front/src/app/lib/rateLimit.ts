@@ -68,7 +68,7 @@ const DDL = `
   );
 `;
 
-const ensureSchema = runDdlOnce(DDL);
+export const ensureSchema = runDdlOnce(DDL);
 
 function bucketFor(rule: RateLimitRule, key: string): string {
   return createHmac("sha256", process.env.AUTH_SECRET ?? "")
