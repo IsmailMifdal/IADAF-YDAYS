@@ -9,16 +9,17 @@ from app.skills.prefill import build_prefill_recap
 from app.skills.router import Skill, route_skill
 
 REFUSE_MESSAGE = (
-    "Je ne peux pas aider sur cette demande (illégale, dangereuse ou hors périmètre). "
+    "Je ne peux pas aider sur cette demande illégale ou dangereuse. "
     "Je reste disponible pour les démarches administratives françaises "
-    "(séjour, CAF, Ameli, impôts, permis…). "
+    "(séjour, CAF, Ameli, impôts, permis, carte grise…) en français ou en anglais. "
     "Consultez aussi https://www.service-public.fr/."
 )
 
 PRECHECK_HINT = (
-    "Pour la pré-vérification d'une pièce, déposez le fichier dans votre pack : "
-    "les contrôles qualité / MRZ / IBAN / dates sont déterministes (sans LLM). "
-    "Je ne « valide » pas juridiquement un dossier."
+    "Un scan flou ou illisible sera en général refusé : reprenez une photo nette, "
+    "texte lisible, bien éclairé. Pour la pré-vérification d'une pièce, déposez le "
+    "fichier dans votre pack : les contrôles qualité / MRZ / IBAN / dates sont "
+    "déterministes (sans LLM). Je ne « valide » pas juridiquement un dossier."
 )
 
 

@@ -141,7 +141,7 @@ def main() -> int:
     # Gate on concurrency=1 (or lowest) p95
     primary = reports[0] if reports else {}
     p95 = primary.get("p95_ms") or float("inf")
-    parallel_slots = 2  # matches strata preset
+    parallel_slots = 4  # matches llama-iadaf / start-local-v3_1
     # At concurrency == parallel, expect successes ~= requests (queue ok but no mass fail)
     level2 = next((r for r in reports if r["concurrency"] == parallel_slots), None)
     success_ratio = (
@@ -162,7 +162,7 @@ def main() -> int:
         "threshold_p95_ms": th["p95_latency_ms"],
         "success": ok,
     }
-    out = ROOT / "artifacts" / "eval_perf.json"
+    out = ROOT / "artifacts" / "results" / "current" / "eval_perf.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(out_body, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(out_body, ensure_ascii=False, indent=2))

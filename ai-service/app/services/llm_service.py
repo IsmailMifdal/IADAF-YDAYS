@@ -37,6 +37,8 @@ class LLMService:
         self._model = ""
         self._temperature = settings.openai_temperature
         self._max_tokens = settings.openai_max_tokens
+        self._http_base = ""
+        self._http_key = ""
 
     # ------------------------------------------------------------------
     # Initialisation
@@ -60,9 +62,11 @@ class LLMService:
             return
 
         # Ollama serves the OpenAI protocol under /v1; it ignores the key.
+        self._http_base = f"{base_url}/v1"
+        self._http_key = "ollama"
         self._client = AsyncOpenAI(
-            base_url=f"{base_url}/v1",
-            api_key="ollama",
+            base_url=self._http_base,
+            api_key=self._http_key,
             timeout=settings.openai_timeout_seconds,
         )
         self._model = settings.ollama_model
@@ -78,6 +82,8 @@ class LLMService:
             return
 
         base_url = settings.openai_base_url or DEFAULT_OPENAI_BASE_URL
+        self._http_base = base_url.rstrip("/")
+        self._http_key = settings.openai_api_key
         self._client = AsyncOpenAI(
             api_key=settings.openai_api_key,
             # Always explicit: the SDK also reads OPENAI_BASE_URL from the
@@ -89,6 +95,24 @@ class LLMService:
         )
         self._model = settings.openai_model
         logger.info(f"OpenAI-compatible backend ready — model: {self._model} @ {base_url}")
+
+    async def _agenerate_httpx(self, prompt: str) -> str:
+        """Fallback when the OpenAI SDK fails (e.g. AppLocker blocking jiter)."""
+        headers = {"Authorization": f"Bearer {self._http_key}"}
+        payload = self._request(prompt, False)
+        async with httpx.AsyncClient(timeout=settings.openai_timeout_seconds) as client:
+            r = await client.post(
+                f"{self._http_base}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            r.raise_for_status()
+            data = r.json()
+            choices = data.get("choices") or []
+            if not choices:
+                return ""
+            msg = choices[0].get("message") or {}
+            return msg.get("content") or ""
 
     # ------------------------------------------------------------------
     # Public API
@@ -120,8 +144,14 @@ class LLMService:
             completion = await self._client.chat.completions.create(**self._request(prompt, False))
             return completion.choices[0].message.content or ""
         except Exception as exc:  # noqa: BLE001
-            logger.error(f"LLM generation error: {exc}")
-            return GENERATION_ERROR_MESSAGE
+            # Windows AppLocker sometimes blocks the OpenAI SDK's jiter DLL;
+            # retry once over plain HTTP so local llama.cpp keeps working.
+            logger.warning(f"LLM SDK error ({exc}); retrying via httpx…")
+            try:
+                return await self._agenerate_httpx(prompt)
+            except Exception as exc2:  # noqa: BLE001
+                logger.error(f"LLM generation error: {exc2}")
+                return GENERATION_ERROR_MESSAGE
 
     async def astream(self, prompt: str) -> AsyncIterator[str]:
         """Yield the response to *prompt* piece by piece, as it is generated.

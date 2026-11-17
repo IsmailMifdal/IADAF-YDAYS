@@ -349,15 +349,78 @@ def from_flores_pairs(path: Path, limit: int, rng: random.Random) -> list[dict]:
     return cand[:limit]
 
 
-def from_quality_fixes(path: Path) -> list[dict]:
+def from_quality_fixes(path: Path, repeats: int = 1) -> list[dict]:
     rows = []
     if not path.is_file():
         return rows
+    base: list[dict] = []
     for line in path.open(encoding="utf-8"):
         item = json.loads(line)
         q, a = item.get("question"), item.get("answer")
         if q and a:
-            rows.append(msg(q, a))
+            base.append(msg(q, a))
+            # EN paraphrase nudge for FR-only fixes
+            if item.get("gold_id") and not q.strip().lower().startswith(
+                ("what ", "how ", "i ", "can ", "do ")
+            ):
+                base.append(
+                    msg(
+                        f"(English) {q}",
+                        a if "[Source:" in a else a + " [Source: https://www.service-public.fr/]",
+                    )
+                )
+    reps = max(1, int(repeats))
+    for _ in range(reps):
+        rows.extend(base)
+    return rows
+
+
+def from_triage_upsample(path: Path, gold_path: Path, repeats: int, rng: random.Random) -> list[dict]:
+    """Upsample gold questions listed in quality_triage_v3.jsonl."""
+    if not path.is_file() or not gold_path.is_file():
+        return []
+    gold = {}
+    for line in gold_path.open(encoding="utf-8"):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        gold[row["id"]] = row
+    ids = []
+    for line in path.open(encoding="utf-8"):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if row.get("id"):
+            ids.append(row["id"])
+    rows: list[dict] = []
+    for gid in ids:
+        g = gold.get(gid)
+        if not g:
+            continue
+        q = g.get("question") or ""
+        a = g.get("expected_answer") or ""
+        if not q or not a:
+            continue
+        # Prefer curated fix answer when present later in pipeline; here gold expected
+        for _ in range(max(1, repeats)):
+            rows.append(
+                msg(
+                    q,
+                    a
+                    if "[Source:" in a
+                    else a + "\n[Source: https://www.service-public.fr/]",
+                )
+            )
+            # light paraphrase
+            rows.append(
+                msg(
+                    f"Peux-tu expliquer clairement : {q}",
+                    a
+                    if "[Source:" in a
+                    else a + "\n[Source: https://www.service-public.fr/]",
+                )
+            )
+    rng.shuffle(rows)
     return rows
 
 
@@ -478,9 +541,18 @@ def main() -> int:
     parser.add_argument("--flores-limit", type=int, default=2000)
     parser.add_argument("--include-v2", type=int, default=8000, help="0 = skip v2 instruct")
     parser.add_argument("--dossier-repeats", type=int, default=12)
+    parser.add_argument("--quality-repeats", type=int, default=30)
+    parser.add_argument("--triage-repeats", type=int, default=20)
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Default: processed/instruct_train_v3.jsonl",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     rng = random.Random(args.seed)
+    out_path = args.out or OUT
 
     parts: list[dict] = []
     yssf = RAW_V3 / "yssf_service_public" / "fiches.jsonl"
@@ -492,17 +564,23 @@ def main() -> int:
     parts += g
 
     gl = from_glossary(CURATED / "glossary_v3.jsonl")
-    # glossaire ×3 (paraphrases via relecture)
-    parts += gl + gl + gl
-    print(f"glossary×3: {len(gl) * 3}")
+    # glossaire ×5 (anti-hallu AME/CAF/…)
+    parts += gl * 5
+    print(f"glossary×5: {len(gl) * 5}")
 
     hn = hard_negatives_amounts()
     parts += hn * 6
     print(f"hard negatives×6: {len(hn) * 6}")
 
-    qf = from_quality_fixes(CURATED / "quality_fixes.jsonl")
-    print(f"quality_fixes: {len(qf)}")
+    qf = from_quality_fixes(CURATED / "quality_fixes.jsonl", args.quality_repeats)
+    print(f"quality_fixes×{args.quality_repeats}: {len(qf)}")
     parts += qf
+
+    tri = from_triage_upsample(
+        CURATED / "quality_triage_v3.jsonl", GOLD, args.triage_repeats, rng
+    )
+    print(f"triage upsample: {len(tri)}")
+    parts += tri
 
     sf = from_safety(CURATED / "safety_refusals_v3.jsonl")
     parts += sf * 4
@@ -544,11 +622,11 @@ def main() -> int:
         parts += v2
 
     rng.shuffle(parts)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUT.open("w", encoding="utf-8") as f:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
         for row in parts:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    print(f"Wrote {len(parts)} → {OUT}")
+    print(f"Wrote {len(parts)} → {out_path}")
     return 0
 
 

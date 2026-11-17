@@ -8,9 +8,14 @@ from typing import Literal, Optional
 
 Skill = Literal["qa", "checklist", "precheck", "prefill", "refuse"]
 
+# Only clear harmful / illegal intents — never route admin Q&A (EN/FR) to refuse.
 _REFUSE = re.compile(
-    r"(pirat\w*|hack(?:er|ing)?|bombe|explosi\w*|drogue|tuer|assassin|child\s*porn|"
-    r"contrefa[cç]on|faux\s+(document|titre|papier)|fraude\s+fiscale)",
+    # Word boundaries: pirat\w* alone matched "piration" inside "expiration".
+    r"(\bpirat(?:e|er|age|ing)?\b|\bhack(?:er|ing)?\b|\bbombe\b|\bexplosi\w*|"
+    r"drogue\s+(de\s+synth[eè]se|dure)|"
+    r"\btuer\b|\bassassin|\bchild\s*porn|\bcontrefa[cç]on\b|"
+    r"faux\s+(document|titre|papier)\s+(pour|afin)|\bmalware\b|\bransomware\b|"
+    r"fabriquer\s+un\s+faux)",
     re.I,
 )
 _CHECKLIST = re.compile(

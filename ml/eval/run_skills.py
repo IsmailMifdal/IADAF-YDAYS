@@ -21,7 +21,7 @@ from app.skills.prefill import build_prefill_recap  # noqa: E402
 from app.skills.service import run_skill  # noqa: E402
 from app.documents import rules  # noqa: E402
 
-OUT = ROOT / "artifacts" / "eval_skills.json"
+OUT = ROOT / "artifacts" / "results" / "current" / "eval_skills.json"
 
 
 CASES = [

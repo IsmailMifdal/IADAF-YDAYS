@@ -26,8 +26,9 @@ _EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 _COLLECTION = "iadaf_knowledge"
 # Part of the fingerprint: changing how the index is built (LangChain → direct
 # ChromaDB) must rebuild it, even with the same files and model.
-_INDEX_FORMAT = "chromadb-direct-1"
-_TOP_K = 5
+_INDEX_FORMAT = "chromadb-direct-hybrid-2"
+_TOP_K = 8
+_RETRIEVE_POOL = 40
 # Below ChromaDB's maximum batch size.
 _BATCH = 500
 # Fingerprint of what the persisted index was built from (knowledge base files
@@ -63,8 +64,11 @@ RÈGLES OBLIGATOIRES :
 2. N'invente JAMAIS montants (timbres), numéros CERFA, délais précis ni définitions d'acronymes hors contexte.
 3. Si l'info manque dans le contexte, dis-le clairement et renvoie vers service-public.fr / l'organisme compétent.
 4. Si un « ÉTAT DU DOSSIER » est fourni, utilise-le comme source de vérité pour les pièces (ne pas inventer d'autres listes).
-5. Refuse poliment le hors-périmètre illégal / dangereux ; recentre sur l'administratif.
-6. Structure : documents / étapes / liens utiles quand c'est pertinent. Réponds en français.
+5. Refuse UNIQUEMENT le hors-périmètre illégal / dangereux. Les questions admin FR/EN (définitions CAF, CPAM, AME, impôts, séjour…) sont DANS le périmètre — réponds.
+6. Structure : documents / étapes / liens utiles quand c'est pertinent. Réponds dans la langue de la question.
+
+Glossaire (si pertinent) :
+{glossary}
 
 Contexte officiel :
 {context}
@@ -82,8 +86,11 @@ MANDATORY RULES:
 2. NEVER invent fees, CERFA numbers, exact deadlines, or acronym definitions not in context.
 3. If information is missing, say so and point to service-public.fr / the competent authority.
 4. If a DOSSIER STATE block is present, treat it as ground truth for required documents.
-5. Politely refuse illegal / dangerous off-scope requests; refocus on admin help.
+5. Refuse ONLY illegal / dangerous off-scope requests. English questions about French admin (CAF, CPAM, AME, taxes, residence permits, récépissé…) ARE in scope — answer them.
 6. Respond in English, structured and factual.
+
+Glossary (when relevant):
+{glossary}
 
 Official context:
 {context}
@@ -101,7 +108,10 @@ Factual structured answer:\
 2. لا تخترع أبدًا مبالغًا أو أرقام CERFA أو مواعيد دقيقة خارج السياق.
 3. إذا نقصت المعلومة، صرّح بذلك وأحل إلى service-public.fr أو الجهة المختصة.
 4. إن وُجدت حالة ملف (ÉTAT DU DOSSIER) فاعتبارها مرجع الوثائق المطلوبة.
-5. ارفض بلطف الطلبات غير القانونية/الخطرة. أجب بالعربية.
+5. ارفض فقط الطلبات غير القانونية/الخطرة. الأسئلة الإدارية ضمن النطاق. أجب بالعربية.
+
+المسرد:
+{glossary}
 
 السياق الرسمي:
 {context}
@@ -119,7 +129,10 @@ REGLAS OBLIGATORIAS:
 2. NUNCA inventes importes, números CERFA ni plazos exactos fuera del contexto.
 3. Si falta información, dilo y remite a service-public.fr / el organismo competente.
 4. Si hay un bloque ÉTAT DU DOSSIER, úsalo como verdad para las piezas.
-5. Rechaza con cortesía lo ilegal/peligroso. Responde en español.
+5. Rechaza SOLO lo ilegal/peligroso. Las preguntas admin están DENTRO del alcance. Responde en español.
+
+Glosario:
+{glossary}
 
 Contexto oficial:
 {context}
@@ -129,6 +142,39 @@ Pregunta:
 
 Respuesta factual y estructurada:\
 """,
+}
+
+# Critical glossary lines injected when query matches (anti-hallu runtime).
+_GLOSSARY_SNIPPETS = {
+    "ame": "AME = Aide Médicale de l'État (soins sous conditions). PAS un compte bancaire. ≠ PUMa.",
+    "puma": "PUMa = Protection Universelle Maladie (résidence stable). ≠ AME.",
+    "caf": "CAF = Caisse d'Allocations Familiales (prestations / logement). ≠ CPAM.",
+    "cpam": "CPAM = Caisse Primaire d'Assurance Maladie (Vitale, remboursements). ≠ CAF.",
+    "anef": "ANEF = portail démarches séjour étrangers. ≠ ANTS.",
+    "ants": "ANTS = titres sécurisés (CNI, passeport, permis, carte grise). ≠ ANEF.",
+    "récépissé": "Récépissé = preuve de dépôt d'une demande de titre ; pas un titre complet ; voyage souvent limité.",
+    "recepisse": "Récépissé = preuve de dépôt d'une demande de titre ; pas un titre complet ; voyage souvent limité.",
+    "cerfa": "CERFA = formulaire officiel numéroté — ne jamais inventer le numéro.",
+    "timbre": "Timbre fiscal = taxe ; ne jamais inventer le montant — renvoyer vers le site officiel.",
+    "apl": "APL / ALS / ALF = aides logement distinctes (CAF).",
+    "numéro fiscal": "Numéro fiscal = identifiant impôts (avis) ; ≠ NIR Sécurité sociale.",
+    "numero fiscal": "Numéro fiscal = identifiant impôts (avis) ; ≠ NIR Sécurité sociale.",
+    "tax number": "Numéro fiscal = French tax ID on your notice; not the social-security NIR.",
+    "revenu fiscal": (
+        "Revenu fiscal de référence (RFR) = montant sur l'avis d'imposition ; "
+        "sert souvent de critère pour des droits / aides (CAF, etc.)."
+    ),
+    "rfr": (
+        "RFR = revenu fiscal de référence figurant sur l'avis d'imposition ; "
+        "utilisé pour des droits CAF et autres aides."
+    ),
+    "renouvel": (
+        "Renouvellement titre de séjour : en pratique, engager la démarche "
+        "au moins 2 mois avant la date d'expiration (ANEF / préfecture)."
+    ),
+    "expiration": (
+        "Avant expiration du titre : anticiper le renouvellement (souvent ≥ 2 mois) via ANEF."
+    ),
 }
 
 
@@ -263,15 +309,53 @@ class RAGService:
         return passages
 
     def _retrieve(self, question: str) -> List[Passage]:
+        """Dense Chroma pool + lexical/title/digit boost (hybrid light)."""
+        import re
+
+        n = min(max(_RETRIEVE_POOL, _TOP_K), max(self._collection.count(), 1))
         result = self._collection.query(
             query_embeddings=self._embed([question]),
-            n_results=_TOP_K,
+            n_results=n,
             include=["documents", "metadatas"],
         )
-        return [
-            Passage(text=text, source=meta.get("source", ""), title=meta.get("title", ""))
-            for text, meta in zip(result["documents"][0], result["metadatas"][0])
-        ]
+        docs = result["documents"][0] if result["documents"] else []
+        metas = result["metadatas"][0] if result["metadatas"] else []
+        q_low = (question or "").lower().strip()
+        q_compact = re.sub(r"[^\w]+", "", q_low, flags=re.UNICODE)
+        q_toks = set(re.findall(r"[a-zàâäéèêëïîôùûüç0-9]{2,}", q_low))
+        digits = re.findall(r"\d{2,5}", q_low)
+        scored: List[Tuple[float, Passage]] = []
+        for rank, (text, meta) in enumerate(zip(docs, metas)):
+            title = meta.get("title", "") if meta else ""
+            source = meta.get("source", "") if meta else ""
+            hay = f"{title}\n{text}".lower()
+            # RRF-ish prior from dense rank
+            score = 1.0 / (60 + rank + 1)
+            title_l = (title or "").lower().strip()
+            if title_l and (title_l == q_low or re.sub(r"[^\w]+", "", title_l) == q_compact):
+                score += 2.5
+            elif title_l and (title_l in q_low or q_low in title_l):
+                score += 1.2
+            for key in _GLOSSARY_SNIPPETS:
+                if key in q_low and key in hay:
+                    score += 0.2
+            for dig in digits:
+                if dig in hay:
+                    score += 0.9
+            hay_toks = set(re.findall(r"[a-zàâäéèêëïîôùûüç0-9]{2,}", hay))
+            if q_toks and hay_toks:
+                score += 0.35 * (len(q_toks & hay_toks) / max(len(q_toks), 1))
+            if "quality_v3" in source or source.endswith("patches.json"):
+                score += 0.15
+            scored.append((score, Passage(text=text, source=source, title=title)))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [p for _, p in scored[:_TOP_K]]
+
+    @staticmethod
+    def _glossary_for(question: str) -> str:
+        q = (question or "").lower()
+        lines = [snip for key, snip in _GLOSSARY_SNIPPETS.items() if key in q]
+        return "\n".join(f"- {line}" for line in lines[:6]) if lines else "(aucun terme critique détecté)"
 
     # ------------------------------------------------------------------
     # Public query interface
@@ -287,10 +371,21 @@ class RAGService:
 
         # Embedding the question is CPU-bound: off the event loop.
         passages = await asyncio.to_thread(self._retrieve, question)
-        context = "\n\n---\n\n".join(passage.text for passage in passages)
+        # Cap context so prompt + generation fit a slot (~8k) with margin.
+        blocks: List[str] = []
+        size = 0
+        max_chars = 4500
+        for passage in passages:
+            block = passage.text
+            if size + len(block) > max_chars and blocks:
+                break
+            blocks.append(block)
+            size += len(block)
+        context = "\n\n---\n\n".join(blocks)
         sources = list({passage.source for passage in passages if passage.source})
         template = _SYSTEM_PROMPT_TEMPLATE.get(language.upper(), _SYSTEM_PROMPT_TEMPLATE["FR"])
-        return template.format(context=context, question=question), sources
+        glossary = self._glossary_for(question)
+        return template.format(context=context, question=question, glossary=glossary), sources
 
     async def aquery(self, question: str, language: str = "FR") -> Dict[str, Any]:
         """Answer *question* using the RAG pipeline.

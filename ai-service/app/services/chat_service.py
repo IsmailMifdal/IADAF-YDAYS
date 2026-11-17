@@ -11,7 +11,35 @@ from app.models import database
 from app.models.database import Conversation, Message
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
+from app.skills.faq_overlay import faq_overlay
 from app.skills.service import run_skill
+
+
+def _detect_language(message: str, fallback: str = "FR") -> str:
+    """Lightweight EN/FR detection for prompt templates (admin Q often EN)."""
+    text = (message or "").strip()
+    if not text:
+        return fallback
+    # Explicit Latin admin phrases
+    lower = text.lower()
+    en_markers = (
+        "what is",
+        "how do",
+        "how can",
+        "i just",
+        "can i",
+        "do i",
+        "please",
+        "account on",
+    )
+    if any(m in lower for m in en_markers):
+        return "EN"
+    # Heuristic: many ASCII words and few French accents → EN
+    ascii_letters = sum(1 for c in text if "a" <= c.lower() <= "z")
+    fr_marks = sum(1 for c in text if c in "àâäéèêëïîôùûüçÀÂÄÉÈÊËÏÎÔÙÛÜÇ")
+    if ascii_letters > 12 and fr_marks == 0 and any(w in lower for w in ("the", "is", "my", "a ")):
+        return "EN"
+    return fallback or "FR"
 
 STREAM_ERROR_MESSAGE = (
     "La réponse a été interrompue par une erreur. Veuillez réessayer ; "
@@ -48,7 +76,8 @@ class ChatService:
             dict with ``response`` (str), ``conversation_id`` (str),
             and ``sources`` (list[str]).
         """
-        conversation = await self._start_turn(session, message, conversation_id, language, user_id)
+        lang = _detect_language(message, language or "FR")
+        conversation = await self._start_turn(session, message, conversation_id, lang, user_id)
 
         skill_result = run_skill(
             message,
@@ -59,13 +88,18 @@ class ChatService:
         )
         sources: List[str] = []
         if skill_result.get("needs_llm"):
-            question = message
-            state_block = skill_result.get("prompt_state")
-            if state_block:
-                question = f"{state_block}\n\nQuestion: {message}"
-            result = await rag_service.aquery(question=question, language=language)
-            answer = result["answer"]
-            sources = result.get("sources", [])
+            faq = faq_overlay.match(message)
+            if faq:
+                answer = faq
+                sources = ["quality_v3_patches.json"]
+            else:
+                question = message
+                state_block = skill_result.get("prompt_state")
+                if state_block:
+                    question = f"{state_block}\n\nQuestion: {message}"
+                result = await rag_service.aquery(question=question, language=lang)
+                answer = result["answer"]
+                sources = result.get("sources", [])
         else:
             answer = skill_result.get("response") or ""
 
@@ -106,9 +140,10 @@ class ChatService:
         Opens its own session: the stream outlives the request handler, and
         with it any session the handler's dependencies provided.
         """
+        lang = _detect_language(message, language or "FR")
         async with AsyncSession(database.engine, expire_on_commit=False) as session:
             conversation = await self._start_turn(
-                session, message, conversation_id, language, user_id
+                session, message, conversation_id, lang, user_id
             )
             # The question is kept even if the answer fails, as in chat().
             await session.commit()
@@ -139,7 +174,7 @@ class ChatService:
                 state_block = skill_result.get("prompt_state")
                 if state_block:
                     question = f"{state_block}\n\nQuestion: {message}"
-                prompt, sources = await rag_service.prepare(question, language)
+                prompt, sources = await rag_service.prepare(question, lang)
                 async for piece in llm_service.astream(prompt):
                     pieces.append(piece)
                     yield "token", {"text": piece}

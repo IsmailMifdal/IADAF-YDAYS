@@ -193,7 +193,7 @@ def main() -> int:
         "success": success,
         "dry_run": args.dry_run,
     }
-    out = ROOT / "artifacts" / "eval_coherence.json"
+    out = ROOT / "artifacts" / "results" / "current" / "eval_coherence.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"coherence_mean={mean_all:.3f} threshold={min_sim} success={success}")

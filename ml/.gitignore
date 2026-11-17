@@ -3,7 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 .venv/
+.venv-trtllm/
 venv/
+
+# Runtime local (Postgres embarqué, logs serve, scripts outils)
+.tools/
 
 # Datasets régénérables (download.py + build_*.py)
 datasets/raw/**

@@ -59,11 +59,21 @@ def load_passages(yssf_limit: int | None) -> list[dict]:
                         }
                     )
                 n += 1
-    # KB locale légère
-    for name in ("faq.json", "demarches.json", "service_public.json"):
+    # KB locale légère (+ patches qualité v3)
+    kb_names = (
+        "faq.json",
+        "demarches.json",
+        "service_public.json",
+        "quality_v3_patches.json",
+    )
+    curated_patch = ROOT / "datasets" / "curated" / "quality_kb_patches.json"
+    for name in kb_names:
         path = KB / name
         if not path.is_file():
-            continue
+            if name == "quality_v3_patches.json" and curated_patch.is_file():
+                path = curated_patch
+            else:
+                continue
         data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, list):
             items = data
@@ -95,6 +105,31 @@ def load_passages(yssf_limit: int | None) -> list[dict]:
                         "source": f"kb:{name}",
                     }
                 )
+    # Glossaire critique (une entrée = un passage dense pour Hit@k acronymes)
+    gloss = ROOT / "datasets" / "curated" / "glossary_v3.jsonl"
+    if gloss.is_file():
+        for i, line in enumerate(gloss.open(encoding="utf-8")):
+            if not line.strip():
+                continue
+            g = json.loads(line)
+            term = g.get("term") or ""
+            definition = g.get("definition") or ""
+            conf = ", ".join(g.get("confusions") or [])
+            url = g.get("url") or "https://www.service-public.fr/"
+            text = (
+                f"{term}: {definition}\n"
+                f"Ne pas confondre avec: {conf}.\n"
+                f"What is {term}? / C'est quoi {term} ?"
+            )
+            passages.append(
+                {
+                    "id": f"glossary_{i}_{term}",
+                    "text": text,
+                    "url": url,
+                    "title": term,
+                    "source": "curated:glossary_v3",
+                }
+            )
     return passages
 
 

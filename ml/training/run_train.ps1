@@ -8,6 +8,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
+$Python = if (Test-Path "$Root\.venv\Scripts\python.exe") {
+    "$Root\.venv\Scripts\python.exe"
+} else {
+    "python"
+}
 
 $env:KMP_DUPLICATE_LIB_OK = "TRUE"
 $env:OMP_NUM_THREADS = "1"
@@ -24,13 +29,14 @@ if (-not $Config) {
 
 Write-Host "== IADAF ML train chat (v2 Qwen3-8B) ==" -ForegroundColor Cyan
 Write-Host "Config: $Config"
+Write-Host "Python: $Python"
 Write-Host "KMP_DUPLICATE_LIB_OK=$env:KMP_DUPLICATE_LIB_OK"
 
 if (-not (Test-Path "$Root\datasets\processed\instruct_train.jsonl")) {
     Write-Host "Building instruct dataset…"
-    python "$Root\datasets\download.py" --skip-hf
+    & $Python "$Root\datasets\download.py" --skip-hf
     if ($LASTEXITCODE -ne 0) { throw "download.py failed" }
-    python "$Root\datasets\build_instruct.py"
+    & $Python "$Root\datasets\build_instruct.py"
     if ($LASTEXITCODE -ne 0) { throw "build_instruct.py failed" }
 }
 
@@ -39,7 +45,7 @@ Write-Host "Arrête llama-server / Strata / VL avant le train (libère la VRAM).
 $outLora = if ($V1) { "$Root\artifacts\lora_v1" } else { "$Root\artifacts\lora" }
 $outMerged = if ($V1) { "$Root\artifacts\merged_v1" } else { "$Root\artifacts\merged" }
 
-python "$Root\training\train_qlora.py" `
+& $Python "$Root\training\train_qlora.py" `
     --config $Config `
     --data "$Root\datasets\processed\instruct_train.jsonl" `
     --out $outLora
@@ -52,7 +58,7 @@ if ($SkipExport) {
     exit 0
 }
 
-python "$Root\training\export_gguf.py" `
+& $Python "$Root\training\export_gguf.py" `
     --config $Config `
     --adapter $outLora `
     --merged $outMerged `

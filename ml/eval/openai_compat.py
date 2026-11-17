@@ -1,4 +1,4 @@
-"""Helpers for OpenAI-compatible APIs (Strata / Qwen thinking models)."""
+"""Helpers for OpenAI-compatible APIs (llama.cpp / TRT-LLM / Qwen)."""
 
 from __future__ import annotations
 
@@ -58,7 +58,6 @@ def chat_payload(
         "messages": messages,
     }
     if disable_thinking:
-        # Accepted by several Qwen3 OpenAI-compatible servers; ignored if unknown
+        # Qwen3 chat template; TRT-LLM rejects top-level enable_thinking (extra_forbidden)
         body["chat_template_kwargs"] = {"enable_thinking": False}
-        body["enable_thinking"] = False
     return body

@@ -1,0 +1,677 @@
+[
+  {
+    "id": "kb_q013",
+    "question": "Puis-je aller aux urgences sans carte Vitale ?",
+    "answer": "Oui, les urgences hospitalières sont accessibles à tous. Présentez une pièce d'identité si possible et contactez ensuite votre assurance maladie / CPAM pour la prise en charge. L'AME peut exister selon la situation. [Source: https://www.ameli.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q013"
+    ]
+  },
+  {
+    "id": "kb_q024",
+    "question": "How do I create an account on impots.gouv.fr?",
+    "answer": "Go to https://www.impots.gouv.fr/ and create a personal space (espace particulier) with your tax number (numéro fiscal) and reference income notice when asked. This is a standard French tax admin step, fully in scope for IADAF. [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q024"
+    ]
+  },
+  {
+    "id": "kb_q029",
+    "question": "Je veux naturalisation française, par où commencer ?",
+    "answer": "Vérifiez d'abord les conditions (résidence, assimilation, casier, etc.) sur service-public.fr, puis constitution du dossier et dépôt selon votre situation (souvent en ligne). Ne confondez pas naturalisation et titre de séjour. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q029"
+    ]
+  },
+  {
+    "id": "kb_q039",
+    "question": "Faut-il un titre de séjour pour demander la CAF ?",
+    "answer": "Le droit CAF dépend surtout de la résidence stable en France et de la situation familiale/ressources. Un titre peut être demandé selon la prestation, mais ce n'est pas toujours le même critère pour toutes les aides. Vérifiez votre cas sur caf.fr. [Source: https://www.caf.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q039"
+    ]
+  },
+  {
+    "id": "kb_q055",
+    "question": "What is a récépissé?",
+    "answer": "A récépissé is an official receipt proving you filed a residence-permit (titre de séjour) application or renewal. It often allows you to stay lawfully while the file is processed; it is not a full residence card and usually does not allow travel like a titre. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q055"
+    ]
+  },
+  {
+    "id": "kb_q056",
+    "question": "Qu'est-ce que l'AME ?",
+    "answer": "L'AME (Aide Médicale de l'État) est une prise en charge des soins pour certaines personnes en situation irrégulière résidant en France, sous conditions (souvent 3 mois de résidence). Ce n'est PAS un compte bancaire. Ne pas confondre avec la PUMa (Protection Universelle Maladie). [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q056"
+    ]
+  },
+  {
+    "id": "kb_q057",
+    "question": "Je suis hébergé, la facture d'électricité n'est pas à mon nom : que faire ?",
+    "answer": "Fournissez une attestation d'hébergement signée par l'hébergeant, sa pièce d'identité et son justificatif de domicile (facture énergie / quittance). La facture au nom de l'hébergeant est normale dans ce cas. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q057"
+    ]
+  },
+  {
+    "id": "kb_q059",
+    "question": "Photos d'identité : quelles règles pour un dossier préfecture ?",
+    "answer": "Les photos doivent respecter les normes officielles (fond neutre, face, récentes, format agréé). Des photos non conformes rendent le dossier incomplet et retardent le traitement. Utilisez un photographe ou une cabine agréée. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q059"
+    ]
+  },
+  {
+    "id": "kb_q061",
+    "question": "Un titre de séjour 'vie privée et familiale', ça concerne qui ?",
+    "answer": "La carte de séjour « vie privée et familiale » concerne certaines situations familiales/personnelles prévues par le CESEDA (liens familiaux en France, etc.). Ce n'est pas la même chose qu'un titre étudiant ou salarié. Vérifiez le motif exact sur service-public.fr / ANEF. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q061"
+    ]
+  },
+  {
+    "id": "kb_q064",
+    "question": "Je suis étudiant étranger, dois-je déclarer ?",
+    "answer": "Oui, selon votre situation vous pouvez avoir des obligations déclaratives (impôts si revenus, parfois résidence). Pour les impôts : espace particulier sur impots.gouv.fr. Pour le séjour : respectez les conditions du titre étudiant. [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q064"
+    ]
+  },
+  {
+    "id": "kb_q067",
+    "question": "What is CPAM?",
+    "answer": "CPAM means Caisse Primaire d'Assurance Maladie: the local health-insurance fund for affiliation, Carte Vitale and reimbursements (ameli.fr). Do not confuse with CAF (family allowances). [Source: https://www.ameli.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q067"
+    ]
+  },
+  {
+    "id": "kb_q070",
+    "question": "Quels formats de pièces IADAF accepte pour un dépôt ?",
+    "answer": "IADAF accepte en général des scans/photos lisibles de pièces (PDF/JPEG/PNG) pour pré-vérification. Évitez les fichiers flous, tronqués ou protégés. Les contrôles MRZ/IBAN/dates sont déterministes. Ce n'est pas une validation juridique finale. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q070"
+    ]
+  },
+  {
+    "id": "kb_q072",
+    "question": "Je suis salarié, mon employeur gère-t-il l'affiliation ?",
+    "answer": "Souvent l'employeur déclare l'embauche ; l'affiliation à l'Assurance Maladie / ouverture des droits se fait ensuite via la CPAM / ameli. Conservez contrat, RIB et justificatif de domicile. [Source: https://www.ameli.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q072"
+    ]
+  },
+  {
+    "id": "kb_q078",
+    "question": "Je déménage le mois prochain, quand prévenir la CAF ?",
+    "answer": "Signalez votre déménagement à la CAF dès que possible, idéalement avant ou juste après l'emménagement, via votre espace caf.fr. Les aides logement dépendent de la nouvelle adresse et de la situation. Ne inventez pas un délai unique pour toutes les prestations. [Source: https://www.caf.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q078"
+    ]
+  },
+  {
+    "id": "kb_q079",
+    "question": "What is a numéro fiscal?",
+    "answer": "The numéro fiscal is your French tax identifier shown on your tax notice (avis d'imposition). You need it to create/access your account on impots.gouv.fr. It is not your social-security number (NIR). [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q079"
+    ]
+  },
+  {
+    "id": "kb_q083",
+    "question": "Que se passe-t-il si je fournis un justificatif de domicile de plus de 3 mois ?",
+    "answer": "Beaucoup d'administrations exigent un justificatif récent (souvent de moins de 3 mois). Un document trop ancien peut rendre le dossier incomplet et retarder le traitement. Fournissez une facture/quittance récente ou une attestation d'hébergement conforme. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q083"
+    ]
+  },
+  {
+    "id": "kb_q084",
+    "question": "Puis-je faire ma déclaration sur papier ?",
+    "answer": "La déclaration de revenus se fait surtout en ligne sur impots.gouv.fr. Une déclaration papier peut rester possible dans certains cas (première déclaration, absence d'accès numérique) selon les consignes DGFIP de l'année. Vérifiez la notice officielle. [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q084"
+    ]
+  },
+  {
+    "id": "kb_q088",
+    "question": "Faut-il un avis d'imposition pour la CAF ?",
+    "answer": "Pas toujours : la CAF récupère souvent les ressources automatiquement. Un avis d'imposition peut être demandé selon la prestation ou en cas de contrôle. Suivez la liste de pièces de votre dossier sur caf.fr. [Source: https://www.caf.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q088"
+    ]
+  },
+  {
+    "id": "kb_q090",
+    "question": "Un scan flou de passeport sera-t-il accepté ?",
+    "answer": "Un scan flou risque d'être refusé : la MRZ et l'identité doivent être lisibles. Refaites une photo/scan net, entier, sans reflets. IADAF peut signaler un problème qualité sans valider juridiquement le dossier. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q090"
+    ]
+  },
+  {
+    "id": "kb_q094",
+    "question": "What is CAF?",
+    "answer": "CAF means Caisse d'Allocations Familiales: family benefits and housing aid (APL/ALS/ALF). It is not the CPAM (health insurance). Official site: caf.fr. [Source: https://www.caf.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q094"
+    ]
+  },
+  {
+    "id": "kb_q099",
+    "question": "IADAF stocke-t-il mes pièces indéfiniment ?",
+    "answer": "Non. IADAF conserve les pièces le temps du traitement de la démarche / pack, avec une durée limitée (RGPD). Vous pouvez supprimer votre espace ; ce n'est pas une archive illimitée. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q099"
+    ]
+  },
+  {
+    "id": "kb_q102",
+    "question": "Comment faire une carte grise en ligne ?",
+    "answer": "La carte grise (certificat d'immatriculation) se demande en ligne via le site de l'ANTS : https://immatriculation.ants.gouv.fr/ . Préparez identité, contrôle technique si requis, et justificatifs du véhicule. [Source: https://ants.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q102"
+    ]
+  },
+  {
+    "id": "kb_en_0",
+    "question": "What is AME?",
+    "answer": "AME (Aide Médicale de l'État) is state medical aid for eligible irregular residents. It is NOT a bank account. Do not confuse with PUMa. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "en"
+    ]
+  },
+  {
+    "id": "kb_en_1",
+    "question": "What is PUMa?",
+    "answer": "PUMa is France's universal health coverage for people residing stably in France. Different from AME. [Source: https://www.ameli.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "en"
+    ]
+  },
+  {
+    "id": "kb_en_2",
+    "question": "What is ANEF?",
+    "answer": "ANEF is the online portal for many residence-permit procedures for foreigners in France. Not ANTS (IDs/driving/vehicle). [Source: https://administration-etrangers-en-france.interieur.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "en"
+    ]
+  },
+  {
+    "id": "kb_en_3",
+    "question": "What is ANTS?",
+    "answer": "ANTS issues secure titles: ID card, passport, driving licence, vehicle registration (carte grise). Not ANEF. [Source: https://ants.gouv.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "en"
+    ]
+  },
+  {
+    "id": "kb_iadaf_formats",
+    "question": "Formats de pièces acceptés par IADAF",
+    "answer": "PDF, JPEG, PNG lisibles ; éviter flou/troncature. Pré-vérification qualité/MRZ/IBAN déterministe.",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "product"
+    ]
+  },
+  {
+    "id": "kb_iadaf_retention",
+    "question": "Durée de conservation des pièces IADAF",
+    "answer": "Conservation limitée au traitement du dossier/pack (RGPD), pas de stockage indéfini.",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "product"
+    ]
+  },
+  {
+    "id": "kb_q015",
+    "question": "Quels documents pour l'affiliation CPAM ?",
+    "answer": "Affiliation CPAM / Assurance Maladie : pièce d'identité (ou titre de séjour), justificatif de domicile de moins de 3 mois, RIB, et formulaire cerfa selon la situation (activité, études…). Démarche via ameli.fr / CPAM. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "quality_v3",
+      "q015",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q017",
+    "question": "Quels documents pour une demande CAF / APL ?",
+    "answer": "Demande CAF / APL : pièce d'identité ou titre de séjour, RIB, bail (contrat de location) ou attestation de logement, justificatifs de ressources (avis d'imposition, salaires). Enfants : actes d'état civil si allocations familiales. Dépôt sur caf.fr. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q017",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q019",
+    "question": "Qu'est-ce qu'un justificatif de domicile accepté pour la CAF ?",
+    "answer": "Un justificatif de domicile accepté pour la CAF date en général de moins de 3 mois : facture d'énergie/eau/internet, quittance de loyer, ou attestation d'hébergement complète. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q019"
+    ]
+  },
+  {
+    "id": "kb_q020",
+    "question": "¿Puedo pedir la APL si acabo de firmar el contrato de alquiler?",
+    "answer": "Sí, puede solicitar la APL tras firmar el bail (contrato de alquiler). Prepare el bail, RIB y situación en caf.fr. La APL depende de recursos y vivienda. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q020"
+    ]
+  },
+  {
+    "id": "kb_q027",
+    "question": "Comment ouvrir un compte bancaire en France ?",
+    "answer": "Pour ouvrir un compte bancaire en France : présentez une pièce d'identité (ou titre de séjour) et un justificatif de domicile. Certaines banques en ligne acceptent un parcours 100 % digital. En cas de refus injustifié, droit au compte via la Banque de France. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q027",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q028",
+    "question": "ما هو إثبات السكن في فرنسا؟",
+    "answer": "إثبات السكن في فرنسا هو وثيقة حديثة (غالبا أقل من 3 أشهر): فاتورة كهرباء/غاز/ماء، إيجار أو وصل كراء، أو شهادة استضافة مع هوية المضيف. يُطلب للسكن والإقامة والإدارات. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q028"
+    ]
+  },
+  {
+    "id": "kb_q033",
+    "question": "Quel est le délai de traitement d'une demande CAF ?",
+    "answer": "Le délai de traitement d'une demande CAF varie selon la prestation ; comptez souvent plusieurs semaines. Suivez l'avancement sur caf.fr et complétez les pièces manquantes rapidement. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q033"
+    ]
+  },
+  {
+    "id": "kb_q040",
+    "question": "What documents prove my address in France?",
+    "answer": "Proof of address in France: a recent utility bill (electricity, gas, water, internet) or rent receipt less than 3 months old, or a host attestation with the host's ID and proof of address. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q040",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q042",
+    "question": "Le 36 46, c'est quoi ?",
+    "answer": "Le 36 46 (3646) est le numéro de téléphone Ameli / CPAM pour joindre l'Assurance Maladie. Vous pouvez aussi utiliser l'espace ameli.fr. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "quality_v3",
+      "q042",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q056b",
+    "question": "Qu'est-ce que l'AME ?",
+    "answer": "L'AME (Aide Médicale de l'État) couvre certains soins pour personnes en situation irrégulière résidant en France sous conditions (souvent résidence de 3 mois). Ce n'est PAS un compte bancaire. Ne pas confondre avec PUMa. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q056"
+    ]
+  },
+  {
+    "id": "kb_q075",
+    "question": "Pourquoi IADAF me demande un RIB dans un pack ?",
+    "answer": "IADAF demande un RIB car CAF, CPAM et d'autres organismes versent des prestations / remboursements par virement (IBAN). Le RIB sert au dossier, pas à une validation bancaire IADAF. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q075"
+    ]
+  },
+  {
+    "id": "kb_q087",
+    "question": "Le SAMU, c'est quel numéro ?",
+    "answer": "Le SAMU c'est le 15 (urgences médicales). Pompiers 18, police 17, urgence européenne 112. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q087",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q101",
+    "question": "Quelles pièces pour un permis de conduire via ANTS ?",
+    "answer": "Permis de conduire via ANTS : pièce d'identité, justificatif de domicile, photo d'identité / signature, et attestations spécifiques selon le cas (ex. ASSR). Vérifiez la liste à jour sur ants.gouv.fr. [Source: https://ants.gouv.fr/]",
+    "url": "https://ants.gouv.fr/",
+    "tags": [
+      "quality_v3",
+      "q101",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_docs_rules",
+    "question": "Qui valide IBAN, MRZ, dates et conformité des pièces ?",
+    "answer": "Les règles déterministes du code IADAF valident IBAN (checksum), MRZ et dates ; le VL / LLM extrait seulement. Formats acceptés : PDF, JPEG, PNG, WebP — un .exe est refusé. Un dossier sans justificatif de domicile est incomplet (pièce manquante, domicile < 3 mois).",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "docs",
+      "rules"
+    ]
+  },
+  {
+    "id": "kb_q023",
+    "question": "Qu'est-ce que le revenu fiscal de référence ?",
+    "answer": "Le revenu fiscal de référence (RFR) figure sur l'avis d'imposition. Il sert souvent de critère pour des droits et aides (CAF, etc.). [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.impots.gouv.fr/",
+    "tags": [
+      "q023"
+    ]
+  },
+  {
+    "id": "kb_q041",
+    "question": "Combien de temps avant l'expiration renouveler mon titre ?",
+    "answer": "Engagez le renouvellement au moins 2 mois avant la date d'expiration via ANEF / préfecture. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q041"
+    ]
+  },
+  {
+    "id": "kb_q003b",
+    "question": "Puis-je travailler avec un titre de sejour etudiant ?",
+    "answer": "Oui, sous conditions : limite habituelle 964 heures par an (environ 60% d'un temps plein). Verifiez les mentions de votre titre. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q003"
+    ]
+  },
+  {
+    "id": "kb_q003",
+    "question": "Puis-je travailler avec un titre de séjour étudiant ?",
+    "answer": "Oui, sous conditions : le travail ne doit pas être l'activité principale. Limite habituelle : 964 heures par an (environ 60 % d'un temps plein). Vérifiez les mentions de votre titre. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q003"
+    ]
+  },
+  {
+    "id": "kb_q012",
+    "question": "A quoi sert la carte Vitale ?",
+    "answer": "La carte Vitale sert aux remboursements maladie / CPAM / Ameli ; ce n'est pas un justificatif de domicile. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "q012"
+    ]
+  },
+  {
+    "id": "kb_q046",
+    "question": "La CAF demande mes 3 derniers mois de ressources : quoi envoyer ?",
+    "answer": "Pour justifier 3 mois de ressources à la CAF : bulletins de salaire, attestations France Travail / Pôle emploi, ou autres justificatifs de revenus selon votre situation. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q046",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q047",
+    "question": "Sans medecin traitant suis-je moins bien rembourse ?",
+    "answer": "Oui, sans médecin traitant le parcours de soins coordonnés est moins bien remboursé. Déclarez un médecin traitant via Ameli / CPAM. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "q047"
+    ]
+  },
+  {
+    "id": "kb_q048",
+    "question": "DELF DALF obligatoire titre etudiant ?",
+    "answer": "Le DELF/DALF n'est pas toujours obligatoire pour un titre étudiant ; les conditions de langue dépendent du motif et de l'établissement. Vérifiez service-public / campus France. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q048"
+    ]
+  },
+  {
+    "id": "kb_q052",
+    "question": "Ou payer le timbre fiscal titre de sejour ?",
+    "answer": "Le timbre fiscal se paie en ligne sur impots.gouv.fr (timbre électronique) ou chez un professionnel habilité. Ne pas inventer le montant. [Source: https://www.impots.gouv.fr/]",
+    "url": "https://www.impots.gouv.fr/",
+    "tags": [
+      "q052"
+    ]
+  },
+  {
+    "id": "kb_q062",
+    "question": "Puis-je me faire rembourser sans carte Vitale ?",
+    "answer": "Oui via feuille de soins papier et attestation de droits ; remboursez ensuite auprès de la CPAM / Ameli. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "q062"
+    ]
+  },
+  {
+    "id": "kb_q071",
+    "question": "Un récépissé permet-il de voyager hors de France ?",
+    "answer": "En règle générale non : le récépissé ne permet pas de voyager / franchir la frontière comme un titre de séjour valide. Consultez service-public.fr avant de partir. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q071"
+    ]
+  },
+  {
+    "id": "kb_q076",
+    "question": "C'est quoi un VLS-TS ?",
+    "answer": "Le VLS-TS est le visa long séjour valant titre de séjour. Il permet de séjourner puis souvent d'obtenir une carte. Ne pas confondre avec un simple visa court séjour. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "q076"
+    ]
+  },
+  {
+    "id": "kb_q077",
+    "question": "Ou telecharger le cerfa d'affiliation ?",
+    "answer": "Les formulaires cerfa d'affiliation santé se trouvent surtout sur ameli.fr / service-public.fr. Ne fabriquez pas de pièce. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "q077"
+    ]
+  },
+  {
+    "id": "kb_q097",
+    "question": "Doctolib remplace-t-il la CPAM ?",
+    "answer": "Non — Doctolib est privé. Pour les droits publics santé utilisez CPAM / Ameli. [Source: https://www.ameli.fr/]",
+    "url": "https://www.ameli.fr/",
+    "tags": [
+      "q097"
+    ]
+  },
+  {
+    "id": "kb_q031",
+    "question": "Quels documents pour un titre de séjour étudiant ?",
+    "answer": "Titre de séjour étudiant : passeport, certificat d'inscription dans un établissement, justificatif de ressources (seuil étudiant publié), justificatif de domicile, photos d'identité, formulaire et timbres fiscaux selon le cas. Démarche ANEF / préfecture. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q031",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q100",
+    "question": "Résume les 3 erreurs fréquentes sur un dossier de titre de séjour.",
+    "answer": "3 erreurs fréquentes sur un dossier de titre de séjour : 1) dossier incomplet (pièces manquantes), 2) rendez-vous trop tardif après expiration du titre, 3) justificatif de domicile périmé (>3 mois). Anticipez via ANEF et vérifiez la liste officielle. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q100",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q004",
+    "question": "I just arrived in France with a long-stay visa. What should I do first?",
+    "answer": "First steps after arrival with a long-stay visa: validate your VLS-TS with OFII within 3 months, open a bank account, register for health insurance (CPAM), get a proof of address, and check CAF housing aid if relevant. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q004",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q035",
+    "question": "Quelles sont les premières démarches à l'arrivée en France ?",
+    "answer": "Premières démarches à l'arrivée : valider le VLS-TS / OFII si concerné, ouvrir un compte bancaire, s'affilier à la CPAM, obtenir un justificatif de domicile, puis CAF / impôts selon la situation. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q035",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q044",
+    "question": "Je vis chez un ami, comment prouver mon domicile ?",
+    "answer": "Si vous êtes hébergé : attestation d'hébergement signée par l'hébergeant, sa pièce d'identité, et son justificatif de domicile (facture / quittance). [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q044",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q068",
+    "question": "Dois-je avoir un bail à mon nom pour l'APL ?",
+    "answer": "En principe l'APL concerne le locataire (ou colocataire) mentionné au bail / occupant selon les règles CAF. Vérifiez votre cas sur caf.fr. [Source: https://www.caf.fr/]",
+    "url": "https://www.caf.fr/",
+    "tags": [
+      "quality_v3",
+      "q068",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q081",
+    "question": "Liste courte des pièces pour renouveler un titre salarié.",
+    "answer": "Renouvellement titre salarié : passeport, titre actuel, contrat de travail / bulletins de salaire, justificatif de domicile, photos, formulaire et timbres selon barème — confirmer sur ANEF / préfecture. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q081",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q085",
+    "question": "Quelles langues IADAF prend en charge ?",
+    "answer": "IADAF prend en charge le français, l'anglais, l'arabe et l'espagnol. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q085",
+      "product",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q086",
+    "question": "Je suis en recours contre un refus de titre : IADAF peut-il rédiger mon recours contentieux ?",
+    "answer": "IADAF peut expliquer les grandes étapes et orienter vers une association ou un avocat. Un recours contentieux personnalisé relève d'un conseil juridique qualifié. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q086",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q095",
+    "question": "Pourquoi un IBAN invalide bloque mon dossier ?",
+    "answer": "Un IBAN invalide bloque le dossier car sans RIB / IBAN correct les organismes ne peuvent pas effectuer le virement des prestations ; corrigez le RIB et renvoyez la pièce. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q095",
+      "hit3"
+    ]
+  },
+  {
+    "id": "kb_q069",
+    "question": "Comment contacter mon centre des finances publiques ?",
+    "answer": "Via la messagerie sécurisée de l'espace particulier impots.gouv.fr ou les coordonnées indiquées sur votre avis. [Source: https://www.service-public.fr/]",
+    "url": "https://www.service-public.fr/",
+    "tags": [
+      "quality_v3",
+      "q069",
+      "hit3"
+    ]
+  }
+]

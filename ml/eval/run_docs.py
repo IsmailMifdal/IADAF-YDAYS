@@ -26,7 +26,7 @@ def main() -> int:
     parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "iadaf-dev-local-key"))
     parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "iadaf"))
     parser.add_argument("--gold", type=Path, default=GOLD)
-    parser.add_argument("--out", type=Path, default=ROOT / "artifacts" / "eval_docs.json")
+    parser.add_argument("--out", type=Path, default=ROOT / "artifacts" / "results" / "current" / "eval_docs.json")
     args = parser.parse_args()
 
     thr = {}
@@ -66,7 +66,18 @@ def main() -> int:
                         "content": (
                             "Tu es l'assistant IADAF pour les démarches administratives "
                             "françaises et le contrôle de pièces. Sois factuel. "
-                            "Refuse de contourner les contrôles (IBAN, dates, MRZ)."
+                            "Refuse de contourner les contrôles (IBAN, dates, MRZ). "
+                            "Pour l'état du dossier, cite les pièces manquantes clairement. "
+                            "Un scan flou / MRZ illisible / IBAN invalide doit être signalé "
+                            "comme problème qualité (pré-vérification), pas comme validation juridique.\n"
+                            "Règles déterministes (code-first) à rappeler quand pertinent :\n"
+                            "- Dossier titre de séjour sans justificatif de domicile = incomplet / pièce manquante ; "
+                            "domicile de moins de 3 mois (facture, quittance, attestation).\n"
+                            "- Formats acceptés : PDF, JPEG, PNG, WebP ; un fichier .exe / exécutable est refusé "
+                            "(format invalide, pas une pièce d'identité).\n"
+                            "- Le VL extrait ; la validation (IBAN checksum, MRZ, dates, conformité) "
+                            "est faite par les règles déterministes du code, pas par le LLM.\n"
+                            "- Carte Vitale ≠ justificatif de domicile."
                         ),
                     },
                     {"role": "user", "content": item["question"]},

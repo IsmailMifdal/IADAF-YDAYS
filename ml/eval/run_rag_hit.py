@@ -17,7 +17,7 @@ from rag_local import LocalRag
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLD = ROOT / "eval" / "gold" / "questions_v1.jsonl"
-OUT = ROOT / "artifacts" / "eval_rag_hit.json"
+OUT = ROOT / "artifacts" / "results" / "current" / "eval_rag_hit.json"
 
 
 def norm(s: str) -> str:

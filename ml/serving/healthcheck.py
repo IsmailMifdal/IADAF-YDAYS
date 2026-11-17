@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ping Strata (or any OpenAI-compatible server): /v1/models + one chat completion."""
+"""Ping OpenAI-compatible server: /v1/models + one chat completion."""
 
 from __future__ import annotations
 

@@ -94,6 +94,11 @@ def build_sft_config(SFTConfig, *, out_dir: Path, max_seq: int, n_examples: int,
         "warmup_ratio": warmup_ratio,
         "warmup_steps": warmup_steps,
     }
+    # Optional cap for smoke / curriculum runs
+    max_steps_env = os.environ.get("IADAF_MAX_STEPS", "").strip()
+    if max_steps_env.isdigit() and int(max_steps_env) > 0:
+        raw["max_steps"] = int(max_steps_env)
+        raw.pop("num_train_epochs", None)
     filtered = {k: v for k, v in raw.items() if k in params}
     # Prefer one length field only
     if "max_seq_length" in filtered and "max_length" in filtered:
