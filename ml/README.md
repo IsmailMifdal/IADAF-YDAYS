@@ -34,6 +34,8 @@ Gates : `artifacts/results/current/phase_gates_v3.json`.
 | `configs/` | `model_v3_1.yaml`, `serving.env.example` |
 | `artifacts/` | Modèles / index / résultats (hors git sauf README) |
 
+Artefacts lourds (privé HF) : [`iadaf/models-v3_1`](https://huggingface.co/iadaf/models-v3_1) · [`iadaf/datasets-v3_1`](https://huggingface.co/datasets/iadaf/datasets-v3_1) — commandes pull/push dans [`artifacts/README.md`](artifacts/README.md).
+
 ## Scripts actifs (`serving/`)
 
 | Script | Usage |
