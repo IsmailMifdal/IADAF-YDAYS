@@ -16,6 +16,8 @@ AI = REPO / "ai-service"
 sys.path.insert(0, str(AI))
 
 from app.skills.router import route_skill  # noqa: E402
+from app.skills.allowlist import is_in_scope_allowed  # noqa: E402
+from app.skills.ants_cost import ants_carte_grise_recap  # noqa: E402
 from app.skills.dossier_state import build_dossier_state  # noqa: E402
 from app.skills.prefill import build_prefill_recap  # noqa: E402
 from app.skills.service import run_skill  # noqa: E402
@@ -110,6 +112,39 @@ CASES = [
     {
         "id": "chemin_ants_exists",
         "fn": lambda: build_dossier_state(chemin_id="permis_ants")["title"] is not None,
+    },
+    # v4 — allowlist / finance refuse / ANTS
+    {
+        "id": "allowlist_carte_grise",
+        "fn": lambda: is_in_scope_allowed("Comment faire une carte grise en ligne ?")
+        and route_skill("Comment faire une carte grise en ligne ?") == "qa",
+    },
+    {
+        "id": "allowlist_urgences",
+        "fn": lambda: route_skill("Quels sont les numéros d'urgence en France ?") == "qa",
+    },
+    {
+        "id": "refuse_finance_bourse",
+        "fn": lambda: route_skill("Quel levier 10x pour trader le CAC40 ?") == "refuse",
+    },
+    {
+        "id": "fiscal_admin_not_finance_refuse",
+        "fn": lambda: route_skill("Comment déclarer mes revenus sur impots.gouv.fr ?") == "qa",
+    },
+    {
+        "id": "ants_cost_no_amount",
+        "fn": lambda: ants_carte_grise_recap()["amount_eur"] is None
+        and "immatriculation.ants.gouv.fr" in ants_carte_grise_recap()["message"],
+    },
+    {
+        "id": "skill_carte_grise_ants_message",
+        "fn": lambda: "ants" in (run_skill("Comment faire une carte grise en ligne ?")["response"] or "").lower(),
+    },
+    {
+        "id": "skill_refuse_finance_message",
+        "fn": lambda: "bourse" in (run_skill("Recomiéndame un trade con apalancamiento")["response"] or "").lower()
+        or "trading" in (run_skill("Recomiéndame un trade con apalancamiento")["response"] or "").lower()
+        or "levier" in (run_skill("Recomiéndame un trade con apalancamiento")["response"] or "").lower(),
     },
 ]
 

@@ -9,9 +9,13 @@ Guides : [`serving/LOCAL-V3.md`](serving/LOCAL-V3.md) · [`serving/RELEASE-V3.1.
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\ml\serving\start-local-v3_1.ps1
 
-# Prod multi-user — TRT IADAF NVFP4 (WSL)
-wsl -d Ubuntu-24.04 -- bash ml/serving/_wsl_serve_iadaf_nvfp4.sh
+# Prod multi-user — TRT IADAF NVFP4 (WSL Ubuntu-24.04 ou 26.04)
+wsl -d Ubuntu-26.04 -- bash ml/serving/_wsl_serve_iadaf_nvfp4.sh
+# Laptop 16 Go : plafonner le batch si besoin
+# $env:TRTLLM_MAX_BATCH=128; wsl -d Ubuntu-26.04 -- bash ml/serving/_wsl_serve_iadaf_nvfp4.sh
 ```
+
+Capacité mesurée (RTX 5080 Laptop, TRT-LLM 1.4 NVFP4, ≥ 60 tok/s/user) : **3 users** — détail `artifacts/results/current/bench_capacity_60tps_summary.json`.
 
 | Mode | Entrée | URL |
 |------|--------|-----|

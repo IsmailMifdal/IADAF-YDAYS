@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+import re
+
+from app.skills.ants_cost import ants_carte_grise_recap
 from app.skills.dossier_state import build_dossier_state, format_state_for_prompt
 from app.skills.prefill import build_prefill_recap
 from app.skills.router import Skill, route_skill
@@ -13,6 +16,23 @@ REFUSE_MESSAGE = (
     "Je reste disponible pour les démarches administratives françaises "
     "(séjour, CAF, Ameli, impôts, permis, carte grise…) en français ou en anglais. "
     "Consultez aussi https://www.service-public.fr/."
+)
+
+REFUSE_FINANCE_MESSAGE = (
+    "Je ne fournis pas de conseil boursier, de trading ni d'effet de levier. "
+    "Je suis l'assistant IADAF pour les démarches administratives françaises "
+    "(séjour, CAF, Ameli, impôts, permis, carte grise…). "
+    "Posez une question de démarche ou consultez https://www.service-public.fr/."
+)
+
+_FINANCE_HINT = re.compile(
+    r"bourse|trading|trader|levier|leverage|apalancamiento|scalping|"
+    r"رافعة|تداول|crypto",
+    re.I,
+)
+_CARTE_GRISE_HINT = re.compile(
+    r"carte\s*grise|immatriculation|certificat\s+d['']?immatriculation",
+    re.I,
 )
 
 PRECHECK_HINT = (
@@ -45,12 +65,14 @@ def run_skill(
     )
 
     if chosen == "refuse":
+        body = REFUSE_FINANCE_MESSAGE if _FINANCE_HINT.search(message or "") else REFUSE_MESSAGE
         return {
             "skill": chosen,
             "dossier_state": state,
-            "response": REFUSE_MESSAGE,
+            "response": body,
             "prefill": None,
             "needs_llm": False,
+            "reason_code": "finance_advice" if _FINANCE_HINT.search(message or "") else "illegal_or_dangerous",
         }
 
     if chosen == "checklist":
@@ -98,6 +120,27 @@ def run_skill(
             "response": prefill["message"],
             "prefill": prefill,
             "needs_llm": False,
+        }
+
+    # Carte grise / immatriculation — deterministic ANTS portal (no invented fee).
+    # Multilingual short recap so we do not false-refuse or invent prefecture routing.
+    if _CARTE_GRISE_HINT.search(message or ""):
+        ants = ants_carte_grise_recap()
+        bilingual = (
+            ants["message"]
+            + "\n\nEN: Apply online on ANTS https://immatriculation.ants.gouv.fr/ "
+            "(not a default prefecture counter process). Do not invent fees."
+        )
+        return {
+            "skill": "qa",
+            "dossier_state": state,
+            "response": bilingual,
+            "prefill": None,
+            "needs_llm": False,
+            "ants": ants,
+            "prompt_state": format_state_for_prompt(state)
+            if (chemin_id or pack_slug or provided_documents)
+            else None,
         }
 
     # qa — LLM + RAG, with dossier_state injected by caller

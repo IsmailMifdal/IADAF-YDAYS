@@ -1,7 +1,60 @@
-# Sources de datasets IADAF (v3)
+# Sources de datasets IADAF (v3 → **v4**)
 
 Aligné sur [`docs/VISION-PRODUIT.md`](../../docs/VISION-PRODUIT.md) :
 chemins **Public** élargis + préparation **Pro**, toujours sous licences ouvertes / synthétique (AIPD).
+
+## Fine-tune v4 (rapport Deep Research intégré)
+
+Cible : QLoRA **`lora_v4`** — mix **32k** SFT, base Qwen3-8B, gates multilang ≥90 % / carte-grise 4/4 / AR ≥18/23.  
+Détail complet : [`RAPPORT-DEEPRESEARCH-V4.md`](RAPPORT-DEEPRESEARCH-V4.md).
+
+| Doc | Rôle |
+|-----|------|
+| [`BRIEF-RECHERCHE-V4.md`](BRIEF-RECHERCHE-V4.md) | Baseline, upgrades P1–P4, skills, gates |
+| [`GEMINI-DEEPRESEARCH-V4.md`](GEMINI-DEEPRESEARCH-V4.md) | Prompt Deep Research |
+| [`RAPPORT-DEEPRESEARCH-V4.md`](RAPPORT-DEEPRESEARCH-V4.md) | **DELTA-01→22**, mix 32k, skills, pipeline docs, gates |
+
+Eval multilang de référence : `eval_multilang_matrix.json` (**69/92**).
+
+### Delta P0 retenu (avant audit licence étape 1)
+
+| ID | Source | Usage |
+|----|--------|-------|
+| DELTA-01 | [moncefem/legi-instruct-fr](https://huggingface.co/datasets/moncefem/legi-instruct-fr) | SFT citation / abstention / tools |
+| DELTA-02 | [AmazonScience/FalseReject](https://huggingface.co/datasets/AmazonScience/FalseReject) | Anti-sur-refus (licence CC-BY à confirmer) |
+| DELTA-03 | [bench-llm/or-bench](https://huggingface.co/datasets/bench-llm/or-bench) | Over-refusal (exclure toxic-all) |
+| DELTA-06 | [DAMO-NLP-SG/MultiJail](https://huggingface.co/datasets/DAMO-NLP-SG/MultiJail) | Jailbreaks multi / AR |
+| DELTA-07 | [ToxicityPrompts/PolyGuardPrompts](https://huggingface.co/datasets/ToxicityPrompts/PolyGuardPrompts) | Modération multi |
+| DELTA-10 | [miracl/nomiracl](https://huggingface.co/datasets/miracl/nomiracl) | Abstention grounded multi |
+| DELTA-14 | [Simulateur coût carte grise DILA](https://www.data.gouv.fr/datasets/simulateur-de-cout-du-certificat-dimmatriculation-carte-grise) | Skill + RAG ANTS |
+| DELTA-16 | [immatriculation.ants.gouv.fr](https://immatriculation.ants.gouv.fr/) (+ Ameli EN, CLEISS) | RAG/SFT grounded |
+| DELTA-19 | [sparkfish/augraphy](https://github.com/sparkfish/augraphy) + djo33350 samples | Docs synth ≥3k |
+| DELTA-21 | [betagouv/document-ia](https://github.com/betagouv/document-ia) | Schémas extraction |
+
+**Rejets notables :** BeaverTails (NC), do-not-answer (NC-SA), xlam gated → glaive Apache ; belebele = **eval only** (SA).  
+**Manques assumés :** pas de QA admin FR natif AR ni corpus refus bourse multi → gabarits synth grounded.
+
+### Phase 2 — statut implémentation
+
+| Élément | Statut |
+|---------|--------|
+| `download_v4.py` | OK — P0 HF + DILA meta + portals ANTS + curated |
+| Curated SFT | `allowlist_in_scope_v4` · `refuse_bourse_v4` · `multilang_ko_upsample_v4` · `docs_explain_v4` |
+| `build_instruct_v4.py` | OK → `processed/instruct_train_v4.jsonl` (curated scale=1 ≈ 17k ; +HF pour viser 32k) |
+| Skills code | allowlist · refuse finance · `ants_cost` — `run_skills` **22/22** |
+| `configs/model_v4.yaml` + `training/run_train_v4.ps1` | OK |
+| Gold docs | `eval/gold/documents_v3.jsonl` (**35** cas) |
+| Train `lora_v4` | **À lancer** après download HF P0 + Hit@3 go |
+
+```powershell
+python ml/datasets/download_v4.py
+python ml/datasets/build_instruct_v4.py
+.\ml\training\run_train_v4.ps1
+```
+
+---
+
+## Héritage v3
 
 **Rapport Deep Research (S01–S25, mapping chemins, recette pipeline)** :
 [`RAPPORT-DEEPRESEARCH-V3.md`](RAPPORT-DEEPRESEARCH-V3.md)

@@ -31,7 +31,8 @@ kv_cache_config:
 EOF
 
 if [[ -f /tmp/trtllm.pid ]]; then kill -9 "$(cat /tmp/trtllm.pid)" 2>/dev/null || true; fi
-pkill -9 -x trtllm-serve 2>/dev/null || true
+pkill -9 -f trtllm-serve 2>/dev/null || true
+pkill -9 -f 'mpi4py.futures.server' 2>/dev/null || true
 sleep 3
 
 echo "Starting IADAF NVFP4: $MODEL max_batch=$MAX_BATCH max_seq=$MAX_SEQ"

@@ -1,0 +1,40 @@
+# IADAF v4 — QLoRA chat (multilang + docs explain + anti–faux-refus)
+# Base: Qwen3-8B from scratch (replay FR in mix) — RTX 5080 Laptop 16 Go
+# Réf. RAPPORT-DEEPRESEARCH-V4.md §4
+base_model: Qwen/Qwen3-8B
+output_name: iadaf-qwen3-8b-v4
+version: v4
+
+max_seq_length: 2048
+load_in_4bit: true
+gradient_checkpointing: true
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  logging_steps: 10
+  save_steps: 200
+  seed: 42
+  bf16: true
+  optim: adamw_8bit
+
+export:
+  gguf_quant: Q4_K_M
+  chat_template: qwen

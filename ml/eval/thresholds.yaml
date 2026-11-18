@@ -7,7 +7,8 @@ quality:
 
 docs:
   min_score: 0.85
-  target_count: 8
+  # documents_v3.jsonl (v4) — fallback v2 = 12
+  target_count: 35
 
 performance:
   # Latence totale chat (prompt court, sans cold start)

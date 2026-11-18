@@ -7,9 +7,21 @@ Date : **2026-11-12** · GPU : **RTX 5080 16 Go** · TRT-LLM **1.4.0rc4** · att
 ```bash
 source ml/serving/_wsl_trtllm_env.sh
 bash ml/serving/_wsl_serve_iadaf_nvfp4.sh   # max_batch=4096 max_seq=512
+# Laptop 16 Go (Ubuntu-26.04) :
+# TRTLLM_MAX_BATCH=128 bash ml/serving/_wsl_serve_iadaf_nvfp4.sh
 ```
 
 ai-service : `OPENAI_BASE_URL=http://127.0.0.1:8000/v1` · `OPENAI_MODEL=iadaf_qwen3_8b_nvfp4`.
+
+**Rebench 2026-11-17** (RTX 5080 Laptop, TRT-LLM 1.4, `max_batch=512`) — `bench_reconcile_scale_summary.json` :
+
+| Métrique | Valeur |
+|----------|--------|
+| QoS ≥ **60 tok/s/user** | **2 users** (C=4 → ~56) |
+| Peak **agrégé** | **~1,1k tok/s** @C256 |
+| C512 admis | **512/512 ok**, ~1,1k agg · **~3 tok/s/user** |
+
+Les **~17k @C512** de la doc = débit agrégé (autre passe / conditions). Ce n’est **pas** 512×60 : à forte charge le tok/s/user chute.
 
 ## Export / rebuild NVFP4
 

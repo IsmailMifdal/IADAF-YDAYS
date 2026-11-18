@@ -16,7 +16,8 @@ from openai_compat import chat_payload, completion_text
 from run_quality import load_gold, score_item
 
 ROOT = Path(__file__).resolve().parents[1]
-GOLD = ROOT / "eval" / "gold" / "documents_v2.jsonl"
+GOLD = ROOT / "eval" / "gold" / "documents_v3.jsonl"
+GOLD_V2 = ROOT / "eval" / "gold" / "documents_v2.jsonl"
 THRESHOLDS = ROOT / "eval" / "thresholds.yaml"
 
 
@@ -25,7 +26,12 @@ def main() -> int:
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL", "http://127.0.0.1:8080/v1"))
     parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", "iadaf-dev-local-key"))
     parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "iadaf"))
-    parser.add_argument("--gold", type=Path, default=GOLD)
+    parser.add_argument(
+        "--gold",
+        type=Path,
+        default=GOLD if GOLD.is_file() else GOLD_V2,
+        help="Gold docs (défaut documents_v3.jsonl si présent)",
+    )
     parser.add_argument("--out", type=Path, default=ROOT / "artifacts" / "results" / "current" / "eval_docs.json")
     args = parser.parse_args()
 
