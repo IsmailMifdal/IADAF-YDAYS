@@ -6,7 +6,7 @@ Orga Hugging Face privée : [iadaf](https://huggingface.co/iadaf).
 | Repo HF | Contenu |
 |---------|---------|
 | [`iadaf/models-v3_1`](https://huggingface.co/iadaf/models-v3_1) | `gguf/`, `lora_v3_1/`, `iadaf_qwen3_8b_nvfp4/` (+ `rag_v3/`, `results/` si uploadés) |
-| [`iadaf/datasets-v3_1`](https://huggingface.co/datasets/iadaf/datasets-v3_1) | `processed/` v3.1 (SFT instruct, labels, VL) |
+| [`iadaf/datasets-v3_1`](https://huggingface.co/datasets/iadaf/datasets-v3_1) | `processed/instruct_train_v3_1.jsonl` (+ labels/VL si présents) — **pas** de `instruct_train_v3` |
 | [`iadaf/datasets-v4`](https://huggingface.co/datasets/iadaf/datasets-v4) | **v4** : `processed/instruct_train_v4.jsonl` (+ meta) — à créer au 1er push |
 | [`iadaf/models-v4`](https://huggingface.co/iadaf/models-v4) | **après train** : `lora_v4/`, GGUF, NVFP4 |
 
@@ -41,7 +41,8 @@ hf upload iadaf/models-v3_1 ml/artifacts/results results
 hf upload iadaf/datasets-v3_1 ml/datasets/processed processed --repo-type dataset
 
 # --- Dataset SFT v4 (avant / pour machine de train) ---
-# Créer le repo dataset privé une fois : hf repo create iadaf/datasets-v4 --type dataset --private
+# CLI récente : `hf repos` (pluriel), pas `hf repo`
+hf repos create iadaf/datasets-v4 --type dataset --private --exist-ok
 hf upload iadaf/datasets-v4 ml/datasets/processed/instruct_train_v4.jsonl processed/instruct_train_v4.jsonl --repo-type dataset
 hf upload iadaf/datasets-v4 ml/datasets/processed/instruct_train_v4.meta.json processed/instruct_train_v4.meta.json --repo-type dataset
 
@@ -49,7 +50,7 @@ hf upload iadaf/datasets-v4 ml/datasets/processed/instruct_train_v4.meta.json pr
 # hf download iadaf/datasets-v4 --repo-type dataset --local-dir ml/datasets
 
 # --- Après train : pousser le LoRA ---
-# hf repo create iadaf/models-v4 --type model --private
+# hf repos create iadaf/models-v4 --type model --private --exist-ok
 # hf upload iadaf/models-v4 ml/artifacts/lora_v4 lora_v4
 ```
 
