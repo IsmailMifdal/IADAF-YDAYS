@@ -84,7 +84,7 @@ flowchart LR
   subgraph Ports ["ports (typing.Protocol)"]
     PChat(("ChatModel"))
     PRead(("DocumentReader"))
-    PRet(("Retriever — optional"))
+    PRet(("Retriever — optional in tests; runtime health requires the index"))
   end
   subgraph Docs ["documents (pure)"]
     Facts["facts.py — frozen DocumentFacts"]
@@ -130,7 +130,8 @@ flowchart LR
 
 - Three ports, each with a named trigger: `ChatModel` (fine-tuned model with role-tagged
   prompts, ISM-111), `DocumentReader` (vision reader planned; two adapters already exist),
-  `Retriever` (RAG is optional at runtime, tests run without ChromaDB).
+  `Retriever` (optional in tests that run without ChromaDB; at runtime, failed knowledge-index
+  initialisation makes ai-service unhealthy, ISM-118; transient recovery is tracked in ISM-127).
 - `rules.py → facts.py` replaces today's `analyzer.py → pypdf / OCR`: the rules never see raw
   text or a library type. The text, MRZ and quality parsers move beside the readers that
   produce `DocumentFacts`, where raw text and image bytes belong. A detected kind that differs

@@ -239,7 +239,8 @@ class RAGService:
         indexed = fingerprint_file.read_text().strip() if fingerprint_file.exists() else None
         is_empty = self._collection.count() == 0
 
-        if is_empty or indexed != current:
+        needs_reindex = is_empty or indexed != current
+        if needs_reindex:
             if is_empty:
                 logger.info("Vector store is empty — indexing knowledge base…")
             else:
@@ -248,9 +249,15 @@ class RAGService:
                 for start in range(0, len(stale), _BATCH):
                     self._collection.delete(ids=stale[start:start + _BATCH])
             self._index_knowledge_base()
+
+        document_count = self._collection.count()
+        if document_count == 0:
+            raise RuntimeError("Knowledge base is empty; no documents were indexed.")
+
+        if needs_reindex:
             fingerprint_file.write_text(current)
 
-        logger.info(f"Vector store ready — {self._collection.count()} documents indexed.")
+        logger.info(f"Vector store ready — {document_count} documents indexed.")
 
     def _index_knowledge_base(self) -> None:
         """Load JSON files from the knowledge base and index them."""
