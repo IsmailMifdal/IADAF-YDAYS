@@ -14,9 +14,14 @@ performance:
   # Latence totale chat (prompt court, sans cold start)
   p95_latency_ms: 15000
   p50_latency_ms: 8000
+  # Flux constant par usager (v5A/v5B) — y compris avec extrait document en contexte
+  min_tok_per_s_per_user: 50
+  target_tok_per_s_per_user: 60
   # Au moins 1 requête réussie par slot parallèle Strata (--parallel 2)
   min_success_per_parallel_slot: 1.0
   concurrent_levels: [1, 2, 4]
+  # Bench arch scale (burst / admission) — voir eval/ARCH-SCALE-PLAN-V5.md
+  scale_levels: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
   timeout_seconds: 90
 
 coherence:

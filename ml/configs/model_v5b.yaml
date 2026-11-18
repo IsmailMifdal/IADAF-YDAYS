@@ -1,0 +1,47 @@
+# IADAF v5B — Ministral 3 14B (qualité FR / docs / tools)
+# Base BF16 Instruct (pas le checkpoint FP8)
+# Cible: RTX 5080 Laptop 16 Go — chemin « maximiser la qualité »
+# Réf. datasets/BRIEF-V5.md
+base_model: mistralai/Ministral-3-14B-Instruct-2512-BF16
+# Prefetch local : ml/artifacts/base_models/Ministral-3-14B-Instruct-2512-BF16
+# Alt. Unsloth: unsloth/Ministral-3-14B-Instruct-2512
+output_name: iadaf-ministral3-14b-v5b
+version: v5b
+track: quality
+
+# 14B sur 16 Go : 2048 défaut ; docs longs = chunks côté ai-service
+max_seq_length: 2048
+load_in_4bit: true
+gradient_checkpointing: true
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  epochs: 2
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 8.0e-5
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  logging_steps: 10
+  save_steps: 200
+  seed: 42
+  bf16: true
+  optim: adamw_8bit
+
+export:
+  gguf_quant: Q4_K_M
+  chat_template: mistral
+  # Serve: Q4 ≈ 9–10 Go → moins de marge KV ; docs = chunks + ctx borné
+  # Gate perf: ≥ 50–60 tok/s/user — si KO sur 1 GPU, candidate scale 2–3 GPU

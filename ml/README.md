@@ -1,6 +1,33 @@
-# ML IADAF — v3.1
+# ML IADAF — v3.1 (prod) · **v5A/v5B** (scaffold Ministral 3)
 
-Guides : [`serving/LOCAL-V3.md`](serving/LOCAL-V3.md) · [`serving/RELEASE-V3.1.md`](serving/RELEASE-V3.1.md) · [`serving/TRTLLM-MONO-SCALE.md`](serving/TRTLLM-MONO-SCALE.md) · [`artifacts/README.md`](artifacts/README.md)
+Guides : [`serving/LOCAL-V3.md`](serving/LOCAL-V3.md) · [`serving/LOCAL-V5.md`](serving/LOCAL-V5.md) · [`serving/ENGINES-V5.md`](serving/ENGINES-V5.md) · [`datasets/BRIEF-V5.md`](datasets/BRIEF-V5.md) · [`datasets/COMPARE-V5A-V5B.md`](datasets/COMPARE-V5A-V5B.md) · [`datasets/SCALE-CAPACITY-V5.md`](datasets/SCALE-CAPACITY-V5.md) · [`serving/RELEASE-V3.1.md`](serving/RELEASE-V3.1.md) · [`serving/TRTLLM-MONO-SCALE.md`](serving/TRTLLM-MONO-SCALE.md) · [`artifacts/README.md`](artifacts/README.md)
+
+## Train v5 — double piste (souverain FR)
+
+- **V5A** = Ministral **8B** → vitesse / ≥ 50–60 tok/s/user  
+- **V5B** = Ministral **14B** → qualité  
+- Mix SFT **commun** + docs-in-context (prêt / pas prêt admin FR)
+
+```powershell
+python ml/datasets/download_v5.py
+.\ml\training\run_train_v5.ps1 -Variant A    # 8B
+.\ml\training\run_train_v5.ps1 -Variant B    # 14B
+# Smoke : .\ml\training\run_train_v5.ps1 -Variant A -MaxSteps 20 -SkipExport -AllowLowHit
+```
+
+Configs : [`configs/model_v5a.yaml`](configs/model_v5a.yaml) · [`configs/model_v5b.yaml`](configs/model_v5b.yaml). Serve : [`serving/LOCAL-V5.md`](serving/LOCAL-V5.md).
+
+### Bench architecture multi-user (256 / 512)
+
+Plan : [`eval/ARCH-SCALE-PLAN-V5.md`](eval/ARCH-SCALE-PLAN-V5.md) · engines : [`serving/ENGINES-V5.md`](serving/ENGINES-V5.md)
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:8000/v1"
+.\ml\eval\run_arch_scale_matrix.ps1 -Track v5a -Engine vllm -Quant fp8
+# Après plusieurs cellules :
+python ml/eval/summarize_arch_scale.py
+# → artifacts/results/current/arch_scale_summary.json
+```
 
 ## Exploitation
 

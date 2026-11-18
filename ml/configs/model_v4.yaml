@@ -2,6 +2,8 @@
 # Base: Qwen3-8B from scratch (replay FR in mix) — RTX 5080 Laptop 16 Go
 # Réf. RAPPORT-DEEPRESEARCH-V4.md §4
 base_model: Qwen/Qwen3-8B
+# Prefetch local (copie machine train) :
+# base_model: ml/artifacts/base_models/Qwen3-8B
 output_name: iadaf-qwen3-8b-v4
 version: v4
 

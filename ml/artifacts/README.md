@@ -9,6 +9,8 @@ Orga Hugging Face privée : [iadaf](https://huggingface.co/iadaf).
 | [`iadaf/datasets-v3_1`](https://huggingface.co/datasets/iadaf/datasets-v3_1) | `processed/instruct_train_v3_1.jsonl` (+ labels/VL si présents) — **pas** de `instruct_train_v3` |
 | [`iadaf/datasets-v4`](https://huggingface.co/datasets/iadaf/datasets-v4) | **v4** : `processed/instruct_train_v4.jsonl` (+ meta) — à créer au 1er push |
 | [`iadaf/models-v4`](https://huggingface.co/iadaf/models-v4) | **après train** : `lora_v4/`, GGUF, NVFP4 |
+| [`iadaf/datasets-v5`](https://huggingface.co/datasets/iadaf/datasets-v5) | **v5** : `processed/instruct_train_v5.jsonl` (+ meta, docs-in-context) |
+| [`iadaf/models-v5`](https://huggingface.co/iadaf/models-v5) | **après train** : `lora_v5a/` + `lora_v5b/`, GGUF 8B/14B, NVFP4 |
 
 `datasets/curated/` et les builders restent dans git. `datasets/raw/` est régénérable via `download_*.py` (non poussé sur HF ; ~300 Mo locaux optionnels).
 
@@ -52,19 +54,30 @@ hf upload iadaf/datasets-v4 ml/datasets/processed/instruct_train_v4.meta.json pr
 # --- Après train : pousser le LoRA ---
 # hf repos create iadaf/models-v4 --type model --private --exist-ok
 # hf upload iadaf/models-v4 ml/artifacts/lora_v4 lora_v4
+
+# --- v5A / v5B Ministral-3 ---
+# datasets-v5 déjà créé / poussé (instruct_train_v5 + meta + docs_in_context)
+# hf download iadaf/datasets-v5 --repo-type dataset --local-dir ml/datasets
+# Bases locales : ml/artifacts/base_models/ (+ prefetch_bases.py)
+# Après train :
+# hf repos create iadaf/models-v5 --type model --private --exist-ok
+# hf upload iadaf/models-v5 ml/artifacts/lora_v5a lora_v5a
+# hf upload iadaf/models-v5 ml/artifacts/lora_v5b lora_v5b
 ```
 
 ## Copie machine dédiée (train) → retour dev
 
-**À emporter (léger, suffisant si `instruct_train_v4.jsonl` est déjà build) :**
+Checklist à jour **v4 + v5a/v5b** : [`../datasets/TRAIN-PACK-V4-V5.md`](../datasets/TRAIN-PACK-V4-V5.md) (~725 Mo data + code).
+
+**À emporter (léger si mixes déjà build) :**
 
 | Élément | Obligatoire |
 |---------|:-----------:|
-| Git branch / commit code (configs, `train_qlora.py`, `model_v4.yaml`, `run_train_v4.ps1`) | oui |
-| `ml/datasets/processed/instruct_train_v4.jsonl` (~54 Mo) + `.meta.json` | oui |
-| Python CUDA (torch, peft, trl, transformers) + auth HF pour `Qwen/Qwen3-8B` | oui |
-| `ml/datasets/raw/v4/` (~310 Mo) | non (rebuild possible) |
-| `ml/artifacts/gguf|lora_v3_1|nvfp4` | non pour le train v4 |
+| Git / code (`train_qlora.py`, `model_v4|v5a|v5b.yaml`, `run_train_v4|v5.ps1`) | oui |
+| `processed/instruct_train_v4.jsonl` + `instruct_train_v5.jsonl` (+ meta) | oui |
+| `raw/v4/` + `curated/` + `eval/gold/` + `artifacts/rag_v3/` | oui (recommandé offline) |
+| Python CUDA + auth HF (Qwen3-8B / Ministral-3-8B / 14B) | oui sur la machine |
+| `gguf` / `lora_v3_1` / NVFP4 | non pour le train |
 
 **Retour sur la machine de dev :**
 

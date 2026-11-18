@@ -1,0 +1,47 @@
+# IADAF v5A — Ministral 3 8B (vitesse / flux ≥ 50–60 tok/s/user)
+# Base BF16 Instruct (pas le checkpoint FP8)
+# Cible: RTX 5080 Laptop 16 Go — chemin « garder la vitesse »
+# Réf. datasets/BRIEF-V5.md
+base_model: mistralai/Ministral-3-8B-Instruct-2512-BF16
+# Prefetch local : ml/artifacts/base_models/Ministral-3-8B-Instruct-2512-BF16
+# Alt. Unsloth: unsloth/Ministral-3-8B-Instruct-2512
+output_name: iadaf-ministral3-8b-v5a
+version: v5a
+track: speed
+
+# 8B : marge VRAM → contexte docs un peu plus long en SFT
+max_seq_length: 3072
+load_in_4bit: true
+gradient_checkpointing: true
+
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  epochs: 2
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  logging_steps: 10
+  save_steps: 200
+  seed: 42
+  bf16: true
+  optim: adamw_8bit
+
+export:
+  gguf_quant: Q4_K_M
+  chat_template: mistral
+  # Serve: Q4 ≈ 5–6 Go → marge KV docs + multi-user
+  # Gate perf: ≥ 50–60 tok/s/user (flux constant) — bench obligatoire
