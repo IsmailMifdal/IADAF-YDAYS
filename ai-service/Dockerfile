@@ -16,7 +16,7 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
@@ -43,7 +43,7 @@ RUN useradd --create-home --uid 10001 app \
 
 EXPOSE 8086
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=360s \
   CMD curl -f http://localhost:8086/ai/health || exit 1
 
 # Database migrations (Alembic) run at application startup.

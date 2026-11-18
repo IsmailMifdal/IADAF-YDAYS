@@ -169,6 +169,10 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
+          no-cache-filters: ${{ matrix.name == 'ai-service' && 'runtime' || '' }}
+      - name: Check AI runtime imports
+        if: matrix.name == 'ai-service'
+        run: docker run --rm --entrypoint python "$IMAGE:${{ github.sha }}" -c "import torch, sentence_transformers, chromadb"
       - name: Scan — fail on any fixable critical vulnerability
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \

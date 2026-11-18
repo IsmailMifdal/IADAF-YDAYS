@@ -30,6 +30,6 @@ word used in the code or the UI follows in parentheses when it differs.
 | ProblemDetail | Spring's implementation of the RFC 9457 error body; the one error shape every service returns once #145 lands. | ADR-0001 |
 | Procedure (démarche) | A user's instance of a pack: status, priority, steps, comments. The aggregate of `demarches-service`. | `demarches-service` |
 | RAG | Retrieval-augmented generation: passages found by the `Retriever` are added to the prompt before the LLM answers. | `03b-component-ai-service.md` |
-| Retriever | The optional port of `ai-service` that returns knowledge-base passages relevant to a question. One adapter: the knowledge index. | `03b-component-ai-service.md` |
+| Retriever | The optional port of `ai-service` that returns knowledge-base passages relevant to a question. Tests can run without ChromaDB; at runtime, the knowledge index must initialise successfully for ai-service to report healthy (ISM-118). Recovery after transient failures is tracked in ISM-127. One adapter: the knowledge index. | `03b-component-ai-service.md` |
 | Rule-based verdict | The completeness, validity or expiry status (`ok`, `warning`, `error`, `unknown`) that deterministic rules compute from document facts. The language model explains a verdict; it never produces one. | ADR-0001 |
 | Service discovery | A registry (Eureka) where services announce themselves so that clients resolve them by name. Compose DNS gives the same resolution without a registry when each service has one instance. | `03c-component-gateway-discovery.md` |
