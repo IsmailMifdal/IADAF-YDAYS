@@ -62,6 +62,7 @@ flowchart LR
 |---|---|
 | `decisions/` | Architecture decision records. Start with `0001-adopt-proportional-clean-architecture.md`. |
 | `diagrams/architecture/` | Component diagrams of the target structure (gateway and discovery, `demarches-service`, `ai-service`). |
+| `specs/` | Detailed specs. `api-route-inventory.md`: every REST route, its callers and personal data (PIL-21). |
 | `glossary.md` | Every term used in the diagrams and ADRs, defined once. |
 
 Not yet written, by design: `traceability-matrix.md` and `diagrams/<feature>/01-use-case*.md`.
