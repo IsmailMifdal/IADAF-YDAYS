@@ -76,8 +76,9 @@ organisme concerné, notes (texte libre), date d'échéance, commentaires.
 Table `profiles.users` ; les comptes réels vivent dans le schéma `users` du front. Aucun service
 Spring n'a d'OpenAPI.
 
-Cible : l'ADR-0002 (proposé, ISM-107) garde le service mais le refait (étape 3) : les comptes
-et l'authentification y arrivent, ces 8 routes et `profiles.users` disparaissent.
+Cible : l'ADR-0001 (étape 1) supprime le service ; l'ADR-0002 (proposé, ISM-107, pas encore
+sur `dev_v1`) le garderait et le referait (étape 3) : les comptes et l'authentification y
+arrivent, ces 8 routes et `profiles.users` disparaissent.
 
 | Méthode | Chemin | Appelant | Rôle | Données personnelles | Cible |
 |---|---|---|---|---|---|
@@ -92,7 +93,8 @@ et l'authentification y arrivent, ces 8 routes et `profiles.users` disparaissent
 
 ## ai-service (8)
 
-FastAPI, préfixe `/ai`. Tout sauf la santé exige le jeton interne (`frontend_claims`). Le proxy
+FastAPI, préfixe `/ai`. Tout sauf la santé et la documentation (`/docs`, `/redoc`,
+`/openapi.json`) exige le jeton interne (`frontend_claims`). Le proxy
 Next.js `/api/ai/[...path]` ouvre `chat`, `chat/stream`, `translate`, `analyze-document` et
 `health`, mais le front n'appelle que `chat/stream` et `analyze-document`. Destinataire tiers :
 le fournisseur LLM (compatible OpenAI, `llm_service.py`).
@@ -106,7 +108,7 @@ le fournisseur LLM (compatible OpenAI, `llm_service.py`).
 | POST | `/api/ai/translate` | aucun | jeton | texte libre ; tiers : LLM | à décider (ISM-142) |
 | POST | `/api/ai/analyze-document` | front (proxy) | jeton, anonyme accepté | texte libre ; le front envoie un résumé du dossier (pack, noms des pièces, contrôles), sans contenu lu ; tiers : LLM | garder, recadrée (ADR-0001, décision 3) |
 | DELETE | `/api/ai/users/{user_id}/data` | front (effacement du compte), ops, e2e | `account:erase` et `sub == user_id` | **identifiant de compte dans l'URL** | garder, aligner sur `/me` (ISM-142) |
-| POST | `/api/ai/documents/{document_id}/analyze` | front (`api/documents/[id]/analyze`), e2e | jeton avec `sub` | lit le fichier via la passerelle ; sortie : contrôles, sans contenu ; tiers : OCR Mistral si `OCR_PROVIDER=mistral` (image de la pièce) | garder |
+| POST | `/api/ai/documents/{document_id}/analyze` | front (`api/documents/[id]/analyze`), e2e | jeton avec `sub` | lit le fichier via la passerelle ; sortie : contrôles, sans contenu ; tiers : OCR Mistral si l'OCR est configuré (image de la pièce) | garder |
 
 ## Routes Next.js (19, lecture seule)
 
@@ -115,7 +117,7 @@ Seules les routes marquées → appellent la passerelle.
 
 | Méthodes | Chemin | Contrôle | Appel | Données personnelles |
 |---|---|---|---|---|
-| GET, POST | `/api/auth/[...nextauth]` | Auth.js | base | e-mail, mot de passe |
+| GET, POST | `/api/auth/[...nextauth]` | Auth.js | base ; tiers : Google (si configuré) | e-mail, mot de passe |
 | POST | `/api/auth/register` | limite par IP | base | e-mail, nom, mot de passe |
 | POST | `/api/auth/password-reset/request` | limite par IP et e-mail | base ; tiers : SMTP | e-mail |
 | POST | `/api/auth/password-reset/confirm` | limite par IP | base | jeton, mot de passe |
@@ -135,7 +137,8 @@ Seules les routes marquées → appellent la passerelle.
 | POST | `/api/documents/[id]/analyze` | session, limite | → `/api/ai/documents/{id}/analyze` | aucune |
 | POST | `/api/precheck/disputes` | session, limite | → `/api/analytics/document-checks/disputes` | aucune |
 
-`base` = PostgreSQL, schéma `users` (compte `iadaf_frontend`).
+`base` = PostgreSQL, compte `iadaf_frontend` : schémas `users`, `billing`, `erasures`,
+`ratelimit` (clés HMAC, 48 h).
 
 ## Qui appelle quoi, quelles données
 
@@ -148,14 +151,15 @@ flowchart LR
   mob["Mobile (futur)"] -.->|"entrée décidée par ISM-147"| next
   ops["deploy/replay-erasures.sh"] -->|"effacements, jeton account:erase"| gw
   next -->|"JWT interne 60 s"| gw["api-gateway"]
-  next --- db[("PostgreSQL, schéma users : comptes, achats, prospects")]
+  next --- db[("PostgreSQL, compte iadaf_frontend : comptes, achats, prospects")]
   next -->|"e-mail, userId"| stripe["Stripe"]
   next -->|"e-mail de réinitialisation"| smtp["SMTP"]
+  next -->|"identité, si configuré"| google["Google OAuth"]
   gw -->|"dossiers, étapes"| dem["demarches-service"]
   gw -->|"pièces d'identité"| doc["document-service"]
   gw -->|"statistiques sans donnée personnelle"| ana["analytics-service"]
   gw -->|"message, résumé du dossier"| ai["ai-service"]
-  gw -.->|"profils, e-mail dans l'URL, e2e seulement"| usr["user-service (refait, ADR-0002)"]
+  gw -.->|"profils, e-mail dans l'URL, e2e seulement"| usr["user-service (ADR-0002 proposé)"]
   ai -->|"lecture du fichier, résultats de contrôle"| gw
   ai -->|"message, résumé"| llm["Fournisseur LLM"]
   ai -.->|"image de la pièce, si activé"| ocr["OCR Mistral"]
@@ -171,7 +175,8 @@ flowchart LR
   `/actuator/health`.
 - **Routes d'effacement** : `deploy/replay-erasures.sh` appelle les trois routes ; tout
   changement de leurs chemins met à jour ce script.
-- **Destinataires tiers** : fournisseur LLM, OCR Mistral (si activé), Stripe, SMTP.
+- **Destinataires tiers** : fournisseur LLM, OCR Mistral (si configuré), Stripe, SMTP,
+  Google OAuth (si configuré).
 - **Scopes sans émetteur** : `admin` et `analytics:read` ne sont émis que par les jetons e2e.
 - **Aucun appel entre services Spring** ; seul `ai-service` rappelle la passerelle avec le
   jeton de l'appelant.
