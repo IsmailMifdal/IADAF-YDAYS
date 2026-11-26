@@ -96,14 +96,14 @@ arrivent, ces 8 routes et `profiles.users` disparaissent.
 FastAPI, préfixe `/ai`. Tout sauf la santé et la documentation (`/docs`, `/redoc`,
 `/openapi.json`) exige le jeton interne (`frontend_claims`). Le proxy
 Next.js `/api/ai/[...path]` ouvre `chat`, `chat/stream`, `translate`, `analyze-document` et
-`health`, mais le front n'appelle que `chat/stream` et `analyze-document`. Destinataire tiers :
+`health`, mais le front n'appelle que `chat`, `chat/stream` et `analyze-document`. Destinataire tiers :
 le fournisseur LLM (compatible OpenAI, `llm_service.py`).
 
 | Méthode | Chemin | Appelant | Rôle | Données personnelles | Cible |
 |---|---|---|---|---|---|
 | GET | `/ai/health` (port 8086, hors passerelle) | Docker, Eureka, e2e | aucun | aucune | garder |
 | GET | `/actuator/health` (port 8086, hors passerelle) | aucun | aucun | aucune | à décider (ISM-142) |
-| POST | `/api/ai/chat` | e2e, test de la passerelle | jeton, `sub` facultatif | message libre (peut contenir toute donnée) ; tiers : LLM | à décider (ISM-142) : doublon de `chat/stream` |
+| POST | `/api/ai/chat` | front (`PackWorkspace`, message d'accueil du pack), e2e, test de la passerelle | jeton, `sub` facultatif | message libre (peut contenir toute donnée) ; tiers : LLM | à décider (ISM-142) : fusionner avec `chat/stream` après migration de `PackWorkspace` |
 | POST | `/api/ai/chat/stream` | front (proxy), e2e | jeton, `sub` facultatif | message libre, sortie SSE ; tiers : LLM | garder |
 | POST | `/api/ai/translate` | aucun | jeton | texte libre ; tiers : LLM | à décider (ISM-142) |
 | POST | `/api/ai/analyze-document` | front (proxy) | jeton, anonyme accepté | texte libre ; le front envoie un résumé du dossier (pack, noms des pièces, contrôles), sans contenu lu ; tiers : LLM | garder, recadrée (ADR-0001, décision 3) |
@@ -171,8 +171,8 @@ flowchart LR
   ISM-142. Routes concernées aujourd'hui : `user-service` (e-mail, langue, pays ; refait par
   l'ADR-0002), `DELETE /api/ai/users/{user_id}/data` (identifiant de compte) et les routes avec
   `packSlug` ou `type` (démarche suivie).
-- **Routes IA sans appelant applicatif** : `chat` (doublon de `chat/stream`), `translate`,
-  `/actuator/health`.
+- **Routes IA sans appelant applicatif** : `translate`, `/actuator/health`. `chat` double
+  `chat/stream` ; seul `PackWorkspace` l'appelle encore.
 - **Routes d'effacement** : `deploy/replay-erasures.sh` appelle les trois routes ; tout
   changement de leurs chemins met à jour ce script.
 - **Destinataires tiers** : fournisseur LLM, OCR Mistral (si configuré), Stripe, SMTP,
